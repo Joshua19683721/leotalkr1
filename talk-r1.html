@@ -163,7 +163,7 @@
                     <textarea id="inputText" class="w-full px-3 py-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
                               rows="4" placeholder="請輸入小學生說的話...例如：爬山今天 困難更的 期待"></textarea>
                     <div id="tokenCounter" class="absolute bottom-2 right-3 text-xs text-gray-500">
-                        0 / 100 tokens
+                        0 / 500 tokens
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-3">
@@ -715,13 +715,16 @@
     <script>
         // 全局变量
         let currentUtterance = null;
-        const MAX_TOKENS = 100; // Token数限制
+        const MAX_TOKENS = 500; // Token数限制
         let isAnalyzing = false; // 防止重复提交
         let apiCallStartTime = 0; // API调用开始时间
         let recognition = null;
         let isRecording = false;
         let lastFinalSegment = '';
         const recentFinalSegments = [];
+        let lastFinalSegmentNorm = '';
+        const recentFinalSegmentsNorm = [];
+        let lastAppendTime = 0;
 
         // DOM元素 - 使用安全的元素获取方式
         const apiKeyInput = document.getElementById('apiKey');
@@ -1402,6 +1405,7 @@
                 // 显示结果
                 displayResults(apiResult.results, apiResult.tokenStats);
                 ['result1','result2','result3','result4','result5','result6'].forEach(populateMaterials);
+                speakResultsSequential(['result1','result2','result3','result4','result5']);
                 
             } catch (error) {
                 console.error('分析錯誤:', error);
@@ -1534,7 +1538,7 @@
                 - 標點正確：中文標點使用得當，避免長句拖沓
                 
                 ## 輸出要求（僅文本，六行）
-                - 第一行：最佳講法（最口語化、最自然），僅輸出純文字一句話
+                - 第一行：最佳／推薦講法（最口語化、最自然），僅輸出純文字一句話；必須完整表述，包含主語+動詞+賓語，並在可用時加入時間／地點／感受或目的；不得使用片段或省略號；以「。」結尾；若缺主語，以「我」補足
                 - 第二行：${phase === 'elementary' ? '白話文／兒童文學版' : '記敘文（敘事）版'}，僅輸出純文字一句話；滿足：
                   定義：以記人、敘事、寫景、狀物為主要內容，透過具體事件表達情感或道理。
                   六要素：時間、地點、人物、事件（起因、經過、結果）。
@@ -1945,6 +1949,36 @@
             }
         }
 
+        function speakResultsSequential(ids) {
+            try {
+                if (!Array.isArray(ids) || ids.length === 0) return;
+                window.speechSynthesis.cancel();
+                const texts = ids
+                    .map(id => {
+                        const el = document.getElementById(id);
+                        const t = el ? el.textContent : '';
+                        if (!t || t.includes('loading-shimmer')) return '';
+                        return t.trim();
+                    })
+                    .filter(t => t && t.length > 0);
+                let i = 0;
+                const speakNext = () => {
+                    if (i >= texts.length) return;
+                    const u = new SpeechSynthesisUtterance(texts[i]);
+                    u.lang = 'zh-TW';
+                    u.rate = 0.9;
+                    u.pitch = 1.1;
+                    u.onend = () => { i++; speakNext(); };
+                    u.onerror = () => { i++; speakNext(); };
+                    currentUtterance = u;
+                    window.speechSynthesis.speak(u);
+                };
+                speakNext();
+            } catch (error) {
+                showError(`語音播放錯誤: ${error.message}`, '請檢查您的瀏覽器語音合成功能是否正常');
+            }
+        }
+
         function initVoiceRecognition() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SR) return null;
@@ -1964,6 +1998,9 @@
                 focusInputEnd();
                 lastFinalSegment = '';
                 recentFinalSegments.length = 0;
+                lastFinalSegmentNorm = '';
+                recentFinalSegmentsNorm.length = 0;
+                lastAppendTime = 0;
                 return;
             }
             recognition = initVoiceRecognition();
@@ -1974,23 +2011,34 @@
             isRecording = true;
             lastFinalSegment = '';
             recentFinalSegments.length = 0;
+            lastFinalSegmentNorm = '';
+            recentFinalSegmentsNorm.length = 0;
+            lastAppendTime = 0;
             if (voiceBtn) voiceBtn.innerHTML = '<i class="fa fa-stop mr-2"></i>停止錄音';
             recognition.onresult = (event) => {
-                const start = typeof event.resultIndex === 'number' ? event.resultIndex : 0;
                 let appended = false;
-                for (let i = start; i < event.results.length; i++) {
-                    const res = event.results[i];
-                    if (res.isFinal) {
-                        const seg = (res[0] && res[0].transcript ? res[0].transcript : '').trim();
-                        if (seg && seg !== lastFinalSegment && !recentFinalSegments.includes(seg)) {
-                            const prev = inputText ? String(inputText.value || '') : '';
-                            const next = (prev ? prev + ' ' : '') + seg;
-                            if (inputText) inputText.value = next;
-                            lastFinalSegment = seg;
-                            recentFinalSegments.push(seg);
-                            if (recentFinalSegments.length > 5) recentFinalSegments.shift();
-                            appended = true;
-                        }
+                const idx = (typeof event.resultIndex === 'number') ? event.resultIndex : (event.results.length - 1);
+                const res = event.results[idx];
+                if (res && res.isFinal) {
+                    const seg = (res[0] && res[0].transcript ? res[0].transcript : '').trim();
+                    const norm = normalizeSeg(seg);
+                    const now = Date.now();
+                    const isDup = (
+                        norm && (norm === lastFinalSegmentNorm || recentFinalSegmentsNorm.includes(norm))
+                    );
+                    const tooSoon = (now - lastAppendTime < 1500 && norm === lastFinalSegmentNorm);
+                    if (seg && norm && !isDup && !tooSoon) {
+                        const prev = inputText ? String(inputText.value || '') : '';
+                        const next = (prev ? prev + ' ' : '') + seg;
+                        if (inputText) inputText.value = next;
+                        lastFinalSegment = seg;
+                        lastFinalSegmentNorm = norm;
+                        recentFinalSegments.push(seg);
+                        recentFinalSegmentsNorm.push(norm);
+                        if (recentFinalSegments.length > 5) recentFinalSegments.shift();
+                        if (recentFinalSegmentsNorm.length > 5) recentFinalSegmentsNorm.shift();
+                        lastAppendTime = now;
+                        appended = true;
                     }
                 }
                 if (appended) {
@@ -2165,3 +2213,10 @@
     </script>
 </body>
 </html>
+        function normalizeSeg(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/[，、。！？；,.!?;\s]+/g, ' ') // 合併標點與空白
+                .replace(/\s+/g, ' ') // 壓縮多重空白
+                .trim();
+        }
