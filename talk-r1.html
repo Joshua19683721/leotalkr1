@@ -177,6 +177,14 @@
                         <i class="fa fa-microphone mr-2"></i>語音輸入
                     </button>
                 </div>
+                <div class="mt-2 text-xs text-gray-600 flex items-center gap-3">
+                    <span id="voiceStatus" class="px-2 py-1 rounded bg-gray-100">狀態：待機</span>
+                    <span id="voiceInterim" class="px-2 py-1 rounded bg-yellow-50 text-yellow-700 hidden"></span>
+                </div>
+                <label class="mt-2 inline-flex items-center text-xs text-gray-700 select-none">
+                    <input type="checkbox" id="toggleAppendInterim" class="mr-2">
+                    即時追加暫存文字
+                </label>
             </div>
         </div>
 
@@ -330,7 +338,7 @@
                     <i class="fa fa-times-circle text-red-500 text-xl"></i>
                 </div>
                 <div class="ml-3 flex-1">
-                    <h3 class="font-medium text-red-800">API 調用失敗</h3>
+                    <h3 id="errorTitle" class="font-medium text-red-800">API 調用失敗</h3>
                     <p class="text-sm text-red-600 mb-2" id="errorMessage"></p>
                     <div class="text-xs text-red-500" id="errorDetails"></div>
                     <div class="mt-2 flex space-x-2">
@@ -348,7 +356,7 @@
         <!-- 结果显示区域 -->
         <div id="resultArea" class="bg-white rounded-2xl p-6 card-shadow mb-8 hidden fade-in">
             <h2 class="text-xl font-bold text-gray-800 mb-6">
-                <i class="fa fa-trophy mr-2 text-accent"></i>最佳講法推薦
+                <i class="fa fa-trophy mr-2 text-accent"></i>推薦用法
             </h2>
             
             <div class="space-y-4">
@@ -356,7 +364,7 @@
                 <div class="bg-gradient-to-r from-primary/10 to-primary/5 p-4 rounded-lg border-l-4 border-primary">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="font-bold text-primary text-lg">
-                            <i class="fa fa-star text-yellow-500 mr-2"></i>推薦講法
+                            <i class="fa fa-star text-yellow-500 mr-2"></i>重述未解析講法
                         </h3>
                         <div class="flex items-center">
                             <span class="token-badge bg-primary/20 text-primary mr-2" id="result1Tokens">0 tokens</span>
@@ -400,9 +408,9 @@
                 <!-- 其他讲法 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- 讲法 2 -->
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-1">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-3">
                         <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-medium text-gray-700" id="result2Title">記敘文（敘事）版</h4>
+                            <h4 class="font-medium text-gray-700" id="result2Title">記敘文（敘事）</h4>
                             <div class="flex items-center">
                                 <span class="token-badge bg-gray-200 text-gray-700 mr-2" id="result2Tokens">0 tokens</span>
                                 <button onclick="playText('result2')" class="text-gray-600 hover:text-gray-800 transition-colors">
@@ -445,9 +453,9 @@
                     </div>
 
                     <!-- 讲法 3 -->
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-2">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-4">
                         <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-medium text-gray-700" id="result3Title">描寫文（描寫）版</h4>
+                            <h4 class="font-medium text-gray-700" id="result3Title">描寫文（描寫）</h4>
                             <div class="flex items-center">
                                 <span class="token-badge bg-gray-200 text-gray-700 mr-2" id="result3Tokens">0 tokens</span>
                                 <button onclick="playText('result3')" class="text-gray-600 hover:text-gray-800 transition-colors">
@@ -490,9 +498,9 @@
                     </div>
 
                     <!-- 讲法 4 -->
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-4">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-1">
                         <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-medium text-gray-700">議論文（總分總）版</h4>
+                            <h4 class="font-medium text-gray-700">議論文（總分總）</h4>
                             <div class="flex items-center">
                                 <span class="token-badge bg-gray-200 text-gray-700 mr-2" id="result4Tokens">0 tokens</span>
                                 <button onclick="playText('result4')" class="text-gray-600 hover:text-gray-800 transition-colors">
@@ -533,7 +541,7 @@
                     <!-- 讲法 5 -->
                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow order-5">
                         <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-medium text-gray-700" id="result5Title">作文（寫作方式）版</h4>
+                            <h4 class="font-medium text-gray-700" id="result5Title">作文（寫作方式）</h4>
                             <div class="flex items-center">
                                 <span class="token-badge bg-gray-200 text-gray-700 mr-2" id="result5Tokens">0 tokens</span>
                                 <button onclick="playText('result5')" class="text-gray-600 hover:text-gray-800 transition-colors">
@@ -725,6 +733,7 @@
         let lastFinalSegmentNorm = '';
         const recentFinalSegmentsNorm = [];
         let lastAppendTime = 0;
+        let isFormattingInput = false;
 
         // DOM元素 - 使用安全的元素获取方式
         const apiKeyInput = document.getElementById('apiKey');
@@ -736,6 +745,14 @@
         const clearBtn = document.getElementById('clearBtn');
         const exampleBtn = document.getElementById('exampleBtn');
         const voiceBtn = document.getElementById('voiceBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const voiceInterim = document.getElementById('voiceInterim');
+        const toggleAppendInterim = document.getElementById('toggleAppendInterim');
+        let appendInterimLive = false;
+        let inputBaseBeforeInterim = '';
+        let lastInterimAppendTime = 0;
+        let lastInterimSegRaw = '';
+        let lastInterimSegNorm = '';
         const processingStatus = document.getElementById('processingStatus');
         const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
@@ -1276,10 +1293,42 @@
             // 添加事件监听器 - 使用安全的方式
             if (clearBtn) clearBtn.addEventListener('click', clearInput);
             if (voiceBtn) voiceBtn.addEventListener('click', toggleVoiceInput);
+            if (toggleAppendInterim) {
+                appendInterimLive = !!toggleAppendInterim.checked;
+                toggleAppendInterim.addEventListener('change', (e) => {
+                    appendInterimLive = !!e.target.checked;
+                });
+            }
             if (copyAllBtn) copyAllBtn.addEventListener('click', copyAllResults);
             if (newAnalysisBtn) newAnalysisBtn.addEventListener('click', resetForm);
             if (saveApiKeyCheckbox) saveApiKeyCheckbox.addEventListener('change', saveApiKeyIfChecked);
-            if (inputText) inputText.addEventListener('input', updateTokenCounter);
+            if (inputText) {
+                inputText.addEventListener('input', (e) => {
+                    if (isFormattingInput) return;
+                    if (e && e.isComposing) { updateTokenCounter(); return; }
+                    const prev = String(inputText.value || '');
+                    const formatted = ensureDoubleSpaceEnd(prev);
+                    if (formatted !== prev) {
+                        const s = inputText.selectionStart;
+                        const epos = inputText.selectionEnd;
+                        isFormattingInput = true;
+                        inputText.value = formatted;
+                        try {
+                            if (s != null && epos != null) {
+                                const delta = formatted.length - prev.length;
+                                const ns = Math.min(formatted.length, s + delta);
+                                const ne = Math.min(formatted.length, epos + delta);
+                                inputText.setSelectionRange(ns, ne);
+                            }
+                        } catch (err) {}
+                        isFormattingInput = false;
+                    }
+                    updateTokenCounter();
+                });
+                inputText.addEventListener('blur', () => {
+                    try { inputText.value = ensureDoubleSpaceEnd(inputText.value || ''); } catch (e) {}
+                });
+            }
             if (wenyanLevelSelect) {
                 const toggleStyle = () => {
                     if (wenyanStyleSelect) {
@@ -1300,18 +1349,18 @@
                 const t3 = document.getElementById('result3Title');
                 const t6 = document.getElementById('result6Title');
                 if (phase === 'elementary') {
-                    if (t2) t2.textContent = '白話文／兒童文學版';
-                    if (t3) t3.textContent = '描寫文（描寫）版';
+                    if (t2) t2.textContent = '白話文／兒童文學';
+                    if (t3) t3.textContent = '描寫文（描寫）';
                     if (t6) t6.textContent = '高中文言文（風格可選）';
                     if (wenyanLevelSelect) wenyanLevelSelect.value = 'senior';
                 } else if (phase === 'junior') {
-                    if (t2) t2.textContent = '記敘文（敘事）版';
+                    if (t2) t2.textContent = '記敘文（敘事）';
                     if (t3) t3.textContent = '國中文言文散文';
                     if (t6) t6.textContent = '高中文言文（風格可選）';
                     if (wenyanLevelSelect) wenyanLevelSelect.value = 'senior';
                 } else {
-                    if (t2) t2.textContent = '記敘文（敘事）版';
-                    if (t3) t3.textContent = '描寫文（描寫）版';
+                    if (t2) t2.textContent = '記敘文（敘事）';
+                    if (t3) t3.textContent = '描寫文（描寫）';
                     if (t6) t6.textContent = '高中文言文（風格可選）';
                     if (wenyanLevelSelect) wenyanLevelSelect.value = 'senior';
                 }
@@ -1343,7 +1392,28 @@
             console.log('开始分析文本...');
             
             try {
+                if (isRecording) {
+                    try { if (recognition) recognition.stop(); } catch (e) {}
+                    isRecording = false;
+                    if (voiceBtn) voiceBtn.innerHTML = '<i class="fa fa-microphone mr-2"></i>語音輸入';
+                    if (typeof setVoiceStatus === 'function') setVoiceStatus('待機');
+                    if (voiceInterim) {
+                        const seg = String(voiceInterim.textContent || '').trim();
+                        if (seg) {
+                            const prev = inputText ? String(inputText.value || '') : '';
+                            const add = compactCjkSpaces(seg);
+                            let next = ensureDoubleSpaceEnd(appendSmart(prev, add));
+                            if (inputText) inputText.value = next;
+                            updateTokenCounter();
+                        }
+                        voiceInterim.classList.add('hidden');
+                        voiceInterim.textContent = '';
+                    }
+                }
                 const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+                if (inputText) {
+                    inputText.value = ensureDoubleSpaceEnd(inputText.value || '');
+                }
                 const textToAnalyze = inputText ? inputText.value.trim() : '';
                 
                 // 验证输入
@@ -1990,22 +2060,143 @@
             return rec;
         }
 
+        function setVoiceStatus(text) {
+            if (voiceStatus) {
+                voiceStatus.textContent = `狀態：${text}`;
+            }
+        }
+
+        function normalizeSeg(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/[，、。！？；,.!?;\s]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function computeDelta(prev, curr) {
+            if (!curr) return '';
+            if (!prev) return String(curr).trim();
+            const a = String(prev);
+            const b = String(curr);
+            let i = 0;
+            const n = Math.min(a.length, b.length);
+            while (i < n && a[i] === b[i]) i++;
+            if (i >= b.length) return '';
+            return b.slice(i).trim();
+        }
+        function compactCjkSpaces(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/([\u3400-\u9FFF])\s+([\u3400-\u9FFF])/g, '$1$2')
+                .replace(/([\u3400-\u9FFF])\s+([，、。！？；])/g, '$1$2')
+                .replace(/([，、。！？；])\s+([\u3400-\u9FFF])/g, '$1$2');
+        }
+        function ensureDoubleSpaceEnd(text) {
+            const s = String(text);
+            return s.replace(/\s+$/, '') + '　';
+        }
+        function appendSmart(prev, seg) {
+            const base = String(prev || '');
+            const add = compactCjkSpaces(String(seg || ''));
+            if (!add) return base;
+            const maxK = Math.min(base.length, add.length);
+            let k = maxK;
+            while (k > 0) {
+                if (base.endsWith(add.slice(0, k))) break;
+                k--;
+            }
+            return base + add.slice(k);
+        }
+        (function(){
+            try {
+                const t1 = ensureDoubleSpaceEnd(appendSmart('今天天氣不', '今天天氣不錯'));
+                if (t1 !== '今天天氣不錯　') {
+                    console.error('appendSmart驗證失敗A', t1);
+                }
+                const t2 = ensureDoubleSpaceEnd(appendSmart('你好世界', '世界真好'));
+                if (t2 !== '你好世界真好　') {
+                    console.error('appendSmart驗證失敗B', t2);
+                }
+            } catch (e) {}
+        })();
+        function convertPunctuationTerm(text) {
+            if (!text) return '';
+            const t = String(text).trim();
+            const k = t.replace(/\s+/g, '');
+            const map = {
+                '逗號':'，','逗号':'，','逗點':'，','逗点':'，',
+                '句號':'。','句号':'。','句點':'。','句点':'。'
+            };
+            const fillerRemoved = k.replace(/[的符號号啊呢喔哦嘛吧]/g, '');
+            if (map[k]) return map[k];
+            if (map[fillerRemoved]) return map[fillerRemoved];
+            const keys = Object.keys(map);
+            let out = '';
+            let i = 0;
+            while (i < fillerRemoved.length) {
+                let matched = false;
+                for (let j = 0; j < keys.length; j++) {
+                    const key = keys[j];
+                    if (fillerRemoved.startsWith(key, i)) {
+                        out += map[key];
+                        i += key.length;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) break;
+            }
+            if (out && i === fillerRemoved.length) return out;
+            return text;
+        }
+        function isClearCommand(text) {
+            const k = String(text || '').trim().replace(/\s+/g, '').toLowerCase();
+            return (
+                k === '清除' ||
+                k === '清空' ||
+                k === '全部清除' ||
+                k === '清除輸入' ||
+                k === '清空輸入' ||
+                k === '刪除全部' ||
+                k === '重置' ||
+                k === '重設' ||
+                k === '重來' ||
+                k === '清除文字' ||
+                k === '清空文字'
+            );
+        }
+
         function toggleVoiceInput() {
             if (isRecording) {
                 try { if (recognition) recognition.stop(); } catch (e) {}
                 isRecording = false;
                 if (voiceBtn) voiceBtn.innerHTML = '<i class="fa fa-microphone mr-2"></i>語音輸入';
+                setVoiceStatus('待機');
+                if (voiceInterim) {
+                    const seg = String(voiceInterim.textContent || '').trim();
+                    if (seg) {
+                        const prev = inputText ? String(inputText.value || '') : '';
+                        const add = compactCjkSpaces(seg);
+                        let next = ensureDoubleSpaceEnd(appendSmart(prev, add));
+                        if (inputText) inputText.value = next;
+                        updateTokenCounter();
+                    }
+                    voiceInterim.classList.add('hidden');
+                    voiceInterim.textContent = '';
+                }
                 focusInputEnd();
                 lastFinalSegment = '';
                 recentFinalSegments.length = 0;
                 lastFinalSegmentNorm = '';
                 recentFinalSegmentsNorm.length = 0;
                 lastAppendTime = 0;
+                const hasText = inputText && String(inputText.value || '').trim().length > 0;
                 return;
             }
             recognition = initVoiceRecognition();
             if (!recognition) {
-                showError('無法使用語音輸入', '您的瀏覽器不支援語音辨識');
+                setVoiceStatus('無法使用語音輸入');
                 return;
             }
             isRecording = true;
@@ -2014,23 +2205,66 @@
             lastFinalSegmentNorm = '';
             recentFinalSegmentsNorm.length = 0;
             lastAppendTime = 0;
+            inputBaseBeforeInterim = inputText ? String(inputText.value || '').trim() : '';
+            lastInterimAppendTime = 0;
+            lastInterimSegRaw = '';
+            lastInterimSegNorm = '';
             if (voiceBtn) voiceBtn.innerHTML = '<i class="fa fa-stop mr-2"></i>停止錄音';
+            setVoiceStatus('正在聆聽');
             recognition.onresult = (event) => {
+                const start = typeof event.resultIndex === 'number' ? event.resultIndex : 0;
                 let appended = false;
-                const idx = (typeof event.resultIndex === 'number') ? event.resultIndex : (event.results.length - 1);
-                const res = event.results[idx];
-                if (res && res.isFinal) {
+                for (let i = start; i < event.results.length; i++) {
+                    const res = event.results[i];
+                    if (res && !res.isFinal && voiceInterim) {
+                        const seg = (res[0] && res[0].transcript ? res[0].transcript : '').trim();
+                        if (seg) { voiceInterim.textContent = seg; voiceInterim.classList.remove('hidden'); }
+                        if (seg && appendInterimLive) {
+                            const now = Date.now();
+                            if (now - lastInterimAppendTime > 250) {
+                                const prevInput = inputText ? String(inputText.value || '') : '';
+                                const delta = computeDelta(lastInterimSegRaw, seg);
+                                if (delta) {
+                                    const add = compactCjkSpaces(delta);
+                                    const next = prevInput + add;
+                                    if (inputText) inputText.value = next;
+                                    updateTokenCounter();
+                                }
+                                lastInterimSegRaw = seg;
+                                lastInterimSegNorm = normalizeSeg(seg);
+                                lastInterimAppendTime = now;
+                            }
+                        }
+                    }
+                    if (!res || !res.isFinal) continue;
                     const seg = (res[0] && res[0].transcript ? res[0].transcript : '').trim();
+                    if (seg && isClearCommand(seg)) {
+                        clearInput();
+                        showSuccessMessage('已清除輸入');
+                        appended = false;
+                        inputBaseBeforeInterim = '';
+                        lastInterimAppendTime = Date.now();
+                        lastInterimSegRaw = '';
+                        lastInterimSegNorm = '';
+                        continue;
+                    }
                     const norm = normalizeSeg(seg);
                     const now = Date.now();
-                    const isDup = (
-                        norm && (norm === lastFinalSegmentNorm || recentFinalSegmentsNorm.includes(norm))
-                    );
-                    const tooSoon = (now - lastAppendTime < 1500 && norm === lastFinalSegmentNorm);
+                    const isDup = (norm && (norm === lastFinalSegmentNorm || recentFinalSegmentsNorm.includes(norm)));
+                    const tooSoon = (now - lastAppendTime < 800 && norm === lastFinalSegmentNorm);
                     if (seg && norm && !isDup && !tooSoon) {
-                        const prev = inputText ? String(inputText.value || '') : '';
-                        const next = (prev ? prev + ' ' : '') + seg;
-                        if (inputText) inputText.value = next;
+                        let delta = seg;
+                        if (appendInterimLive && lastInterimSegRaw) {
+                            const d = computeDelta(lastInterimSegRaw, seg);
+                            delta = d;
+                        }
+                        if (delta) {
+                            const prev = inputText ? String(inputText.value || '') : '';
+                            const add = compactCjkSpaces(delta);
+                            let next = ensureDoubleSpaceEnd(appendSmart(prev, add));
+                            if (inputText) inputText.value = next;
+                            updateTokenCounter();
+                        }
                         lastFinalSegment = seg;
                         lastFinalSegmentNorm = norm;
                         recentFinalSegments.push(seg);
@@ -2039,28 +2273,55 @@
                         if (recentFinalSegmentsNorm.length > 5) recentFinalSegmentsNorm.shift();
                         lastAppendTime = now;
                         appended = true;
+                        inputBaseBeforeInterim = inputText ? String(inputText.value || '').trim() : '';
+                        lastInterimAppendTime = now;
+                        lastInterimSegRaw = '';
+                        lastInterimSegNorm = '';
                     }
                 }
                 if (appended) {
                     updateTokenCounter();
                     showSuccessMessage('語音已轉文字');
+                    if (voiceInterim) { voiceInterim.classList.add('hidden'); voiceInterim.textContent = ''; }
                 }
                 focusInputEnd();
             };
+            recognition.onstart = () => { setVoiceStatus('辨識開始'); };
+            recognition.onaudiostart = () => { setVoiceStatus('音訊輸入中'); };
+            recognition.onspeechstart = () => { setVoiceStatus('偵測到語音'); };
             recognition.onend = () => {
                 if (isRecording) {
                     try { recognition.start(); } catch (e) {}
+                    setVoiceStatus('自動重啟中');
                 } else {
                     if (voiceBtn) voiceBtn.innerHTML = '<i class="fa fa-microphone mr-2"></i>語音輸入';
+                    setVoiceStatus('待機');
+                    if (voiceInterim) {
+                        const seg = String(voiceInterim.textContent || '').trim();
+                        if (seg) {
+                        const prev = inputText ? String(inputText.value || '') : '';
+                        const add = compactCjkSpaces(seg);
+                        let next = ensureDoubleSpaceEnd(appendSmart(prev, add));
+                        if (inputText) inputText.value = next;
+                        updateTokenCounter();
+                        }
+                        voiceInterim.classList.add('hidden');
+                        voiceInterim.textContent = '';
+                    }
+                    const hasText = inputText && String(inputText.value || '').trim().length > 0;
                 }
                 focusInputEnd();
             };
-            recognition.onerror = () => {
+            recognition.onerror = (e) => {
                 if (isRecording) {
                     try { recognition.start(); } catch (e) {}
+                    setVoiceStatus('錯誤，重試中');
                 } else {
                     if (voiceBtn) voiceBtn.innerHTML = '<i class="fa fa-microphone mr-2"></i>語音輸入';
+                    setVoiceStatus('待機');
                 }
+                const code = e && e.error ? e.error : '';
+                const msg = code === 'no-speech' ? '沒有偵測到語音' : (code === 'audio-capture' ? '找不到麥克風裝置' : (code === 'not-allowed' ? '麥克風權限被拒絕' : '語音辨識錯誤'));
                 focusInputEnd();
             };
             try { recognition.start(); } catch (e) {}
@@ -2069,7 +2330,7 @@
 
         // 复制所有结果
         function copyAllResults() {
-            let content = '最佳講法推薦：\n\n';
+            let content = '推薦用法：\n\n';
             
             for (let i = 1; i <= 6; i++) {
                 const resultId = `result${i}`;
@@ -2138,9 +2399,14 @@
         }
 
         // 显示错误 - 增强版
-        function showError(message, details = '') {
+        function showError(message, details = '', title = '') {
             console.error('错误:', message, details);
             
+            const defaultTitle = 'API 調用失敗';
+            const t = title && title.trim() ? title.trim() : defaultTitle;
+            const et = document.getElementById('errorTitle');
+            if (et) { et.textContent = t; }
+
             if (errorMessage) {
                 safeSetText(errorMessage, message);
             }
@@ -2169,8 +2435,14 @@
             const helpMessages = {
                 '請輸入您的DeepSeek API Key': '請前往DeepSeek平台(https://platform.deepseek.com/)申請API Key',
                 '輸入內容太長': '請簡化您的輸入內容，確保在50 tokens以內',
+                'API 調用失敗': '請檢查您的API Key是否有效，網絡連接是否正常',
                 'API调用失败': '請檢查您的API Key是否有效，網絡連接是否正常',
-                '語音播放錯誤': '請確保您的瀏覽器支援Web Speech API，並且語音合成功能正常'
+                '語音播放錯誤': '請確保您的瀏覽器支援Web Speech API，並且語音合成功能正常',
+                '沒有偵測到語音': '請靠近麥克風、提高音量，或確保周遭環境安靜後重試',
+                '找不到麥克風裝置': '請確認麥克風已連接且可被瀏覽器偵測，並允許麥克風權限',
+                '麥克風權限被拒絕': '請在瀏覽器設定中允許此網站的麥克風權限，然後重試',
+                '語音辨識錯誤': '請重新啟動語音輸入，或更換瀏覽器測試（建議Chrome）',
+                '無法使用語音輸入': '您的瀏覽器可能不支援Web Speech API，請更換到支援的瀏覽器（建議Chrome）'
             };
             
             const errorMsg = errorMessage ? errorMessage.textContent : '';
