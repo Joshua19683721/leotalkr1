@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rudolph The Red-Nosed Reindeer - 歌詞</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/v4-shims.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E53E3E',
+                        secondary: '#F6AD55',
+                        accent: '#ED8936',
+                        snow: '#F7FAFC',
+                        evergreen: '#22543D'
+                    },
+                    fontFamily: {
+                        christmas: ['Arial', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .bg-gradient-christmas {
+                background: linear-gradient(135deg, #E53E3E 0%, #F6AD55 50%, #ED8936 100%);
+            }
+            .hover-scale {
+                transition: transform 0.3s ease;
+            }
+            .hover-scale:hover {
+                transform: scale(1.05);
+            }
+            .audio-button {
+                transition: all 0.3s ease;
+            }
+            .audio-button:hover {
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+            }
+            .audio-button.active {
+                background-color: #38A169;
+                transform: scale(0.95);
+            }
+        }
+    </style>
+</head>
+<body class="bg-snow min-h-screen">
+    <!-- 装饰性雪花背景 -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-10 left-20 text-white text-4xl animate-float-slow">❄️</div>
+        <div class="absolute top-20 right-32 text-white text-3xl animate-float-medium">❄️</div>
+        <div class="absolute top-40 left-40 text-white text-2xl animate-float-fast">❄️</div>
+        <div class="absolute bottom-30 right-20 text-white text-3xl animate-float-slow">❄️</div>
+        <div class="absolute bottom-20 left-30 text-white text-4xl animate-float-medium">❄️</div>
+    </div>
+
+    <div class="relative z-10 max-w-4xl mx-auto px-4 py-8">
+        <!-- 标题区域 -->
+        <header class="text-center mb-12">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-primary text-shadow mb-4">
+                Rudolph The Red-Nosed Reindeer
+            </h1>
+            <h2 class="text-[clamp(1.2rem,3vw,2rem)] text-secondary mb-6">
+                紅鼻子馴鹿魯道夫
+            </h2>
+            <div class="w-32 h-1 bg-gradient-christmas mx-auto rounded-full"></div>
+        </header>
+
+        <!-- 歌词区域 -->
+        <main class="space-y-6">
+            <!-- 第一節 -->
+            <section class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">You know Dasher and Dancer and Prancer and Vixen</p>
+                            <p class="text-gray-600">你認識達舍、舞者、飛奔和維克斯</p>
+                        </div>
+                        <button onclick="speak('You know Dasher and Dancer and Prancer and Vixen')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Comet and Cupid, Donner and Blitzen</p>
+                            <p class="text-gray-600">彗星、丘比特、唐納和布利岑</p>
+                        </div>
+                        <button onclick="speak('Comet and Cupid, Donner and Blitzen')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">But do you recall</p>
+                            <p class="text-gray-600">但你還記得嗎</p>
+                        </div>
+                        <button onclick="speak('But do you recall')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">The most famous reindeer of all?</p>
+                            <p class="text-gray-600">最著名的那隻馴鹿是誰？</p>
+                        </div>
+                        <button onclick="speak('The most famous reindeer of all?')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 第二節 -->
+            <section class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Rudolph the Red-Nosed Reindeer</p>
+                            <p class="text-gray-600">紅鼻子馴鹿魯道夫</p>
+                        </div>
+                        <button onclick="speak('Rudolph the Red-Nosed Reindeer')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Had a very shiny nose</p>
+                            <p class="text-gray-600">有一個非常閃亮的鼻子</p>
+                        </div>
+                        <button onclick="speak('Had a very shiny nose')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">And if you ever saw it</p>
+                            <p class="text-gray-600">如果你曾經看過</p>
+                        </div>
+                        <button onclick="speak('And if you ever saw it')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">You would even say it glows</p>
+                            <p class="text-gray-600">你甚至會說它在發光</p>
+                        </div>
+                        <button onclick="speak('You would even say it glows')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 第三節 -->
+            <section class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">All of the other reindeer</p>
+                            <p class="text-gray-600">其他所有的馴鹿</p>
+                        </div>
+                        <button onclick="speak('All of the other reindeer')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Used to laugh and call him names</p>
+                            <p class="text-gray-600">過去常常嘲笑他並給他取綽號</p>
+                        </div>
+                        <button onclick="speak('Used to laugh and call him names')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">They never let poor Rudolph</p>
+                            <p class="text-gray-600">他們從不讓可憐的魯道夫</p>
+                        </div>
+                        <button onclick="speak('They never let poor Rudolph')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Join in any reindeer games</p>
+                            <p class="text-gray-600">參加任何馴鹿遊戲</p>
+                        </div>
+                        <button onclick="speak('Join in any reindeer games')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 第四節 -->
+            <section class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Then one foggy Christmas Eve</p>
+                            <p class="text-gray-600">然後在一個有霧的平安夜</p>
+                        </div>
+                        <button onclick="speak('Then one foggy Christmas Eve')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Santa came to say</p>
+                            <p class="text-gray-600">聖誕老人來說</p>
+                        </div>
+                        <button onclick="speak('Santa came to say')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">"Rudolph, with your nose so bright"</p>
+                            <p class="text-gray-600">"魯道夫，你的鼻子如此明亮"</p>
+                        </div>
+                        <button onclick="speak('Rudolph, with your nose so bright')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">"Won't you guide my sleigh tonight?"</p>
+                            <p class="text-gray-600">"今晚你不來引導我的雪橇嗎？"</p>
+                        </div>
+                        <button onclick="speak('Won\'t you guide my sleigh tonight?')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 第五節 -->
+            <section class="bg-white rounded-xl shadow-lg p-6 hover-scale">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">Then how the reindeer loved him</p>
+                            <p class="text-gray-600">然後馴鹿們多麼愛他</p>
+                        </div>
+                        <button onclick="speak('Then how the reindeer loved him')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">As they shouted out with glee</p>
+                            <p class="text-gray-600">當他們高興地大喊時</p>
+                        </div>
+                        <button onclick="speak('As they shouted out with glee')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">"Rudolph the Red-Nosed Reindeer"</p>
+                            <p class="text-gray-600">"紅鼻子馴鹿魯道夫"</p>
+                        </div>
+                        <button onclick="speak('Rudolph the Red-Nosed Reindeer')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-1">
+                            <p class="text-lg font-medium text-gray-800">"You'll go down in history"</p>
+                            <p class="text-gray-600">"你將名垂青史"</p>
+                        </div>
+                        <button onclick="speak('You\'ll go down in history')" 
+                                class="audio-button ml-4 bg-primary text-white p-3 rounded-full">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 頁腳 -->
+        <footer class="text-center mt-12 text-gray-600">
+            <p>🎄 聖誕快樂！Merry Christmas! 🎄</p>
+            <p class="mt-2 text-sm">點擊喇叭圖標收聽英文朗讀</p>
+        </footer>
+    </div>
+
+    <script>
+        // 語音朗讀功能
+        let currentUtterance = null;
+
+        function speak(text) {
+            // 停止當前朗讀
+            if (currentUtterance) {
+                speechSynthesis.cancel();
+            }
+
+            // 創建新的朗讀
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            
+            currentUtterance = utterance;
+
+            // 設置按鈕狀態
+            const buttons = document.querySelectorAll('.audio-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            const event = window.event;
+            if (event && event.target.closest('.audio-button')) {
+                event.target.closest('.audio-button').classList.add('active');
+            }
+
+            // 朗讀完成時重置按鈕
+            utterance.onend = () => {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                currentUtterance = null;
+            };
+
+            speechSynthesis.speak(utterance);
+        }
+
+        // 頁面加載完成後的動畫
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加雪花動畫
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes float-slow {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(-20px) rotate(10deg); }
+                }
+                @keyframes float-medium {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(-30px) rotate(-10deg); }
+                }
+                @keyframes float-fast {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(-40px) rotate(15deg); }
+                }
+                .animate-float-slow {
+                    animation: float-slow 6s ease-in-out infinite;
+                }
+                .animate-float-medium {
+                    animation: float-medium 4s ease-in-out infinite;
+                }
+                .animate-float-fast {
+                    animation: float-fast 3s ease-in-out infinite;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // 頁面淡入效果
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-in-out';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // 響應式調整
+        window.addEventListener('resize', function() {
+            // 可以添加響應式調整邏輯
+        });
+    </script>
+</body>
+</html>
