@@ -1,0 +1,50 @@
+{
+  "page1": {
+    "title": "魯道夫紅鼻子馴鹿",
+    "story": "從前從前，有一隻可愛的小馴鹿叫做魯道夫。魯道夫和其他馴鹿不一樣，因為他有一個特別的紅鼻子，就像一盞小燈籠一樣閃閃發光。",
+    "english": "Rudolph the Red-Nosed Reindeer",
+    "illustration_prompt": "A cute baby reindeer with a bright glowing red nose, standing in a snowy forest, big innocent eyes, watercolor illustration style, soft colors, children's book art, magical atmosphere, Christmas theme"
+  },
+  "page2": {
+    "title": "閃亮的紅鼻子",
+    "story": "魯道夫的紅鼻子非常特別，無論是白天還是黑夜，都會發出溫暖的紅色光芒。其他的小馴鹿們看到他的紅鼻子，都覺得很奇怪。",
+    "english": "Had a very shiny nose",
+    "illustration_prompt": "Close-up of a glowing red reindeer nose, magical sparkles around it, soft focus, watercolor style, warm red and gold colors, children's book illustration"
+  },
+  "page3": {
+    "title": "朋友們的反應",
+    "story": "如果你曾經見過魯道夫的紅鼻子，你一定會驚訝地說：「哇！那個鼻子簡直在發光呢！」就像一顆小小的星星一樣明亮。",
+    "english": "And if you ever saw it, You would even say it glows",
+    "illustration_prompt": "Children looking amazed at the glowing red nose, wonder and surprise on their faces, magical lighting, watercolor illustration, soft pastel colors, storybook style"
+  },
+  "page4": {
+    "title": "被排擠的魯道夫",
+    "story": "其他的馴鹿們看到魯道夫的紅鼻子，不僅不覺得神奇，反而常常嘲笑他，給他取難聽的外號。他們從來不讓可憐的魯道夫參加任何遊戲。",
+    "english": "All of the other reindeer, Used to laugh and call him names, They never let poor Rudolph, Join in any reindeer games",
+    "illustration_prompt": "A sad little reindeer being excluded by other reindeers, winter forest setting, emotional scene, watercolor style, muted colors to show sadness, children's book illustration"
+  },
+  "page5": {
+    "title": "聖誕夜的霧氣",
+    "story": "然後，在一個有霧的聖誕夜，天空佈滿了濃濃的白霧，連路都看不清楚了。這時候，聖誕老人來到了馴鹿們的家。",
+    "english": "Then one foggy Christmas Eve, Santa came to say",
+    "illustration_prompt": "Foggy Christmas night scene, Santa Claus arriving with his sleigh, magical fog effects, warm lights from the sleigh, watercolor illustration, cozy winter atmosphere"
+  },
+  "page6": {
+    "title": "聖誕老人的請求",
+    "story": "聖誕老人看到魯道夫，眼睛一亮，親切地說：「魯道夫，你的鼻子這麼明亮，今晚願意幫我引導雪橇嗎？這樣我就能安全地送禮物給全世界的小朋友了！」",
+    "english": "Rudolph with your nose so bright, Won't you guide my sleigh tonight",
+    "illustration_prompt": "Santa Claus talking to Rudolph, pointing at his glowing red nose, warm interaction, magical moment, watercolor style, heartwarming scene, children's book art"
+  },
+  "page7": {
+    "title": "成為英雄的魯道夫",
+    "story": "從那天晚上開始，所有的馴鹿都愛上了魯道夫！他們開心地大聲歡呼：「魯道夫紅鼻子馴鹿，你將名揚四海！」魯道夫終於找到了屬於自己的位置。",
+    "english": "Then how all the reindeer loved him, As they shouted out with glee, Rudolph the red-nose Reindeer, You'll go down in history",
+    "illustration_prompt": "Rudolph leading Santa's sleigh through the night sky, other reindeers cheering below, city lights visible, triumphant moment, magical stars, watercolor illustration, heroic scene"
+  },
+  "page8": {
+    "title": "快樂的結局",
+    "story": "從此以後，魯道夫成為了聖誕老人最得力的助手。每當聖誕夜來臨，他都會用自己閃亮的紅鼻子為雪橇引路，確保所有的禮物都能安全送達。魯道夫終於明白，原來自己的不同之處，正是最寶貴的天賦！",
+    "english": "Rudolph the Red-Nosed Reindeer, You'll go down in history",
+    "illustration_prompt": "Happy ending scene with Rudolph and Santa Claus delivering presents, children waking up to find gifts, warm and joyful atmosphere, morning light, watercolor style, heartwarming conclusion"
+  }
+}

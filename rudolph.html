@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rudolph紅鼻子馴鹿 - 兒童繪本有聲書</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/v4-shims.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E63946',
+                        secondary: '#457B9D',
+                        accent: '#1D3557',
+                        warm: '#F1FAEE',
+                        snow: '#A8DADC',
+                        christmas: '#C70039'
+                    },
+                    fontFamily: {
+                        christmas: ['Mountains of Christmas', 'cursive'],
+                        inter: ['Inter', 'sans-serif'],
+                        story: ['Noto Sans TC', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .storybook-page {
+                min-height: calc(100vh - 160px);
+            }
+            .page-content {
+                max-width: 1200px;
+            }
+            .story-text {
+                font-family: 'Noto Sans TC', sans-serif;
+                line-height: 1.8;
+            }
+            .christmas-shadow {
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .page-transition {
+                transition: all 0.5s ease-in-out;
+            }
+            .audio-controls {
+                backdrop-filter: blur(10px);
+            }
+            .floating-animation {
+                animation: float 3s ease-in-out infinite;
+            }
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+                100% { transform: translateY(0px); }
+            }
+            .snowfall {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 100;
+            }
+            .snowflake {
+                position: absolute;
+                color: white;
+                font-size: 1.5rem;
+                animation: fall linear infinite;
+                opacity: 0.8;
+            }
+            @keyframes fall {
+                0% { transform: translateY(-10px) rotate(0deg); }
+                100% { transform: translateY(100vh) rotate(360deg); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-warm to-snow font-inter overflow-x-hidden">
+    <!-- 雪花效果 -->
+    <div class="snowfall" id="snowfall"></div>
+
+    <!-- 頂部導航 -->
+    <header class="bg-accent text-white py-6 shadow-lg relative z-10">
+        <div class="container mx-auto px-4">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-christmas font-bold text-center christmas-shadow">
+                <i class="fa fa-snowflake-o mr-3"></i>
+                Rudolph紅鼻子馴鹿
+                <i class="fa fa-snowflake-o ml-3"></i>
+            </h1>
+            <p class="text-center text-lg mt-2 opacity-90">兒童繪本有聲書</p>
+        </div>
+    </header>
+
+    <!-- 主要內容區域 -->
+    <main class="container mx-auto px-4 py-8 relative z-10">
+        <div class="storybook-page flex flex-col items-center justify-center">
+            <!-- 頁面內容 -->
+            <div class="page-content w-full bg-white rounded-2xl shadow-2xl overflow-hidden mb-8">
+                <!-- 頁碼指示器 -->
+                <div class="bg-accent text-white px-4 py-2 text-center text-sm font-medium">
+                    <span id="pageIndicator">第 1 頁 / 共 8 頁</span>
+                </div>
+
+                <!-- 頁面容器 -->
+                <div class="page-container relative">
+                    <!-- 第1頁 -->
+                    <div class="page active page-transition" data-page="1">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="p-6 lg:p-10 flex flex-col justify-center">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    魯道夫紅鼻子馴鹿
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">從前從前，有一隻可愛的小馴鹿叫做魯道夫。</p>
+                                    <p class="mb-4">魯道夫和其他馴鹿不一樣，因為他有一個特別的紅鼻子，就像一盞小燈籠一樣閃閃發光。</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: Rudolph the Red-Nosed Reindeer</p>
+                                </div>
+                            </div>
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center">
+                                <img src="https://aka.doubaocdn.com/s/c8cn1vZkUq" 
+                                     alt="可愛的小馴鹿魯道夫" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第2頁 -->
+                    <div class="page hidden page-transition" data-page="2">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center order-2 lg:order-1">
+                                <img src="https://aka.doubaocdn.com/s/4IJU1vZkUp" 
+                                     alt="閃亮的紅鼻子" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                            <div class="p-6 lg:p-10 flex flex-col justify-center order-1 lg:order-2">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    閃亮的紅鼻子
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">魯道夫的紅鼻子非常特別，無論是白天還是黑夜，都會發出溫暖的紅色光芒。</p>
+                                    <p class="mb-4">其他的小馴鹿們看到他的紅鼻子，都覺得很奇怪。</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: Had a very shiny nose</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第3頁 -->
+                    <div class="page hidden page-transition" data-page="3">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="p-6 lg:p-10 flex flex-col justify-center">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    朋友們的反應
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">如果你曾經見過魯道夫的紅鼻子，你一定會驚訝地說：「哇！那個鼻子簡直在發光呢！」</p>
+                                    <p class="mb-4">就像一顆小小的星星一樣明亮。</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: And if you ever saw it, You would even say it glows</p>
+                                </div>
+                            </div>
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center">
+                                <img src="https://aka.doubaocdn.com/s/4IJU1vZkUp" 
+                                     alt="孩子們驚奇地看著紅鼻子" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第4頁 -->
+                    <div class="page hidden page-transition" data-page="4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center order-2 lg:order-1">
+                                <img src="https://aka.doubaocdn.com/s/zpTy1vZkUq" 
+                                     alt="被排擠的魯道夫" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                            <div class="p-6 lg:p-10 flex flex-col justify-center order-1 lg:order-2">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    被排擠的魯道夫
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">其他的馴鹿們看到魯道夫的紅鼻子，不僅不覺得神奇，反而常常嘲笑他，給他取難聽的外號。</p>
+                                    <p class="mb-4">他們從來不讓可憐的魯道夫參加任何遊戲。</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: All of the other reindeer, Used to laugh and call him names, They never let poor Rudolph, Join in any reindeer games</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第5頁 -->
+                    <div class="page hidden page-transition" data-page="5">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="p-6 lg:p-10 flex flex-col justify-center">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    聖誕夜的霧氣
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">然後，在一個有霧的聖誕夜，天空佈滿了濃濃的白霧，連路都看不清楚了。</p>
+                                    <p class="mb-4">這時候，聖誕老人來到了馴鹿們的家。</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: Then one foggy Christmas Eve, Santa came to say</p>
+                                </div>
+                            </div>
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center">
+                                <img src="https://aka.doubaocdn.com/s/rJpC1vZkUq" 
+                                     alt="聖誕老人在霧中來到" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第6頁 -->
+                    <div class="page hidden page-transition" data-page="6">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center order-2 lg:order-1">
+                                <img src="https://aka.doubaocdn.com/s/gVzY1vZkUr" 
+                                     alt="聖誕老人和魯道夫說話" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                            <div class="p-6 lg:p-10 flex flex-col justify-center order-1 lg:order-2">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    聖誕老人的請求
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">聖誕老人看到魯道夫，眼睛一亮，親切地說：「魯道夫，你的鼻子這麼明亮，今晚願意幫我引導雪橇嗎？」</p>
+                                    <p class="mb-4">這樣我就能安全地送禮物給全世界的小朋友了！</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: Rudolph with your nose so bright, Won't you guide my sleigh tonight</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第7頁 -->
+                    <div class="page hidden page-transition" data-page="7">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="p-6 lg:p-10 flex flex-col justify-center">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    成為英雄的魯道夫
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">從那天晚上開始，所有的馴鹿都愛上了魯道夫！</p>
+                                    <p class="mb-4">他們開心地大聲歡呼：「魯道夫紅鼻子馴鹿，你將名揚四海！」</p>
+                                    <p class="mb-4">魯道夫終於找到了屬於自己的位置。</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: Then how all the reindeer loved him, As they shouted out with glee, Rudolph the red-nose Reindeer, You'll go down in history</p>
+                                </div>
+                            </div>
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center">
+                                <img src="https://aka.doubaocdn.com/s/52E61vZkV7" 
+                                     alt="魯道夫帶領聖誕老人的雪橇" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 第8頁 -->
+                    <div class="page hidden page-transition" data-page="8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2">
+                            <div class="bg-snow/20 p-4 lg:p-8 flex items-center justify-center order-2 lg:order-1">
+                                <img src="https://aka.doubaocdn.com/s/Qron1vZkV7" 
+                                     alt="快樂的結局" 
+                                     class="w-full h-auto max-h-[400px] object-contain rounded-lg shadow-lg floating-animation">
+                            </div>
+                            <div class="p-6 lg:p-10 flex flex-col justify-center order-1 lg:order-2">
+                                <h2 class="text-3xl lg:text-4xl font-bold text-accent mb-6 text-center lg:text-left">
+                                    快樂的結局
+                                </h2>
+                                <div class="story-text text-lg lg:text-xl text-gray-700 leading-relaxed">
+                                    <p class="mb-4">從此以後，魯道夫成為了聖誕老人最得力的助手。</p>
+                                    <p class="mb-4">每當聖誕夜來臨，他都會用自己閃亮的紅鼻子為雪橇引路，確保所有的禮物都能安全送達。</p>
+                                    <p class="mb-4">魯道夫終於明白，原來自己的不同之處，正是最寶貴的天賦！</p>
+                                </div>
+                                <div class="mt-6 text-center lg:text-left">
+                                    <p class="text-sm text-gray-500 italic">English: Rudolph the Red-Nosed Reindeer, You'll go down in history</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 音訊控制區域 -->
+            <div class="audio-controls bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-4 mb-8 w-full max-w-md">
+                <div class="flex items-center justify-between">
+                    <button id="playPauseBtn" class="bg-primary hover:bg-primary/80 text-white p-3 rounded-full shadow-lg transition-all duration-300">
+                        <i class="fa fa-play text-xl"></i>
+                    </button>
+                    <div class="flex-1 mx-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="progressBar" class="bg-primary h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span id="currentTime">0:00</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                    </div>
+                    <button id="stopBtn" class="bg-gray-500 hover:bg-gray-600 text-white p-3 rounded-full shadow-lg transition-all duration-300">
+                        <i class="fa fa-stop text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 頁面導航按鈕 -->
+            <div class="flex justify-center space-x-4 w-full max-w-md">
+                <button id="prevBtn" class="bg-secondary hover:bg-secondary/80 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 flex items-center">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    上一頁
+                </button>
+                <button id="nextBtn" class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 flex items-center">
+                    下一頁
+                    <i class="fa fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="bg-accent text-white py-6 relative z-10">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Rudolph紅鼻子馴鹿 - 兒童繪本有聲書</p>
+            <p class="text-sm opacity-80">© 2024 兒童故事時間 | 祝您閱讀愉快！</p>
+        </div>
+    </footer>
+
+    <!-- 音訊元素 -->
+    <audio id="storyAudio" preload="metadata">
+        <source id="audioSource" src="https://aka.doubaocdn.com/s/V7Lm1vZkVR" type="audio/wav">
+    </audio>
+
+    <script>
+        // 頁面管理
+        let currentPage = 1;
+        const totalPages = 8;
+        
+        // 音訊管理
+        const audio = document.getElementById('storyAudio');
+        const audioSource = document.getElementById('audioSource');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        
+        // 音訊檔案清單
+        const audioFiles = [
+            'https://aka.doubaocdn.com/s/V7Lm1vZkVR',  // 第1頁
+            'https://aka.doubaocdn.com/s/wIxo1vZkVb',  // 第2頁
+            'https://aka.doubaocdn.com/s/LI8U1vZkVk',  // 第3頁
+            'https://aka.doubaocdn.com/s/MyCO1vZkVu',  // 第4頁
+            'https://aka.doubaocdn.com/s/E6fT1vZkW3',  // 第5頁
+            'https://aka.doubaocdn.com/s/a94R1vZkWE',  // 第6頁
+            'https://aka.doubaocdn.com/s/97Ai1vZkWO',  // 第7頁
+            'https://aka.doubaocdn.com/s/i2S61vZkWZ'   // 第8頁
+        ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Rudolph繪本有聲書初始化完成');
+            
+            // 初始化雪花效果
+            createSnowflakes();
+            
+            // 初始化頁面
+            updatePageIndicator();
+            updateNavigationButtons();
+            
+            // 音訊事件監聽
+            audio.addEventListener('loadedmetadata', updateDuration);
+            audio.addEventListener('timeupdate', updateProgress);
+            audio.addEventListener('ended', onAudioEnded);
+            
+            // 按鈕點擊事件
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            stopBtn.addEventListener('click', stopAudio);
+            document.getElementById('prevBtn').addEventListener('click', goToPreviousPage);
+            document.getElementById('nextBtn').addEventListener('click', goToNextPage);
+            
+            // 鍵盤控制
+            document.addEventListener('keydown', handleKeyPress);
+        });
+
+        // 頁面導航
+        function goToPage(pageNumber) {
+            if (pageNumber < 1 || pageNumber > totalPages) return;
+            
+            // 停止當前音訊
+            stopAudio();
+            
+            // 更新頁面
+            document.querySelector(`.page[data-page="${currentPage}"]`).classList.remove('active');
+            document.querySelector(`.page[data-page="${currentPage}"]`).classList.add('hidden');
+            
+            currentPage = pageNumber;
+            
+            document.querySelector(`.page[data-page="${currentPage}"]`).classList.remove('hidden');
+            document.querySelector(`.page[data-page="${currentPage}"]`).classList.add('active');
+            
+            // 更新頁面指示器和導航按鈕
+            updatePageIndicator();
+            updateNavigationButtons();
+            
+            // 加載對應頁面的音訊
+            loadPageAudio();
+            
+            // 平滑滾動到頁面頂部
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function goToPreviousPage() {
+            goToPage(currentPage - 1);
+        }
+
+        function goToNextPage() {
+            goToPage(currentPage + 1);
+        }
+
+        function updatePageIndicator() {
+            document.getElementById('pageIndicator').textContent = `第 ${currentPage} 頁 / 共 ${totalPages} 頁`;
+        }
+
+        function updateNavigationButtons() {
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+            
+            if (currentPage === 1) {
+                document.getElementById('prevBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('prevBtn').classList.remove('hover:bg-secondary/80');
+            } else {
+                document.getElementById('prevBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('prevBtn').classList.add('hover:bg-secondary/80');
+            }
+            
+            if (currentPage === totalPages) {
+                document.getElementById('nextBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('nextBtn').classList.remove('hover:bg-primary/80');
+            } else {
+                document.getElementById('nextBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('nextBtn').classList.add('hover:bg-primary/80');
+            }
+        }
+
+        // 音訊控制
+        function loadPageAudio() {
+            const audioUrl = audioFiles[currentPage - 1];
+            audioSource.src = audioUrl;
+            audio.load();
+            
+            // 重置播放按鈕
+            playPauseBtn.innerHTML = '<i class="fa fa-play text-xl"></i>';
+            progressBar.style.width = '0%';
+            currentTimeEl.textContent = '0:00';
+            durationEl.textContent = '0:00';
+        }
+
+        function togglePlayPause() {
+            if (audio.paused) {
+                audio.play();
+                playPauseBtn.innerHTML = '<i class="fa fa-pause text-xl"></i>';
+            } else {
+                audio.pause();
+                playPauseBtn.innerHTML = '<i class="fa fa-play text-xl"></i>';
+            }
+        }
+
+        function stopAudio() {
+            audio.pause();
+            audio.currentTime = 0;
+            playPauseBtn.innerHTML = '<i class="fa fa-play text-xl"></i>';
+            progressBar.style.width = '0%';
+            currentTimeEl.textContent = '0:00';
+        }
+
+        function updateProgress() {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+            
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+        }
+
+        function updateDuration() {
+            durationEl.textContent = formatTime(audio.duration);
+        }
+
+        function onAudioEnded() {
+            playPauseBtn.innerHTML = '<i class="fa fa-play text-xl"></i>';
+            progressBar.style.width = '0%';
+            
+            // 如果不是最後一頁，自動跳轉到下一頁
+            if (currentPage < totalPages) {
+                setTimeout(() => {
+                    goToNextPage();
+                }, 1000);
+            }
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // 鍵盤控制
+        function handleKeyPress(e) {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    goToPreviousPage();
+                    break;
+                case 'ArrowRight':
+                    goToNextPage();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'Escape':
+                    stopAudio();
+                    break;
+            }
+        }
+
+        // 雪花效果
+        function createSnowflakes() {
+            const snowfall = document.getElementById('snowfall');
+            const snowflakeCount = 50;
+            
+            for (let i = 0; i < snowflakeCount; i++) {
+                createSnowflake(snowfall);
+            }
+        }
+
+        function createSnowflake(container) {
+            const snowflake = document.createElement('div');
+            snowflake.className = 'snowflake';
+            snowflake.textContent = '❄️';
+            
+            // 隨機位置和動畫
+            const size = Math.random() * 10 + 10;
+            const left = Math.random() * 100;
+            const animationDuration = Math.random() * 5 + 5;
+            const delay = Math.random() * 10;
+            
+            snowflake.style.left = `${left}%`;
+            snowflake.style.fontSize = `${size}px`;
+            snowflake.style.animationDuration = `${animationDuration}s`;
+            snowflake.style.animationDelay = `${delay}s`;
+            
+            container.appendChild(snowflake);
+            
+            // 雪花消失後重新創建
+            setTimeout(() => {
+                snowflake.remove();
+                createSnowflake(container);
+            }, (animationDuration + delay) * 1000);
+        }
+
+        // 響應式調整
+        window.addEventListener('resize', function() {
+            // 可以在這裡添加響應式調整邏輯
+        });
+
+        // 頁面可見性變化時暫停音訊
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (!audio.paused) {
+                    audio.pause();
+                    playPauseBtn.innerHTML = '<i class="fa fa-play text-xl"></i>';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
