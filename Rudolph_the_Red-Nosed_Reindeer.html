@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rudolph the Red-Nosed Reindeer英文歌詞互動學習工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/v4-shims.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E63946',
+                        secondary: '#457B9D',
+                        accent: '#1D3557',
+                        warm: '#F1FAEE',
+                        snow: '#A8DADC'
+                    },
+                    fontFamily: {
+                        christmas: ['Mountains of Christmas', 'cursive'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .word-card {
+                @apply bg-white rounded-lg shadow-lg p-3 m-2 cursor-grab transition-all duration-300 hover:scale-105 hover:shadow-xl;
+            }
+            .word-card.dragging {
+                @apply opacity-70 scale-95;
+            }
+            .drop-zone {
+                @apply min-h-[60px] p-4 rounded-lg bg-snow/30 border-2 border-dashed border-secondary/50 transition-all duration-300;
+            }
+            .drop-zone.highlight {
+                @apply bg-snow/60 border-secondary;
+            }
+            .drop-zone.completed {
+                @apply bg-green-100 border-green-400;
+            }
+            .christmas-text {
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .animate-pulse {
+                animation: pulse 1s ease-in-out;
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+                100% { transform: scale(1); }
+            }
+            @keyframes fall {
+                0% { transform: translateY(0) rotate(0deg); }
+                100% { transform: translateY(100vh) rotate(360deg); }
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-warm to-snow min-h-screen font-inter">
+    <!-- 頂部導航 -->
+    <header class="bg-accent text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-christmas font-bold text-center christmas-text">
+                <i class="fa fa-snowflake-o mr-3"></i>
+                Rudolph the Red-Nosed Reindeer英文歌詞互動學習
+                <i class="fa fa-snowflake-o ml-3"></i>
+            </h1>
+            <p class="text-center text-lg mt-2 opacity-90">拖動單字組成句子，點擊喇叭聽發音</p>
+        </div>
+    </header>
+
+    <!-- 主要內容區域 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- 歌詞行列表 -->
+            <div id="lyrics-container" class="space-y-8">
+                <!-- 第1行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第1行</h3>
+                        <button onclick="speakSentence('Rudolph the Red-Nosed Reindeer')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：魯道夫紅鼻子馴鹿</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Rudolph">
+                                    <span>Rudolph</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Rudolph')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="the">
+                                    <span>the</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('the')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Red-Nosed">
+                                    <span>Red-Nosed</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Red-Nosed')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Reindeer">
+                                    <span>Reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Rudolph the Red-Nosed Reindeer">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第2行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第2行</h3>
+                        <button onclick="speakSentence('Had a very shiny nose')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：有個閃亮的紅鼻子</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Had">
+                                    <span>Had</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Had')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="a">
+                                    <span>a</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('a')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="very">
+                                    <span>very</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('very')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="shiny">
+                                    <span>shiny</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('shiny')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="nose">
+                                    <span>nose</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('nose')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Had a very shiny nose">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第3行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第3行</h3>
+                        <button onclick="speakSentence('And if you ever saw it')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：如果你曾見過它</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="And">
+                                    <span>And</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('And')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="if">
+                                    <span>if</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('if')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="you">
+                                    <span>you</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('you')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="ever">
+                                    <span>ever</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('ever')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="saw">
+                                    <span>saw</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('saw')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="it">
+                                    <span>it</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('it')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="And if you ever saw it">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第4行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第4行</h3>
+                        <button onclick="speakSentence('You would even say it glows')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：一定會說它在發光</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="You">
+                                    <span>You</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('You')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="would">
+                                    <span>would</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('would')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="even">
+                                    <span>even</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('even')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="say">
+                                    <span>say</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('say')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="it">
+                                    <span>it</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('it')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="glows">
+                                    <span>glows</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('glows')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="You would even say it glows">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第5行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第5行</h3>
+                        <button onclick="speakSentence('All of the other reindeer')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：其他所有的馴鹿</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="All">
+                                    <span>All</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('All')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="of">
+                                    <span>of</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('of')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="the">
+                                    <span>the</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('the')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="other">
+                                    <span>other</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('other')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="reindeer">
+                                    <span>reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="All of the other reindeer">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第6行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第6行</h3>
+                        <button onclick="speakSentence('Used to laugh and call him names')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：從前總嘲笑他 還取難聽外號</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Used">
+                                    <span>Used</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Used')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="to">
+                                    <span>to</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('to')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="laugh">
+                                    <span>laugh</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('laugh')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="and">
+                                    <span>and</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('and')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="call">
+                                    <span>call</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('call')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="him">
+                                    <span>him</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('him')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="names">
+                                    <span>names</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('names')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Used to laugh and call him names">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第7行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第7行</h3>
+                        <button onclick="speakSentence('They never let poor Rudolph')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：它們從不讓可憐的魯道夫</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="They">
+                                    <span>They</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('They')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="never">
+                                    <span>never</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('never')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="let">
+                                    <span>let</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('let')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="poor">
+                                    <span>poor</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('poor')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Rudolph">
+                                    <span>Rudolph</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Rudolph')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="They never let poor Rudolph">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第8行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第8行</h3>
+                        <button onclick="speakSentence('Join in any reindeer games')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：加入任何馴鹿遊戲</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Join">
+                                    <span>Join</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Join')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="in">
+                                    <span>in</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('in')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="any">
+                                    <span>any</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('any')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="reindeer">
+                                    <span>reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="games">
+                                    <span>games</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('games')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Join in any reindeer games">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第9行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第9行</h3>
+                        <button onclick="speakSentence('Then one foggy Christmas Eve')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：後來在一個有霧的聖誕夜</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Then">
+                                    <span>Then</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Then')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="one">
+                                    <span>one</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('one')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="foggy">
+                                    <span>foggy</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('foggy')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Christmas">
+                                    <span>Christmas</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Christmas')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Eve">
+                                    <span>Eve</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Eve')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Then one foggy Christmas Eve">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第10行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第10行</h3>
+                        <button onclick="speakSentence('Santa came to say')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：聖誕老人來對它說</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Santa">
+                                    <span>Santa</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Santa')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="came">
+                                    <span>came</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('came')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="to">
+                                    <span>to</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('to')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="say">
+                                    <span>say</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('say')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Santa came to say">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第11行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第11行</h3>
+                        <button onclick="speakSentence('Rudolph with your nose so bright')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：魯道夫 你鼻子這麼亮</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Rudolph">
+                                    <span>Rudolph</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Rudolph')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="with">
+                                    <span>with</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('with')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="your">
+                                    <span>your</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('your')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="nose">
+                                    <span>nose</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('nose')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="so">
+                                    <span>so</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('so')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="bright">
+                                    <span>bright</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('bright')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Rudolph with your nose so bright">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第12行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第12行</h3>
+                        <button onclick="speakSentence('Won\'t you guide my sleigh tonight')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：今晚願意為我的雪橇引路嗎</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Won't">
+                                    <span>Won't</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Won\'t')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="you">
+                                    <span>you</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('you')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="guide">
+                                    <span>guide</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('guide')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="my">
+                                    <span>my</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('my')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="sleigh">
+                                    <span>sleigh</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('sleigh')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="tonight">
+                                    <span>tonight</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('tonight')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Won't you guide my sleigh tonight">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第13行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第13行</h3>
+                        <button onclick="speakSentence('Then how all the reindeer loved him')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：從此所有馴鹿都愛它</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Then">
+                                    <span>Then</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Then')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="how">
+                                    <span>how</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('how')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="all">
+                                    <span>all</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('all')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="the">
+                                    <span>the</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('the')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="reindeer">
+                                    <span>reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="loved">
+                                    <span>loved</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('loved')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="him">
+                                    <span>him</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('him')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Then how all the reindeer loved him">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第14行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第14行</h3>
+                        <button onclick="speakSentence('As they shouted out with glee')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：開心地大聲歡呼</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="As">
+                                    <span>As</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('As')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="they">
+                                    <span>they</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('they')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="shouted">
+                                    <span>shouted</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('shouted')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="out">
+                                    <span>out</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('out')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="with">
+                                    <span>with</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('with')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="glee">
+                                    <span>glee</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('glee')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="As they shouted out with glee">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第15行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第15行</h3>
+                        <button onclick="speakSentence('Rudolph the red-nose Reindeer')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：紅鼻子魯道夫</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Rudolph">
+                                    <span>Rudolph</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Rudolph')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="the">
+                                    <span>the</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('the')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="red-nose">
+                                    <span>red-nose</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('red-nose')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Reindeer">
+                                    <span>Reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Rudolph the red-nose Reindeer">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第16行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第16行</h3>
+                        <button onclick="speakSentence('You\'ll go down in history')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：你將名揚四海</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="You'll">
+                                    <span>You'll</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('You\'ll')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="go">
+                                    <span>go</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('go')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="down">
+                                    <span>down</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('down')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="in">
+                                    <span>in</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('in')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="history">
+                                    <span>history</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('history')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="You'll go down in history">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第17行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第17行</h3>
+                        <button onclick="speakSentence('Then one foggy Christmas Eve')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：後來在一個有霧的聖誕夜</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Then">
+                                    <span>Then</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Then')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="one">
+                                    <span>one</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('one')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="foggy">
+                                    <span>foggy</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('foggy')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Christmas">
+                                    <span>Christmas</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Christmas')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Eve">
+                                    <span>Eve</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Eve')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Then one foggy Christmas Eve">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第18行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第18行</h3>
+                        <button onclick="speakSentence('Santa came to say')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：聖誕老人來對它說</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Santa">
+                                    <span>Santa</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Santa')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="came">
+                                    <span>came</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('came')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="to">
+                                    <span>to</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('to')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="say">
+                                    <span>say</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('say')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Santa came to say">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第19行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第19行</h3>
+                        <button onclick="speakSentence('Rudolph with your nose so bright')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：魯道夫 你鼻子這麼亮</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Rudolph">
+                                    <span>Rudolph</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Rudolph')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="with">
+                                    <span>with</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('with')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="your">
+                                    <span>your</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('your')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="nose">
+                                    <span>nose</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('nose')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="so">
+                                    <span>so</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('so')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="bright">
+                                    <span>bright</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('bright')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Rudolph with your nose so bright">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第20行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第20行</h3>
+                        <button onclick="speakSentence('Wont you guide my sleigh tonight')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：今晚願意為我的雪橇引路嗎</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Wont">
+                                    <span>Wont</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Wont')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="you">
+                                    <span>you</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('you')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="guide">
+                                    <span>guide</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('guide')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="my">
+                                    <span>my</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('my')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="sleigh">
+                                    <span>sleigh</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('sleigh')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="tonight">
+                                    <span>tonight</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('tonight')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Wont you guide my sleigh tonight">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第21行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第21行</h3>
+                        <button onclick="speakSentence('Then how all the reindeer loved him')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：從此所有馴鹿都愛它</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Then">
+                                    <span>Then</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Then')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="how">
+                                    <span>how</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('how')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="all">
+                                    <span>all</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('all')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="the">
+                                    <span>the</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('the')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="reindeer">
+                                    <span>reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="loved">
+                                    <span>loved</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('loved')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="him">
+                                    <span>him</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('him')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Then how all the reindeer loved him">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第22行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第22行</h3>
+                        <button onclick="speakSentence('As they shouted out with glee')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：開心地大聲歡呼</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="As">
+                                    <span>As</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('As')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="they">
+                                    <span>they</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('they')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="shouted">
+                                    <span>shouted</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('shouted')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="out">
+                                    <span>out</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('out')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="with">
+                                    <span>with</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('with')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="glee">
+                                    <span>glee</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('glee')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="As they shouted out with glee">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第23行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第23行</h3>
+                        <button onclick="speakSentence('Rudolph the Red-Nosed Reindeer')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：魯道夫紅鼻子馴鹿</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="Rudolph">
+                                    <span>Rudolph</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Rudolph')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="the">
+                                    <span>the</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('the')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Red-Nosed">
+                                    <span>Red-Nosed</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Red-Nosed')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="Reindeer">
+                                    <span>Reindeer</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('Reindeer')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="Rudolph the Red-Nosed Reindeer">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+
+                <!-- 第24行 -->
+                <div class="lyric-row bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-accent">第24行</h3>
+                        <button onclick="speakSentence('You\'ll go down in history')" 
+                                class="bg-secondary hover:bg-secondary/80 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center">
+                            <i class="fa fa-volume-up mr-2"></i>
+                            句子發音
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-lg font-medium text-gray-800">中文翻譯：你將名揚四海</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">單字庫</h4>
+                            <div class="flex flex-wrap word-bank">
+                                <div class="word-card" draggable="true" data-word="You'll">
+                                    <span>You'll</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('You\'ll')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="go">
+                                    <span>go</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('go')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="down">
+                                    <span>down</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('down')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="in">
+                                    <span>in</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('in')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                                <div class="word-card" draggable="true" data-word="history">
+                                    <span>history</span>
+                                    <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('history')">
+                                        <i class="fa fa-volume-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-accent mb-3">句子組合區</h4>
+                            <div class="drop-zone" data-correct="You'll go down in history">
+                                <div class="flex flex-wrap sentence-area min-h-[60px]"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-600">拖動單字到這裡組成正確句子</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="checkAnswer(this)" 
+                                class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all duration-300">
+                            檢查答案
+                        </button>
+                        <div class="result-message mt-2 text-sm font-medium hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 返回頂部按鈕 -->
+    <button id="backToTop" class="fixed bottom-6 right-6 bg-primary hover:bg-primary/80 text-white p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 invisible">
+        <i class="fa fa-arrow-up text-xl"></i>
+    </button>
+
+    <!-- 進度追蹤 -->
+    <div id="progressTracker" class="fixed top-20 right-6 bg-white rounded-lg shadow-lg p-4 max-w-xs hidden md:block">
+        <h4 class="font-semibold text-accent mb-3">學習進度</h4>
+        <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+                <span>已完成行數</span>
+                <span id="completedCount" class="font-medium">0/24</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progressBar" class="bg-green-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <button onclick="resetAll()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-1 rounded transition-colors">
+                重置所有進度
+            </button>
+        </div>
+    </div>
+
+    <!-- 頁腳 -->
+    <footer class="bg-accent text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Rudolph英文歌詞互動學習工具</p>
+            <p class="text-sm opacity-80">© 2025 英文學習助手 | 祝您學習愉快！</p>
+        </div>
+    </footer>
+
+    <script>
+        // 拖放功能實現
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('頁面載入完成，初始化拖放功能...');
+            
+            // 獲取所有單字卡片和放置區域
+            const wordCards = document.querySelectorAll('.word-card');
+            const dropZones = document.querySelectorAll('.drop-zone');
+            
+            console.log(`找到 ${wordCards.length} 個單字卡片`);
+            console.log(`找到 ${dropZones.length} 個放置區域`);
+            
+            // 為每個單字卡片添加拖放事件
+            wordCards.forEach(card => {
+                card.addEventListener('dragstart', function(e) {
+                    console.log('開始拖動單字:', this.dataset.word);
+                    e.dataTransfer.setData('text/plain', this.dataset.word);
+                    this.classList.add('dragging');
+                });
+                
+                card.addEventListener('dragend', function() {
+                    console.log('結束拖動單字');
+                    this.classList.remove('dragging');
+                });
+                
+                // 確保卡片可以被拖動
+                card.style.cursor = 'grab';
+            });
+            
+            // 為每個放置區域添加事件
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('highlight');
+                });
+                
+                zone.addEventListener('dragenter', function(e) {
+                    e.preventDefault();
+                    this.classList.add('highlight');
+                });
+                
+                zone.addEventListener('dragleave', function() {
+                    this.classList.remove('highlight');
+                });
+                
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('highlight');
+                    
+                    const word = e.dataTransfer.getData('text/plain');
+                    console.log('放置單字:', word);
+                    
+                    const sentenceArea = this.querySelector('.sentence-area');
+                    
+                    // 創建新的單字卡片
+                    const newCard = document.createElement('div');
+                    newCard.className = 'word-card';
+                    newCard.innerHTML = `
+                        <span>${word}</span>
+                        <button class="ml-2 text-sm text-gray-500 hover:text-primary" onclick="speakWord('${word}')">
+                            <i class="fa fa-volume-up"></i>
+                        </button>
+                        <button class="ml-1 text-sm text-gray-500 hover:text-red-500" onclick="removeWord(this)">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    `;
+                    
+                    sentenceArea.appendChild(newCard);
+                    console.log('單字已成功放置到組合區域');
+                });
+            });
+            
+            console.log('拖放功能初始化完成！');
+        });
+
+        // 移除單字卡片
+        function removeWord(button) {
+            const card = button.parentElement;
+            card.remove();
+            
+            // 更新進度
+            const row = card.closest('.lyric-row');
+            const dropZone = row.querySelector('.drop-zone');
+            if (dropZone.classList.contains('completed')) {
+                dropZone.classList.remove('completed');
+                updateProgress();
+            }
+        }
+
+        // 檢查答案
+        function checkAnswer(button) {
+            const row = button.closest('.lyric-row');
+            const dropZone = row.querySelector('.drop-zone');
+            const sentenceArea = dropZone.querySelector('.sentence-area');
+            const resultMessage = row.querySelector('.result-message');
+            const correctAnswer = dropZone.getAttribute('data-correct');
+            
+            // 獲取用戶組合的句子
+            const words = Array.from(sentenceArea.querySelectorAll('.word-card span'))
+                .map(span => span.textContent);
+            const userAnswer = words.join(' ');
+            
+            console.log('檢查答案:', userAnswer, '正確答案:', correctAnswer);
+            
+            // 檢查答案
+            if (userAnswer === correctAnswer) {
+                resultMessage.textContent = '恭喜！答案正確！';
+                resultMessage.className = 'result-message mt-2 text-sm font-medium text-green-600';
+                dropZone.classList.add('completed');
+                
+                // 添加成功動畫
+                row.classList.add('animate-pulse');
+                setTimeout(() => {
+                    row.classList.remove('animate-pulse');
+                }, 1000);
+                
+                showNotification('答對了！繼續加油！');
+            } else {
+                resultMessage.textContent = `答案不正確。正確答案：${correctAnswer}`;
+                resultMessage.className = 'result-message mt-2 text-sm font-medium text-red-600';
+                dropZone.classList.remove('completed');
+            }
+            
+            resultMessage.classList.remove('hidden');
+            updateProgress();
+        }
+
+        // 文本轉語音功能
+        function speakWord(word) {
+            console.log('發音單字:', word);
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('您的瀏覽器不支援文字轉語音功能');
+            }
+        }
+
+        function speakSentence(sentence) {
+            console.log('發音句子:', sentence);
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(sentence);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('您的瀏覽器不支援文字轉語音功能');
+            }
+        }
+
+        // 返回頂部按鈕
+        const backToTopButton = document.getElementById('backToTop');
+
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopButton.classList.remove('opacity-0', 'invisible');
+                backToTopButton.classList.add('opacity-100', 'visible');
+            } else {
+                backToTopButton.classList.remove('opacity-100', 'visible');
+                backToTopButton.classList.add('opacity-0', 'invisible');
+            }
+        });
+
+        backToTopButton.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // 更新進度追蹤
+        function updateProgress() {
+            const completedRows = document.querySelectorAll('.drop-zone.completed').length;
+            const totalRows = document.querySelectorAll('.drop-zone').length;
+            const progressPercentage = (completedRows / totalRows) * 100;
+            
+            document.getElementById('completedCount').textContent = `${completedRows}/${totalRows}`;
+            document.getElementById('progressBar').style.width = `${progressPercentage}%`;
+            
+            // 添加完成慶祝效果
+            if (completedRows === totalRows && totalRows > 0) {
+                setTimeout(() => {
+                    showCompletionCelebration();
+                }, 500);
+            }
+        }
+
+        // 重置所有進度
+        function resetAll() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+            dropZones.forEach(zone => {
+                zone.classList.remove('completed');
+                const sentenceArea = zone.querySelector('.sentence-area');
+                sentenceArea.innerHTML = '';
+                
+                const resultMessage = zone.closest('.lyric-row').querySelector('.result-message');
+                if (resultMessage) {
+                    resultMessage.classList.add('hidden');
+                }
+            });
+            
+            updateProgress();
+            showNotification('所有進度已重置！');
+        }
+
+        // 顯示完成慶祝
+        function showCompletionCelebration() {
+            const celebration = document.createElement('div');
+            celebration.className = 'fixed inset-0 flex items-center justify-center bg-black/50 z-50';
+            celebration.innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md">
+                    <div class="text-6xl mb-4">🎉</div>
+                    <h3 class="text-2xl font-bold text-accent mb-2">恭喜完成！</h3>
+                    <p class="text-gray-600 mb-6">您已完成所有24行Rudolph歌詞的學習！</p>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg transition-all">
+                        太棒了！
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(celebration);
+            
+            // 添加雪花效果
+            createSnowflakes();
+        }
+
+        // 創建雪花效果
+        function createSnowflakes() {
+            for (let i = 0; i < 50; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'fixed text-white text-xl pointer-events-none';
+                snowflake.textContent = '❄️';
+                snowflake.style.left = `${Math.random() * 100}vw`;
+                snowflake.style.top = '-50px';
+                snowflake.style.animation = `fall ${Math.random() * 3 + 2}s linear infinite`;
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+                snowflake.style.fontSize = `${Math.random() * 10 + 10}px`;
+                snowflake.style.zIndex = '60';
+                
+                document.body.appendChild(snowflake);
+                
+                setTimeout(() => {
+                    snowflake.remove();
+                }, 5000);
+            }
+        }
+
+        // 顯示通知
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-accent text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // 顯示通知
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // 隱藏通知
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // 頁面載入完成後初始化
+        window.addEventListener('load', function() {
+            console.log('頁面完全載入完成');
+            updateProgress();
+        });
+    </script>
+</body>
+</html>
