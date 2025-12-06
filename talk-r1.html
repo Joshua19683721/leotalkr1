@@ -142,9 +142,20 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">模型選擇</label>
                     <select id="modelSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50">
-                        <option value="deepseek-chat">deepseek-chat (預設)</option>
+                        <option value="deepseek-chat">deepseek-chat（V3.2 非思考模式，預設）</option>
+                        <option value="deepseek-reasoner">deepseek-reasoner（V3.2 思考模式）</option>
                         <option value="deepseek-coder">deepseek-coder</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">雲端代理 URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="proxyUrlInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="例如：https://your-app.vercel.app/api/deepseek">
+                        <button id="saveProxyUrl" class="px-3 py-2 bg-primary text-white rounded-lg btn-hover text-sm">保存</button>
+                        <button id="clearProxyUrl" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg btn-hover text-sm">清除</button>
+                        <button id="testProxyUrl" class="px-3 py-2 bg-success text-white rounded-lg btn-hover text-sm">測試</button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">若部署到 GitHub Pages，請填入你在 Vercel/Workers 的代理路徑。</p>
                 </div>
                 <div class="flex items-center">
                     <input type="checkbox" id="saveApiKey" class="mr-2">
@@ -1512,53 +1523,73 @@
 
         // 调用实际的DeepSeek API
         async function callDeepSeekApi(apiKey, model, prompt, originalText, inputTokenCount) {
-            try {
-                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: 'system', content: '你是專業的小學生語言潤色修飾專家，所有輸出必須使用繁體中文（臺灣用字），不得使用簡體字或簡化標點。' },
-                            { role: 'user', content: prompt }
-                        ],
-                        max_tokens: 800,
-                        temperature: 0.7
-                    })
-                });
-                if (!response.ok) {
-                    let errorData = {};
-                    try { errorData = await response.json(); } catch (e) {}
-                    const message = (errorData && errorData.error && errorData.error.message) ? errorData.error.message : 'API調用失敗';
-                    throw new Error(`${response.status} ${response.statusText}: ${message}`);
-                }
-                const data = await response.json();
-                const content = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content : '';
-                const results = parseResults(content);
-                const analysis = parseAnalysis(content);
-                const { resultTokenCounts, totalOutputTokens } = calculateResultTokens(results);
-                const promptTokens = (data && data.usage && typeof data.usage.prompt_tokens === 'number') ? data.usage.prompt_tokens : 0;
-                const completionTokens = (data && data.usage && typeof data.usage.completion_tokens === 'number') ? data.usage.completion_tokens : totalOutputTokens;
-                const totalTokens = (data && data.usage && typeof data.usage.total_tokens === 'number') ? data.usage.total_tokens : (promptTokens + completionTokens);
-                return {
-                    results,
-                    analysis,
-                    tokenStats: {
-                        promptTokens: promptTokens,
-                        inputTokens: inputTokenCount || 0,
-                        totalInputTokens: promptTokens + (inputTokenCount || 0),
-                        outputTokens: completionTokens,
-                        total: totalTokens,
-                        resultTokenCounts
+            const requestBody = {
+                model: model,
+                messages: [
+                    { role: 'system', content: '你是專業的小學生語言潤色修飾專家，所有輸出必須使用繁體中文（臺灣用字），不得使用簡體字或簡化標點。' },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 800,
+                temperature: 0.7
+            };
+            const customProxy = (typeof window !== 'undefined' && window.DEEPSEEK_PROXY_URL) || (typeof localStorage !== 'undefined' ? localStorage.getItem('deepseekProxyUrl') : '');
+            const endpoints = (
+                customProxy && customProxy.trim()
+                ? [customProxy.trim(), 'http://localhost:8787/deepseek', 'https://api.deepseek.com/v1/chat/completions', 'https://cors.isomorphic-git.org/https://api.deepseek.com/v1/chat/completions', 'https://corsproxy.io/?https://api.deepseek.com/v1/chat/completions']
+                : ['http://localhost:8787/deepseek', 'https://api.deepseek.com/v1/chat/completions', 'https://cors.isomorphic-git.org/https://api.deepseek.com/v1/chat/completions', 'https://corsproxy.io/?https://api.deepseek.com/v1/chat/completions']
+            );
+            let lastError = null;
+            for (const url of endpoints) {
+                try {
+                    const controller = new AbortController();
+                    const tm = setTimeout(() => controller.abort(), 15000);
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify(requestBody),
+                        mode: 'cors',
+                        cache: 'no-store',
+                        redirect: 'follow',
+                        referrerPolicy: 'no-referrer',
+                        signal: controller.signal
+                    });
+                    clearTimeout(tm);
+                    if (!response.ok) {
+                        let errorData = {};
+                        try { errorData = await response.json(); } catch (e) {}
+                        const message = (errorData && errorData.error && errorData.error.message) ? errorData.error.message : 'API調用失敗';
+                        throw new Error(`${response.status} ${response.statusText}: ${message}`);
                     }
-                };
-            } catch (error) {
-                console.error('DeepSeek API调用错误:', error);
-                throw error;
+                    const data = await response.json();
+                    const content = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content : '';
+                    const results = parseResults(content);
+                    const analysis = parseAnalysis(content);
+                    const { resultTokenCounts, totalOutputTokens } = calculateResultTokens(results);
+                    const promptTokens = (data && data.usage && typeof data.usage.prompt_tokens === 'number') ? data.usage.prompt_tokens : 0;
+                    const completionTokens = (data && data.usage && typeof data.usage.completion_tokens === 'number') ? data.usage.completion_tokens : totalOutputTokens;
+                    const totalTokens = (data && data.usage && typeof data.usage.total_tokens === 'number') ? data.usage.total_tokens : (promptTokens + completionTokens);
+                    return {
+                        results,
+                        analysis,
+                        tokenStats: {
+                            promptTokens: promptTokens,
+                            inputTokens: inputTokenCount || 0,
+                            totalInputTokens: promptTokens + (inputTokenCount || 0),
+                            outputTokens: completionTokens,
+                            total: totalTokens,
+                            resultTokenCounts
+                        }
+                    };
+                } catch (error) {
+                    lastError = error;
+                    continue;
+                }
             }
+            if (lastError) throw lastError;
+            throw new Error('網路或CORS問題，請稍後再試');
         }
 
         // 创建专家级提示词 - 严格遵循5大优化规则
@@ -2437,6 +2468,9 @@
                 '輸入內容太長': '請簡化您的輸入內容，確保在50 tokens以內',
                 'API 調用失敗': '請檢查您的API Key是否有效，網絡連接是否正常',
                 'API调用失败': '請檢查您的API Key是否有效，網絡連接是否正常',
+                'Failed to fetch': '瀏覽器無法連線到 DeepSeek API，可能是網路或 CORS 限制。請確保使用 HTTPS、檢查防火牆與公司代理，或改用後端代理呼叫。',
+                'TypeError: Failed to fetch': '瀏覽器無法連線到 DeepSeek API，可能是網路或 CORS 限制。請確保使用 HTTPS、檢查防火牆與公司代理，或改用後端代理呼叫。',
+                'Authentication Fails': '認證失敗：請確認 API Key 正確、未過期且以 "sk-" 開頭，並確保使用 baseURL https://api.deepseek.com。若仍失敗，請嘗試透過本地代理或後端伺服器呼叫。',
                 '語音播放錯誤': '請確保您的瀏覽器支援Web Speech API，並且語音合成功能正常',
                 '沒有偵測到語音': '請靠近麥克風、提高音量，或確保周遭環境安靜後重試',
                 '找不到麥克風裝置': '請確認麥克風已連接且可被瀏覽器偵測，並允許麥克風權限',
@@ -2480,6 +2514,78 @@
         window.playText = playText;
         window.showErrorHelp = showErrorHelp;
         window.hideError = hideError;
+
+        // 代理URL初始化與保存
+        (function initProxyUrl() {
+            try {
+                const proxyInput = document.getElementById('proxyUrlInput');
+                const saveBtn = document.getElementById('saveProxyUrl');
+                const clearBtn = document.getElementById('clearProxyUrl');
+                const testBtn = document.getElementById('testProxyUrl');
+                const saved = (typeof localStorage !== 'undefined') ? localStorage.getItem('deepseekProxyUrl') : '';
+                if (proxyInput) {
+                    proxyInput.value = saved || '';
+                }
+                if (saved && typeof window !== 'undefined') {
+                    window.DEEPSEEK_PROXY_URL = saved;
+                }
+                if (saveBtn && proxyInput) {
+                    saveBtn.onclick = () => {
+                        const val = String(proxyInput.value || '').trim();
+                        if (typeof localStorage !== 'undefined') {
+                            if (val) localStorage.setItem('deepseekProxyUrl', val); else localStorage.removeItem('deepseekProxyUrl');
+                        }
+                        if (typeof window !== 'undefined') {
+                            window.DEEPSEEK_PROXY_URL = val || '';
+                        }
+                        showSuccessMessage(val ? '代理 URL 已保存' : '已清除代理 URL');
+                    };
+                }
+                if (clearBtn && proxyInput) {
+                    clearBtn.onclick = () => {
+                        proxyInput.value = '';
+                        if (typeof localStorage !== 'undefined') localStorage.removeItem('deepseekProxyUrl');
+                        if (typeof window !== 'undefined') window.DEEPSEEK_PROXY_URL = '';
+                        showSuccessMessage('已清除代理 URL');
+                    };
+                }
+                if (testBtn && proxyInput) {
+                    testBtn.onclick = async () => {
+                        try {
+                            const url = String(proxyInput.value || '').trim();
+                            if (!url) { showError('請先填入代理 URL', '代理 URL 不能為空'); return; }
+                            const apiKeyInput = document.getElementById('apiKey');
+                            const apiKey = apiKeyInput ? String(apiKeyInput.value || '').trim() : '';
+                            if (!apiKey) { showError('請輸入您的DeepSeek API Key', 'API Key 是必要條件'); return; }
+                            const controller = new AbortController();
+                            const tm = setTimeout(() => controller.abort(), 8000);
+                            const body = {
+                                model: 'deepseek-chat',
+                                messages: [ { role: 'system', content: 'ping' }, { role: 'user', content: 'ping' } ],
+                                max_tokens: 1,
+                                temperature: 0
+                            };
+                            const res = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                                body: JSON.stringify(body),
+                                mode: 'cors',
+                                signal: controller.signal
+                            });
+                            clearTimeout(tm);
+                            if (!res.ok) {
+                                let d = {}; try { d = await res.json(); } catch {}
+                                showError('代理測試失敗', JSON.stringify(d || {}));
+                                return;
+                            }
+                            showSuccessMessage('代理測試成功');
+                        } catch (e) {
+                            showError('代理測試失敗', String(e && e.message || 'unknown'));
+                        }
+                    };
+                }
+            } catch (e) { console.warn('initProxyUrl error:', e); }
+        })();
 
         console.log('应用脚本加载完成');
     </script>
