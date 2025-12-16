@@ -39,7 +39,7 @@
         .conversation {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            padding: 20px;
+            padding: 15px;
             min-height: 400px;
             max-height: calc(100vh - 300px);
             overflow-y: auto;
@@ -49,6 +49,8 @@
         .message {
             margin-bottom: 20px;
             animation: fadeIn 0.3s ease-in;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         @keyframes fadeIn {
@@ -62,13 +64,22 @@
             }
         }
 
+        .message {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
         .message-image {
             width: 100%;
-            max-width: 300px;
+            max-width: 100%;
+            max-height: 50vh;
+            height: auto;
             border-radius: 12px;
-            margin-bottom: 10px;
+            margin-top: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             display: block;
+            object-fit: contain;
         }
 
         .message-text {
@@ -77,10 +88,11 @@
             border-radius: 18px;
             line-height: 1.5;
             color: #333;
-            font-size: 15px;
+            font-size: clamp(14px, 3vw, 16px);
             word-wrap: break-word;
-            max-width: 80%;
-            margin-top: 8px;
+            max-width: 90%;
+            margin-bottom: 8px;
+            width: fit-content;
         }
 
         .message-text.user {
@@ -431,17 +443,20 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
 
+            // 先添加文字（會顯示在上方）
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text user';
+            textDiv.textContent = text;
+
+            // 再添加照片（會顯示在下方）
             const img = document.createElement('img');
             img.src = imageData;
             img.className = 'message-image';
             img.alt = '拍攝的照片';
 
-            const textDiv = document.createElement('div');
-            textDiv.className = 'message-text user';
-            textDiv.textContent = text;
-
-            messageDiv.appendChild(img);
+            // 先添加文字，再添加照片
             messageDiv.appendChild(textDiv);
+            messageDiv.appendChild(img);
 
             conversation.appendChild(messageDiv);
             
