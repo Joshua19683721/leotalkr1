@@ -1135,18 +1135,18 @@
                     formalContent.appendChild(englishDiv);
                 }
                 
-                // 添加解析區域（在英文和中文之間）
-                if (parsedResponse.formal.analyze && hasAnalyzeContent(parsedResponse.formal.analyze)) {
-                    const analyzeArea = createAnalyzeArea(parsedResponse.formal.analyze);
-                    formalContent.appendChild(analyzeArea);
-                }
-                
                 // 添加繁體中文
                 if (parsedResponse.formal.chinese) {
                     const chineseDiv = document.createElement('div');
                     chineseDiv.className = 'ai-response-chinese';
                     chineseDiv.textContent = parsedResponse.formal.chinese;
                     formalContent.appendChild(chineseDiv);
+                }
+                
+                // 添加解析區域（在繁體中文後面）
+                if (parsedResponse.formal.analyze && hasAnalyzeContent(parsedResponse.formal.analyze)) {
+                    const analyzeArea = createAnalyzeArea(parsedResponse.formal.analyze);
+                    formalContent.appendChild(analyzeArea);
                 }
                 
                 formalSection.appendChild(formalTitle);
@@ -1179,18 +1179,18 @@
                     casualContent.appendChild(englishDiv);
                 }
                 
-                // 添加解析區域（在英文和中文之間）
-                if (parsedResponse.casual.analyze && hasAnalyzeContent(parsedResponse.casual.analyze)) {
-                    const analyzeArea = createAnalyzeArea(parsedResponse.casual.analyze);
-                    casualContent.appendChild(analyzeArea);
-                }
-                
                 // 添加繁體中文
                 if (parsedResponse.casual.chinese) {
                     const chineseDiv = document.createElement('div');
                     chineseDiv.className = 'ai-response-chinese';
                     chineseDiv.textContent = parsedResponse.casual.chinese;
                     casualContent.appendChild(chineseDiv);
+                }
+                
+                // 添加解析區域（在繁體中文後面）
+                if (parsedResponse.casual.analyze && hasAnalyzeContent(parsedResponse.casual.analyze)) {
+                    const analyzeArea = createAnalyzeArea(parsedResponse.casual.analyze);
+                    casualContent.appendChild(analyzeArea);
                 }
                 
                 casualSection.appendChild(casualTitle);
