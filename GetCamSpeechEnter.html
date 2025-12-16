@@ -41,14 +41,55 @@
             margin: 0;
         }
 
+        .config-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            user-select: none;
+        }
+
+        .config-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .config-toggle-btn {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .config-toggle-text {
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         .api-config {
             background: rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             padding: 10px;
             margin-bottom: 10px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 8px;
+        }
+
+        .api-config.expanded {
+            display: flex;
         }
 
         .api-config input[type="password"],
@@ -431,7 +472,11 @@
         <div class="header">
             <h1>📸 語音拍照對話</h1>
             <p>拍照並說出你的想法</p>
-            <div class="api-config">
+            <div class="config-toggle" id="configToggle">
+                <div class="config-toggle-btn" id="toggleBtn">+</div>
+                <div class="config-toggle-text">設定</div>
+            </div>
+            <div class="api-config" id="apiConfig">
                 <input type="password" id="apiKey" placeholder="請輸入 API Key" />
                 <div class="save-key-option">
                     <input type="checkbox" id="saveApiKey" />
@@ -441,11 +486,11 @@
                     <div class="version-select-title">回覆版本選擇：</div>
                     <div class="version-checkbox-group">
                         <div class="version-checkbox-item">
-                            <input type="checkbox" id="showFormal" checked />
+                            <input type="checkbox" id="showFormal" />
                             <label for="showFormal">正式版 (Formal)</label>
                         </div>
                         <div class="version-checkbox-item">
-                            <input type="checkbox" id="showCasual" checked />
+                            <input type="checkbox" id="showCasual" />
                             <label for="showCasual">口語版 (Casual)</label>
                         </div>
                     </div>
@@ -502,6 +547,9 @@
         const saveApiKeyCheckbox = document.getElementById('saveApiKey');
         const showFormalCheckbox = document.getElementById('showFormal');
         const showCasualCheckbox = document.getElementById('showCasual');
+        const configToggle = document.getElementById('configToggle');
+        const apiConfig = document.getElementById('apiConfig');
+        const toggleBtn = document.getElementById('toggleBtn');
         
         // 從 localStorage 載入保存的 API Key
         const savedApiKey = localStorage.getItem('qwen_api_key');
@@ -509,6 +557,27 @@
             apiKey = savedApiKey;
             apiKeyInput.value = savedApiKey;
             saveApiKeyCheckbox.checked = true;
+        }
+
+        // 從 localStorage 載入保存的版本選擇
+        const savedShowFormal = localStorage.getItem('showFormal');
+        const savedShowCasual = localStorage.getItem('showCasual');
+        if (savedShowFormal !== null) {
+            showFormalCheckbox.checked = savedShowFormal === 'true';
+        } else {
+            showFormalCheckbox.checked = true; // 預設選中
+        }
+        if (savedShowCasual !== null) {
+            showCasualCheckbox.checked = savedShowCasual === 'true';
+        } else {
+            showCasualCheckbox.checked = true; // 預設選中
+        }
+
+        // 從 localStorage 載入配置區域展開狀態（預設收縮）
+        const savedConfigExpanded = localStorage.getItem('configExpanded');
+        if (savedConfigExpanded === 'true') {
+            apiConfig.classList.add('expanded');
+            toggleBtn.textContent = '-';
         }
 
         // 檢查瀏覽器支援
@@ -610,12 +679,17 @@
                     const parsedResponse = parseAIResponse(aiResponse);
                     addAIMessage(aiResponse);
                     
-                    // 語音朗讀英文（優先讀正式版，如果沒有則讀口語版）
+                    // 語音朗讀英文（根據用戶選擇：優先讀口語版，如果沒有則讀正式版）
                     let textToSpeak = '';
-                    if (parsedResponse.formal && parsedResponse.formal.english) {
-                        textToSpeak = parsedResponse.formal.english;
-                    } else if (parsedResponse.casual && parsedResponse.casual.english) {
+                    const showCasual = showCasualCheckbox.checked;
+                    const showFormal = showFormalCheckbox.checked;
+                    
+                    // 優先讀口語版
+                    if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
                         textToSpeak = parsedResponse.casual.english;
+                    } else if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
+                        // 如果沒有口語版或未選擇口語版，則讀正式版
+                        textToSpeak = parsedResponse.formal.english;
                     }
                     
                     if (textToSpeak) {
@@ -1073,6 +1147,29 @@
             } else {
                 // 從 localStorage 移除
                 localStorage.removeItem('qwen_api_key');
+            }
+        });
+
+        // 版本選擇變更時保存到 localStorage
+        showFormalCheckbox.addEventListener('change', (e) => {
+            localStorage.setItem('showFormal', e.target.checked.toString());
+        });
+
+        showCasualCheckbox.addEventListener('change', (e) => {
+            localStorage.setItem('showCasual', e.target.checked.toString());
+        });
+
+        // 展開/收縮配置區域
+        configToggle.addEventListener('click', () => {
+            const isExpanded = apiConfig.classList.contains('expanded');
+            if (isExpanded) {
+                apiConfig.classList.remove('expanded');
+                toggleBtn.textContent = '+';
+                localStorage.setItem('configExpanded', 'false');
+            } else {
+                apiConfig.classList.add('expanded');
+                toggleBtn.textContent = '-';
+                localStorage.setItem('configExpanded', 'true');
             }
         });
 
