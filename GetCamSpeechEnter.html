@@ -159,6 +159,83 @@
             cursor: pointer;
         }
 
+        .speech-rate-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .speech-rate-title {
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .speech-rate-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speech-rate-label {
+            color: white;
+            font-size: 11px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .speech-rate-slider {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .speech-rate-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .speech-rate-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .speech-rate-value {
+            color: white;
+            font-size: 11px;
+            text-align: center;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 40px;
+        }
+
+        .keyword-highlight {
+            color: #2196F3;
+            font-weight: 600;
+            background: rgba(33, 150, 243, 0.1);
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+
         .message-text.ai {
             background: #f0f0f0;
             color: #333;
@@ -610,6 +687,15 @@
                         </div>
                     </div>
                 </div>
+                <div class="speech-rate-control">
+                    <div class="speech-rate-title">語音播放速度：</div>
+                    <div class="speech-rate-slider-container">
+                        <span class="speech-rate-label">慢</span>
+                        <input type="range" id="speechRate" min="0.5" max="1.5" step="0.1" value="0.8" class="speech-rate-slider" />
+                        <span class="speech-rate-label">快</span>
+                    </div>
+                    <div class="speech-rate-value" id="speechRateValue">0.8x</div>
+                </div>
             </div>
         </div>
 
@@ -665,6 +751,8 @@
         const configToggle = document.getElementById('configToggle');
         const apiConfig = document.getElementById('apiConfig');
         const toggleBtn = document.getElementById('toggleBtn');
+        const speechRateSlider = document.getElementById('speechRate');
+        const speechRateValue = document.getElementById('speechRateValue');
         
         // 從 localStorage 載入保存的 API Key
         const savedApiKey = localStorage.getItem('qwen_api_key');
@@ -686,6 +774,13 @@
             showCasualCheckbox.checked = savedShowCasual === 'true';
         } else {
             showCasualCheckbox.checked = true; // 預設選中
+        }
+
+        // 從 localStorage 載入保存的語音速度
+        const savedSpeechRate = localStorage.getItem('speechRate');
+        if (savedSpeechRate !== null) {
+            speechRateSlider.value = savedSpeechRate;
+            speechRateValue.textContent = savedSpeechRate + 'x';
         }
 
         // 從 localStorage 載入配置區域展開狀態（預設收縮）
@@ -1031,7 +1126,7 @@
                 if (parsedResponse.formal.english) {
                     const englishDiv = document.createElement('div');
                     englishDiv.className = 'ai-response-english';
-                    englishDiv.textContent = parsedResponse.formal.english;
+                    englishDiv.innerHTML = highlightKeywords(parsedResponse.formal.english);
                     englishDiv.title = '點擊朗讀';
                     // 添加點擊事件來朗讀這段英文
                     englishDiv.addEventListener('click', () => {
@@ -1075,7 +1170,7 @@
                 if (parsedResponse.casual.english) {
                     const englishDiv = document.createElement('div');
                     englishDiv.className = 'ai-response-english';
-                    englishDiv.textContent = parsedResponse.casual.english;
+                    englishDiv.innerHTML = highlightKeywords(parsedResponse.casual.english);
                     englishDiv.title = '點擊朗讀';
                     // 添加點擊事件來朗讀這段英文
                     englishDiv.addEventListener('click', () => {
@@ -1123,24 +1218,33 @@
                     },
                     {
                         "type": "text",
-                        "text": `請用 A2 等級的英文描述這張圖片，並提供兩種版本：
-1. 正式版（Formal Version）：使用正式、標準的英文
-2. 口語版（Casual Version）：使用口語、輕鬆的英文
+                        "text": `請解析這張圖片，用英文完成以下描述：
+- 指出圖中的 2-3 個核心人/物（使用身份名詞）
+- 描述每個人/物的位置（使用方位介詞/副詞）
+- 說明人/物的特徵或正在進行的動作（使用形容詞/動詞）
+- 全部使用 A2 級別詞彙，句子簡單易懂
+
+請提供兩種版本：
+1. 正式版（Formal Version）：使用正式、標準的英文表達
+2. 口語版（Casual Version）：使用口語、輕鬆的英文表達
+
+每種版本的英文內容格式範例：
+"There is a woman in front of the window. She is sitting at a small table. The table has a red cup of coffee on it. The woman looks happy. She is not eating—she is just drinking her coffee."
 
 每種版本都需要包含：
-- 英文內容
+- 英文內容（按照上述格式要求）
 - 繁體中文翻譯
 
 同時請為每種版本提供詳細解析：
 - 中文原文重點：列出中文翻譯中的關鍵重點
 - 英文對應處理：說明英文版本如何對應處理這些重點
 - 為什麼這麼翻：分析句子中使用的A2語法結構
-- A2級別詞彙表：從圖片描述中辨識並列出所有A2級別詞彙，格式為：詞彙 (詞性) 中文意思（例如：welcome (v./n.) 歡迎）
+- A2級別詞彙表：從圖片描述中辨識並列出所有A2級別詞彙，格式為：詞彙 (詞性) 中文意思（例如：woman (n.) 女人）
 - A2級別例句：提供3個使用這些詞彙的A2級別例句
 
 請按照以下格式回覆：
 【正式版】
-[正式英文內容]
+[正式英文內容 - 按照範例格式：There is... She is... The table has... 等]
 [正式繁體中文翻譯]
 
 【正式版解析】
@@ -1157,7 +1261,7 @@
 3. 例句3
 
 【口語版】
-[口語英文內容]
+[口語英文內容 - 按照範例格式：There is... She is... The table has... 等]
 [口語繁體中文翻譯]
 
 【口語版解析】
@@ -1388,6 +1492,54 @@
             }
         }
 
+        // 標示關鍵英文單字和片語
+        function highlightKeywords(text) {
+            // 常見的 A2 級別關鍵詞和片語
+            const keywords = [
+                // 基本動詞
+                'is', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'must',
+                'go', 'come', 'get', 'make', 'take', 'give', 'put', 'see', 'look', 'watch', 'listen', 'hear', 'say', 'tell', 'speak', 'talk',
+                'eat', 'drink', 'sleep', 'work', 'play', 'study', 'learn', 'teach', 'read', 'write', 'buy', 'sell', 'help', 'need', 'want', 'like', 'love',
+                
+                // 常用名詞
+                'time', 'day', 'week', 'month', 'year', 'morning', 'afternoon', 'evening', 'night', 'today', 'tomorrow', 'yesterday',
+                'home', 'house', 'room', 'kitchen', 'bedroom', 'bathroom', 'school', 'office', 'shop', 'store', 'restaurant', 'hospital',
+                'family', 'friend', 'people', 'person', 'man', 'woman', 'child', 'children', 'boy', 'girl', 'baby',
+                'food', 'water', 'coffee', 'tea', 'bread', 'rice', 'meat', 'fish', 'fruit', 'vegetable',
+                'car', 'bus', 'train', 'plane', 'bike', 'phone', 'computer', 'book', 'table', 'chair', 'bed', 'door', 'window',
+                
+                // 形容詞
+                'good', 'bad', 'big', 'small', 'long', 'short', 'tall', 'high', 'low', 'fast', 'slow', 'hot', 'cold', 'warm', 'cool',
+                'new', 'old', 'young', 'easy', 'difficult', 'hard', 'soft', 'heavy', 'light', 'dark', 'bright', 'clean', 'dirty',
+                'happy', 'sad', 'angry', 'tired', 'hungry', 'thirsty', 'busy', 'free', 'ready', 'sure', 'right', 'wrong',
+                
+                // 介詞和副詞
+                'in', 'on', 'at', 'to', 'from', 'with', 'without', 'for', 'about', 'under', 'over', 'between', 'behind', 'next to',
+                'here', 'there', 'now', 'then', 'always', 'never', 'sometimes', 'often', 'usually', 'very', 'really', 'quite', 'too', 'also',
+                
+                // 常用片語
+                'how are you', 'nice to meet you', 'excuse me', 'thank you', 'you\'re welcome', 'i\'m sorry', 'no problem',
+                'what time', 'how much', 'how many', 'how long', 'how often', 'what about', 'would you like', 'i would like',
+                'there is', 'there are', 'used to', 'going to', 'have to', 'need to', 'want to', 'like to', 'love to',
+                'look at', 'listen to', 'wait for', 'look for', 'think about', 'talk about', 'worry about', 'care about',
+                'turn on', 'turn off', 'pick up', 'put down', 'get up', 'sit down', 'stand up', 'wake up', 'go out', 'come back',
+                'right now', 'just now', 'a little', 'a lot', 'too much', 'not enough', 'of course', 'by the way', 'at least', 'at most'
+            ];
+
+            let highlightedText = text;
+            
+            // 按長度排序，先處理長片語
+            keywords.sort((a, b) => b.length - a.length);
+            
+            keywords.forEach(keyword => {
+                // 創建正則表達式，匹配完整單詞或片語（不區分大小寫）
+                const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                highlightedText = highlightedText.replace(regex, `<span class="keyword-highlight">$&</span>`);
+            });
+            
+            return highlightedText;
+        }
+
         // 語音合成（讀取英文）
         function speakText(text, lang = 'en-US') {
             if (!('speechSynthesis' in window)) {
@@ -1401,7 +1553,7 @@
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
             utterance.volume = 0.8;
-            utterance.rate = 0.9;
+            utterance.rate = parseFloat(speechRateSlider.value); // 使用用戶設定的語速
             utterance.pitch = 1;
 
             // 選擇合適的語音（英文）
@@ -1544,6 +1696,13 @@
 
         showCasualCheckbox.addEventListener('change', (e) => {
             localStorage.setItem('showCasual', e.target.checked.toString());
+        });
+
+        // 語音速度滑桿事件
+        speechRateSlider.addEventListener('input', (e) => {
+            const rate = e.target.value;
+            speechRateValue.textContent = rate + 'x';
+            localStorage.setItem('speechRate', rate);
         });
 
         // 展開/收縮配置區域
