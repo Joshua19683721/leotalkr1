@@ -396,8 +396,55 @@
             font-size: 14px;
             line-height: 1.6;
             color: #666;
-            padding-top: 8px;
-            border-top: 1px solid #e0e0e0;
+            padding-top: 0;
+        }
+
+        .ai-response-sentence-translation {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #888;
+            margin-bottom: 8px;
+            padding-left: 10px;
+            border-left: 3px solid #e0e0e0;
+            font-style: italic;
+        }
+
+        .ai-response-english.speaking {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            animation: speakingGlow 1s ease-in-out infinite alternate;
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        @keyframes speakingGlow {
+            0% {
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            }
+            100% {
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            }
+        }
+
+        .btn-play-all {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .btn-play-all:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+
+        .btn-play-all:active {
+            transform: scale(0.95);
         }
 
         .loading-indicator {
@@ -487,14 +534,18 @@
         }
 
         .camera-preview {
-            width: 100%;
-            max-width: 200px;
-            height: 150px;
-            border-radius: 12px;
+            position: fixed;
+            bottom: 120px;
+            left: 20px;
+            width: 80px;
+            height: 142px;
+            border-radius: 8px;
             object-fit: cover;
-            margin: 0 auto 15px;
             display: block;
             background: #000;
+            z-index: 50;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .preview-toggle {
@@ -622,6 +673,28 @@
             animation: pulse 1s infinite;
         }
 
+        .btn-reload {
+            background: #28a745;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin: 0 10px;
+        }
+
+        .btn-reload:hover {
+            background: #218838;
+            transform: scale(1.05);
+        }
+
+        .btn-reload:active {
+            transform: scale(0.95);
+        }
+
         @keyframes pulse {
             0%, 100% {
                 opacity: 1;
@@ -646,16 +719,20 @@
             font-size: 16px;
         }
 
-        /* 顯示 video 預覽 */
+        /* 顯示 video 預覽 - 9:16 規格，固定在左下角 */
         #videoElement {
-            width: 100%;
-            max-width: 200px;
-            height: 150px;
-            border-radius: 12px;
+            position: fixed;
+            bottom: 120px;
+            left: 20px;
+            width: 80px;
+            height: 142px;
+            border-radius: 8px;
             object-fit: cover;
-            margin: 0 auto 15px;
             display: block;
             background: #000;
+            z-index: 50;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
@@ -705,19 +782,13 @@
     </div>
 
     <div class="camera-controls">
-        <div class="preview-toggle">
-            <span>相機預覽</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="previewToggle" checked>
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
         <video id="videoElement" autoplay playsinline></video>
         <canvas id="canvasElement" style="display: none;"></canvas>
         <img id="previewImage" class="camera-preview" alt="預覽" style="display: none;">
         
         <div class="button-group">
             <button class="btn btn-capture" id="captureBtn">📷 拍照</button>
+            <button class="btn btn-reload" id="reloadBtn" title="重新載入頁面">🔄</button>
             <button class="btn btn-record" id="recordBtn">🎤 按住說話</button>
         </div>
         
@@ -730,9 +801,9 @@
         const conversation = document.getElementById('conversation');
         const captureBtn = document.getElementById('captureBtn');
         const recordBtn = document.getElementById('recordBtn');
+        const reloadBtn = document.getElementById('reloadBtn');
         const status = document.getElementById('status');
         const previewImage = document.getElementById('previewImage');
-        const previewToggle = document.getElementById('previewToggle');
 
         let stream = null;
         let currentImageData = null;
@@ -880,31 +951,79 @@
                     return;
                 }
                 
-                // 調用 qwen-vl-plus API
+                // 調用 qwen3-vl-flash API
                 try {
                     status.textContent = '正在處理...';
-                    const aiResponse = await callQwenVLPlus(currentImageData, text);
+                    const aiResponse = await callQwen2VL72B(currentImageData, text);
                     
-                    // 顯示 AI 回應
+                    // 解析第一次回應
                     const parsedResponse = parseAIResponse(aiResponse);
-                    addAIMessage(aiResponse);
                     
-                    // 語音朗讀英文（根據用戶選擇：優先讀口語版，如果沒有則讀正式版）
-                    let textToSpeak = '';
-                    const showCasual = showCasualCheckbox.checked;
-                    const showFormal = showFormalCheckbox.checked;
+                    // 第二次API調用：翻譯英文句子
+                    status.textContent = '正在翻譯英文句子...';
+                    const translatedResponse = await translateEnglishSentences(parsedResponse);
                     
-                    // 優先讀口語版
-                    if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
-                        textToSpeak = parsedResponse.casual.english;
-                    } else if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
-                        // 如果沒有口語版或未選擇口語版，則讀正式版
-                        textToSpeak = parsedResponse.formal.english;
-                    }
+                    // 顯示 AI 回應（包含翻譯）
+                    addAIMessage(aiResponse, translatedResponse);
                     
-                    if (textToSpeak) {
-                        speakText(textToSpeak, 'en-US');
-                    }
+                    // 自動朗讀英文（根據用戶選擇：優先讀口語版，如果沒有則讀正式版）
+                    setTimeout(() => {
+                        const showCasual = showCasualCheckbox.checked;
+                        const showFormal = showFormalCheckbox.checked;
+                        
+                        // 優先讀口語版
+                        if (showCasual && translatedResponse && translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
+                            const casualSentences = [];
+                            translatedResponse.casual.sentences.forEach((sentence, index) => {
+                                const element = document.getElementById(`casual-sentence-${index}`);
+                                if (element) {
+                                    casualSentences.push({ element: element, text: sentence.english });
+                                }
+                            });
+                            if (casualSentences.length > 0) {
+                                speakAllSentences(casualSentences);
+                            }
+                        } else if (showFormal && translatedResponse && translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
+                            // 如果沒有口語版或未選擇口語版，則讀正式版
+                            const formalSentences = [];
+                            translatedResponse.formal.sentences.forEach((sentence, index) => {
+                                const element = document.getElementById(`formal-sentence-${index}`);
+                                if (element) {
+                                    formalSentences.push({ element: element, text: sentence.english });
+                                }
+                            });
+                            if (formalSentences.length > 0) {
+                                speakAllSentences(formalSentences);
+                            }
+                        } else {
+                            // 回退到原始朗讀方式（如果沒有翻譯結果）- 也使用逐句朗讀
+                            if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
+                                const casualSentences = [];
+                                const sentences = splitIntoSentences(parsedResponse.casual.english);
+                                sentences.forEach((sentence, index) => {
+                                    const element = document.getElementById(`casual-sentence-${index}`);
+                                    if (element) {
+                                        casualSentences.push({ element: element, text: sentence });
+                                    }
+                                });
+                                if (casualSentences.length > 0) {
+                                    speakAllSentences(casualSentences);
+                                }
+                            } else if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
+                                const formalSentences = [];
+                                const sentences = splitIntoSentences(parsedResponse.formal.english);
+                                sentences.forEach((sentence, index) => {
+                                    const element = document.getElementById(`formal-sentence-${index}`);
+                                    if (element) {
+                                        formalSentences.push({ element: element, text: sentence });
+                                    }
+                                });
+                                if (formalSentences.length > 0) {
+                                    speakAllSentences(formalSentences);
+                                }
+                            }
+                        }
+                    }, 500); // 延遲500ms讓DOM元素完全渲染
                     
                 } catch (error) {
                     status.textContent = '錯誤: ' + error.message;
@@ -922,8 +1041,8 @@
         function resetForNextCapture() {
             currentImageData = null;
             previewImage.style.display = 'none';
-            // 恢復 video 預覽（根據開關狀態）
-            video.style.display = previewToggle.checked ? 'block' : 'none';
+            // 恢復 video 預覽
+            video.style.display = 'block';
             status.textContent = '已重置，可以再次拍照';
         }
 
@@ -1079,7 +1198,7 @@
         }
 
         // 添加 AI 訊息到對話
-        function addAIMessage(response) {
+        function addAIMessage(response, translatedResponse = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
 
@@ -1108,19 +1227,80 @@
                 
                 // 添加英文（可點擊朗讀）
                 if (parsedResponse.formal.english) {
-                    const englishDiv = document.createElement('div');
-                    englishDiv.className = 'ai-response-english';
-                    englishDiv.textContent = parsedResponse.formal.english;
-                    englishDiv.title = '點擊朗讀';
-                    // 添加點擊事件來朗讀這段英文
-                    englishDiv.addEventListener('click', () => {
-                        speakText(parsedResponse.formal.english, 'en-US');
-                    });
-                    formalContent.appendChild(englishDiv);
+                    // 如果有翻譯結果，逐句顯示
+                    if (translatedResponse && translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
+                        const formalSentences = [];
+                        translatedResponse.formal.sentences.forEach((sentence, index) => {
+                            // 英文句子
+                            const englishDiv = document.createElement('div');
+                            englishDiv.className = 'ai-response-english';
+                            englishDiv.id = `formal-sentence-${index}`;
+                            englishDiv.textContent = sentence.english;
+                            englishDiv.title = '點擊朗讀';
+                            englishDiv.addEventListener('click', () => {
+                                speakSentenceWithHighlight(sentence.english, englishDiv);
+                            });
+                            formalContent.appendChild(englishDiv);
+                            formalSentences.push({ element: englishDiv, text: sentence.english });
+                            
+                            // 中文翻譯（緊跟在英文下方）
+                            const chineseDiv = document.createElement('div');
+                            chineseDiv.className = 'ai-response-sentence-translation';
+                            chineseDiv.textContent = sentence.chinese;
+                            formalContent.appendChild(chineseDiv);
+                        });
+                        
+                        // 為整個正式版添加全部朗讀功能
+                        const playAllBtn = document.createElement('button');
+                        playAllBtn.className = 'btn-play-all';
+                        playAllBtn.textContent = '🔊 朗讀全部';
+                        playAllBtn.addEventListener('click', () => {
+                            speakAllSentences(formalSentences);
+                        });
+                        formalContent.appendChild(playAllBtn);
+                    } else {
+                        // 沒有翻譯結果時的原始顯示方式 - 拆分成句子
+                        const sentences = splitIntoSentences(parsedResponse.formal.english);
+                        const formalSentences = [];
+                        
+                        sentences.forEach((sentence, index) => {
+                            const englishDiv = document.createElement('div');
+                            englishDiv.className = 'ai-response-english';
+                            englishDiv.id = `formal-sentence-${index}`;
+                            englishDiv.textContent = sentence;
+                            englishDiv.title = '點擊朗讀';
+                            englishDiv.addEventListener('click', () => {
+                                speakSentenceWithHighlight(sentence, englishDiv);
+                            });
+                            formalContent.appendChild(englishDiv);
+                            formalSentences.push({ element: englishDiv, text: sentence });
+                        });
+                        
+                        // 添加全部朗讀按鈕
+                        if (formalSentences.length > 1) {
+                            const playAllBtn = document.createElement('button');
+                            playAllBtn.className = 'btn-play-all';
+                            playAllBtn.textContent = '🔊 朗讀全部';
+                            playAllBtn.addEventListener('click', () => {
+                                speakAllSentences(formalSentences);
+                            });
+                            formalContent.appendChild(playAllBtn);
+                        }
+                        
+                        // 保存句子引用供自動朗讀使用
+                        formalContent.dataset.sentences = JSON.stringify(formalSentences.map(s => s.text));
+                    }
                 }
                 
                 // 添加繁體中文
                 if (parsedResponse.formal.chinese) {
+                    // 添加分隔線
+                    const hrElement = document.createElement('hr');
+                    hrElement.style.margin = '15px 0';
+                    hrElement.style.border = 'none';
+                    hrElement.style.borderTop = '1px solid #e0e0e0';
+                    formalContent.appendChild(hrElement);
+                    
                     const chineseDiv = document.createElement('div');
                     chineseDiv.className = 'ai-response-chinese';
                     chineseDiv.textContent = parsedResponse.formal.chinese;
@@ -1152,19 +1332,80 @@
                 
                 // 添加英文（可點擊朗讀）
                 if (parsedResponse.casual.english) {
-                    const englishDiv = document.createElement('div');
-                    englishDiv.className = 'ai-response-english';
-                    englishDiv.textContent = parsedResponse.casual.english;
-                    englishDiv.title = '點擊朗讀';
-                    // 添加點擊事件來朗讀這段英文
-                    englishDiv.addEventListener('click', () => {
-                        speakText(parsedResponse.casual.english, 'en-US');
-                    });
-                    casualContent.appendChild(englishDiv);
+                    // 如果有翻譯結果，逐句顯示
+                    if (translatedResponse && translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
+                        const casualSentences = [];
+                        translatedResponse.casual.sentences.forEach((sentence, index) => {
+                            // 英文句子
+                            const englishDiv = document.createElement('div');
+                            englishDiv.className = 'ai-response-english';
+                            englishDiv.id = `casual-sentence-${index}`;
+                            englishDiv.textContent = sentence.english;
+                            englishDiv.title = '點擊朗讀';
+                            englishDiv.addEventListener('click', () => {
+                                speakSentenceWithHighlight(sentence.english, englishDiv);
+                            });
+                            casualContent.appendChild(englishDiv);
+                            casualSentences.push({ element: englishDiv, text: sentence.english });
+                            
+                            // 中文翻譯（緊跟在英文下方）
+                            const chineseDiv = document.createElement('div');
+                            chineseDiv.className = 'ai-response-sentence-translation';
+                            chineseDiv.textContent = sentence.chinese;
+                            casualContent.appendChild(chineseDiv);
+                        });
+                        
+                        // 為整個口語版添加全部朗讀功能
+                        const playAllBtn = document.createElement('button');
+                        playAllBtn.className = 'btn-play-all';
+                        playAllBtn.textContent = '🔊 朗讀全部';
+                        playAllBtn.addEventListener('click', () => {
+                            speakAllSentences(casualSentences);
+                        });
+                        casualContent.appendChild(playAllBtn);
+                    } else {
+                        // 沒有翻譯結果時的原始顯示方式 - 拆分成句子
+                        const sentences = splitIntoSentences(parsedResponse.casual.english);
+                        const casualSentences = [];
+                        
+                        sentences.forEach((sentence, index) => {
+                            const englishDiv = document.createElement('div');
+                            englishDiv.className = 'ai-response-english';
+                            englishDiv.id = `casual-sentence-${index}`;
+                            englishDiv.textContent = sentence;
+                            englishDiv.title = '點擊朗讀';
+                            englishDiv.addEventListener('click', () => {
+                                speakSentenceWithHighlight(sentence, englishDiv);
+                            });
+                            casualContent.appendChild(englishDiv);
+                            casualSentences.push({ element: englishDiv, text: sentence });
+                        });
+                        
+                        // 添加全部朗讀按鈕
+                        if (casualSentences.length > 1) {
+                            const playAllBtn = document.createElement('button');
+                            playAllBtn.className = 'btn-play-all';
+                            playAllBtn.textContent = '🔊 朗讀全部';
+                            playAllBtn.addEventListener('click', () => {
+                                speakAllSentences(casualSentences);
+                            });
+                            casualContent.appendChild(playAllBtn);
+                        }
+                        
+                        // 保存句子引用供自動朗讀使用
+                        casualContent.dataset.sentences = JSON.stringify(casualSentences.map(s => s.text));
+                    }
                 }
                 
                 // 添加繁體中文
                 if (parsedResponse.casual.chinese) {
+                    // 添加分隔線
+                    const hrElement = document.createElement('hr');
+                    hrElement.style.margin = '15px 0';
+                    hrElement.style.border = 'none';
+                    hrElement.style.borderTop = '1px solid #e0e0e0';
+                    casualContent.appendChild(hrElement);
+                    
                     const chineseDiv = document.createElement('div');
                     chineseDiv.className = 'ai-response-chinese';
                     chineseDiv.textContent = parsedResponse.casual.chinese;
@@ -1189,8 +1430,8 @@
             conversation.scrollTop = conversation.scrollHeight;
         }
 
-        // 調用 qwen-vl-plus API
-        async function callQwenVLPlus(imageData, text) {
+        // 調用 qwen3-vl-flash API
+        async function callQwen2VL72B(imageData, text) {
             const userMessage = {
                 "role": "user",
                 "content": [
@@ -1228,7 +1469,7 @@
 請按照以下格式回覆：
 【正式版】
 [正式英文內容 - 按照範例格式：There is... She is... The table has... 等]
-[正式繁體中文翻譯]
+
 
 【正式版解析】
 [重點說明]
@@ -1244,7 +1485,7 @@
 
 【口語版】
 [口語英文內容 - 按照範例格式：There is... She is... The table has... 等]
-[口語繁體中文翻譯]
+
 
 【口語版解析】
 [重點說明]
@@ -1266,7 +1507,7 @@
             const messages = [...conversationHistory, userMessage];
 
             const requestBody = {
-                "model": "qwen-vl-plus",
+                "model": "qwen3-vl-flash",
                 "messages": messages,
                 "max_tokens": 2000,
                 "temperature": 0.7
@@ -1307,6 +1548,94 @@
             }
         }
 
+        // 翻譯英文句子的函數
+        async function translateEnglishSentences(parsedResponse) {
+            const translations = {
+                formal: { sentences: [] },
+                casual: { sentences: [] }
+            };
+
+            // 翻譯正式版英文
+            if (parsedResponse.formal && parsedResponse.formal.english) {
+                const formalTranslation = await callTranslationAPI(parsedResponse.formal.english);
+                translations.formal.sentences = parseTranslationResponse(formalTranslation);
+            }
+
+            // 翻譯口語版英文
+            if (parsedResponse.casual && parsedResponse.casual.english) {
+                const casualTranslation = await callTranslationAPI(parsedResponse.casual.english);
+                translations.casual.sentences = parseTranslationResponse(casualTranslation);
+            }
+
+            return translations;
+        }
+
+        // 調用翻譯API
+        async function callTranslationAPI(englishText) {
+            const userMessage = {
+                "role": "user",
+                "content": `請將以下英文段落逐句翻譯成繁體中文，保持原有的句子結構和順序：
+
+${englishText}
+
+請按照以下格式回覆，每個英文句子後面緊跟其中文翻譯：
+英文句子1
+中文翻譯1
+英文句子2
+中文翻譯2
+...以此類推`
+            };
+
+            const requestBody = {
+                "model": "qwen3-vl-flash",
+                "messages": [userMessage],
+                "max_tokens": 1000,
+                "temperature": 0.3
+            };
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'X-DashScope-SSE': 'disable'
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`翻譯API錯誤 ${response.status}: ${errorText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content;
+            } else {
+                throw new Error('翻譯API返回格式異常: ' + JSON.stringify(data));
+            }
+        }
+
+        // 解析翻譯回應
+        function parseTranslationResponse(translationText) {
+            const lines = translationText.split('\n').filter(line => line.trim());
+            const sentences = [];
+            
+            for (let i = 0; i < lines.length; i += 2) {
+                if (i + 1 < lines.length) {
+                    sentences.push({
+                        english: lines[i].trim(),
+                        chinese: lines[i + 1].trim()
+                    });
+                }
+            }
+            
+            return sentences;
+        }
+
         // 解析 AI 回應，提取正式版和口語版的英文、繁體中文和解析內容
         function parseAIResponse(response) {
             const result = {
@@ -1344,6 +1673,10 @@
                 
                 for (let line of lines) {
                     const trimmedLine = line.trim();
+                    // 過濾掉不需要的標記文字
+                    if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') {
+                        continue;
+                    }
                     if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
                         chineseParts.push(trimmedLine);
                     } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
@@ -1372,6 +1705,10 @@
                 
                 for (let line of lines) {
                     const trimmedLine = line.trim();
+                    // 過濾掉不需要的標記文字
+                    if (trimmedLine.includes('口語版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') {
+                        continue;
+                    }
                     if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
                         chineseParts.push(trimmedLine);
                     } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
@@ -1396,6 +1733,11 @@
                 
                 for (let line of allLines) {
                     const trimmedLine = line.trim();
+                    // 過濾掉不需要的標記文字
+                    if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('口語版翻譯') || 
+                        trimmedLine.includes('---') || trimmedLine === '---') {
+                        continue;
+                    }
                     if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
                         chineseParts.push(trimmedLine);
                     } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
@@ -1513,6 +1855,21 @@
             return highlightedText;
         }
 
+        // 關閉相機和預覽
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.style.display = 'none';
+            previewImage.style.display = 'none';
+        }
+
+        // 重新啟動相機
+        function restartCamera() {
+            startCamera();
+        }
+
         // 語音合成（讀取英文）
         function speakText(text, lang = 'en-US') {
             if (!('speechSynthesis' in window)) {
@@ -1523,13 +1880,19 @@
             // 停止當前播放
             window.speechSynthesis.cancel();
 
+            // 先過濾掉特定的中文字串
+            let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
+            
             // 過濾掉中文字符，只保留英文字符、數字、標點符號和空格
-            const englishOnlyText = text.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
+            const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
             
             if (!englishOnlyText) {
                 console.log('沒有英文內容可以朗讀');
                 return;
             }
+
+            // 開始朗讀時關閉相機
+            stopCamera();
 
             const utterance = new SpeechSynthesisUtterance(englishOnlyText);
             utterance.lang = lang;
@@ -1566,25 +1929,186 @@
 
             utterance.onend = () => {
                 status.textContent = '朗讀完成';
+                // 朗讀完成後重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000); // 延遲1秒後重新啟動相機
             };
 
             utterance.onerror = (event) => {
                 console.error('語音合成錯誤:', event.error);
                 status.textContent = '朗讀失敗';
+                // 朗讀失敗也重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000);
             };
         }
 
-        // 預覽開關事件
-        previewToggle.addEventListener('change', function() {
-            if (this.checked) {
-                video.style.display = 'block';
-            } else {
-                video.style.display = 'none';
+        // 單句朗讀並高亮
+        function speakSentenceWithHighlight(text, element) {
+            if (!('speechSynthesis' in window)) {
+                console.log('瀏覽器不支援語音合成');
+                return;
             }
-        });
+
+            // 停止當前播放並清除所有高亮
+            window.speechSynthesis.cancel();
+            clearAllHighlights();
+
+            // 過濾文本
+            let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
+            const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
+            
+            if (!englishOnlyText) {
+                console.log('沒有英文內容可以朗讀');
+                return;
+            }
+
+            // 添加高亮效果
+            element.classList.add('speaking');
+
+            const utterance = new SpeechSynthesisUtterance(englishOnlyText);
+            utterance.lang = 'en-US';
+            utterance.volume = 0.8;
+            utterance.rate = parseFloat(speechRateSlider.value);
+            utterance.pitch = 1;
+
+            utterance.onstart = () => {
+                status.textContent = '正在朗讀: ' + englishOnlyText.substring(0, 30) + '...';
+            };
+
+            utterance.onend = () => {
+                element.classList.remove('speaking');
+                status.textContent = '朗讀完成';
+            };
+
+            utterance.onerror = (event) => {
+                element.classList.remove('speaking');
+                console.error('語音合成錯誤:', event.error);
+                status.textContent = '朗讀失敗';
+            };
+
+            // 選擇語音並播放
+            const voices = window.speechSynthesis.getVoices();
+            const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US'));
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 朗讀所有句子
+        function speakAllSentences(sentences) {
+            if (!sentences || sentences.length === 0) return;
+
+            // 停止當前播放並清除所有高亮
+            window.speechSynthesis.cancel();
+            clearAllHighlights();
+            
+            // 關閉相機
+            stopCamera();
+
+            let currentIndex = 0;
+
+            function speakNext() {
+                if (currentIndex >= sentences.length) {
+                    // 全部朗讀完成
+                    status.textContent = '全部朗讀完成';
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 1000);
+                    return;
+                }
+
+                const sentence = sentences[currentIndex];
+                const element = sentence.element;
+                const text = sentence.text;
+
+                // 過濾文本
+                let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
+                const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
+
+                if (!englishOnlyText) {
+                    currentIndex++;
+                    speakNext();
+                    return;
+                }
+
+                // 清除之前的高亮，添加當前高亮
+                clearAllHighlights();
+                element.classList.add('speaking');
+                
+                // 滾動到當前句子
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                const utterance = new SpeechSynthesisUtterance(englishOnlyText);
+                utterance.lang = 'en-US';
+                utterance.volume = 0.8;
+                utterance.rate = parseFloat(speechRateSlider.value);
+                utterance.pitch = 1;
+
+                utterance.onstart = () => {
+                    status.textContent = `正在朗讀 (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`;
+                };
+
+                utterance.onend = () => {
+                    element.classList.remove('speaking');
+                    currentIndex++;
+                    // 延遲一點再朗讀下一句
+                    setTimeout(speakNext, 500);
+                };
+
+                utterance.onerror = (event) => {
+                    element.classList.remove('speaking');
+                    console.error('語音合成錯誤:', event.error);
+                    currentIndex++;
+                    setTimeout(speakNext, 500);
+                };
+
+                // 選擇語音並播放
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US'));
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            speakNext();
+        }
+
+        // 清除所有高亮效果
+        function clearAllHighlights() {
+            const speakingElements = document.querySelectorAll('.ai-response-english.speaking');
+            speakingElements.forEach(element => {
+                element.classList.remove('speaking');
+            });
+        }
+
+        // 將文本拆分成句子
+        function splitIntoSentences(text) {
+            if (!text) return [];
+            
+            // 使用正則表達式拆分句子，保留句號、問號、驚嘆號
+            const sentences = text.split(/(?<=[.!?])\s+/)
+                .map(sentence => sentence.trim())
+                .filter(sentence => sentence.length > 0);
+            
+            return sentences;
+        }
+
+
 
         // 按鈕事件
         captureBtn.addEventListener('click', capturePhoto);
+        
+        // 重新載入按鈕事件
+        reloadBtn.addEventListener('click', () => {
+            location.reload();
+        });
 
         // 語音按鈕事件
         recordBtn.addEventListener('mousedown', function(e) {
