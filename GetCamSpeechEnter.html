@@ -274,7 +274,7 @@
             font-size: 15px;
             line-height: 1.6;
             margin-bottom: 8px;
-            color: #333;
+            color: #2196F3;
             cursor: pointer;
             padding: 4px 8px;
             border-radius: 4px;
@@ -961,9 +961,8 @@
 
         // 檢查是否有解析內容
         function hasAnalyzeContent(analyze) {
-            return analyze.keyPoints || analyze.englishCorrespondence || 
-                   analyze.grammarAnalysis || analyze.vocabulary.length > 0 || 
-                   analyze.examples.length > 0;
+            return analyze.keyPoints || analyze.grammarAnalysis || 
+                   analyze.vocabulary.length > 0 || analyze.examples.length > 0;
         }
 
         // 創建解析區域
@@ -979,7 +978,7 @@
             toggleBtn.textContent = '+';
             const toggleText = document.createElement('span');
             toggleText.className = 'ai-response-analyze-toggle-text';
-            toggleText.textContent = '翻譯說明與重點解析';
+            toggleText.textContent = '📖 單字片語文法重點解析';
             toggle.appendChild(toggleBtn);
             toggle.appendChild(toggleText);
             
@@ -987,13 +986,13 @@
             const analyzeContent = document.createElement('div');
             analyzeContent.className = 'ai-response-analyze';
             
-            // 中文原文重點
+            // 重點說明
             if (analyze.keyPoints) {
                 const section = document.createElement('div');
                 section.className = 'analyze-section';
                 const title = document.createElement('div');
                 title.className = 'analyze-title';
-                title.textContent = '📌 中文原文重點';
+                title.textContent = '📌 重點說明';
                 const content = document.createElement('div');
                 content.className = 'analyze-content';
                 content.textContent = analyze.keyPoints;
@@ -1002,28 +1001,13 @@
                 analyzeContent.appendChild(section);
             }
             
-            // 英文對應處理
-            if (analyze.englishCorrespondence) {
-                const section = document.createElement('div');
-                section.className = 'analyze-section';
-                const title = document.createElement('div');
-                title.className = 'analyze-title';
-                title.textContent = '🔄 英文對應處理';
-                const content = document.createElement('div');
-                content.className = 'analyze-content';
-                content.textContent = analyze.englishCorrespondence;
-                section.appendChild(title);
-                section.appendChild(content);
-                analyzeContent.appendChild(section);
-            }
-            
-            // 為什麼這麼翻
+            // 語法結構
             if (analyze.grammarAnalysis) {
                 const section = document.createElement('div');
                 section.className = 'analyze-section';
                 const title = document.createElement('div');
                 title.className = 'analyze-title';
-                title.textContent = '❓ 為什麼這麼翻（A2語法結構分析）';
+                title.textContent = '📝 語法結構（A2語法結構分析）';
                 const content = document.createElement('div');
                 content.className = 'analyze-content';
                 content.textContent = analyze.grammarAnalysis;
@@ -1111,7 +1095,7 @@
             container.className = 'message-text ai';
 
             // 添加正式版（如果用戶選擇顯示）
-            if (showFormal && parsedResponse.formal && (parsedResponse.formal.english || parsedResponse.formal.chinese)) {
+            if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
                 const formalSection = document.createElement('div');
                 formalSection.className = 'ai-response-section';
                 
@@ -1126,7 +1110,7 @@
                 if (parsedResponse.formal.english) {
                     const englishDiv = document.createElement('div');
                     englishDiv.className = 'ai-response-english';
-                    englishDiv.innerHTML = highlightKeywords(parsedResponse.formal.english);
+                    englishDiv.textContent = parsedResponse.formal.english;
                     englishDiv.title = '點擊朗讀';
                     // 添加點擊事件來朗讀這段英文
                     englishDiv.addEventListener('click', () => {
@@ -1135,15 +1119,7 @@
                     formalContent.appendChild(englishDiv);
                 }
                 
-                // 添加繁體中文
-                if (parsedResponse.formal.chinese) {
-                    const chineseDiv = document.createElement('div');
-                    chineseDiv.className = 'ai-response-chinese';
-                    chineseDiv.textContent = parsedResponse.formal.chinese;
-                    formalContent.appendChild(chineseDiv);
-                }
-                
-                // 添加解析區域（在繁體中文後面）
+                // 添加解析區域（在繁體中文翻譯後面）
                 if (parsedResponse.formal.analyze && hasAnalyzeContent(parsedResponse.formal.analyze)) {
                     const analyzeArea = createAnalyzeArea(parsedResponse.formal.analyze);
                     formalContent.appendChild(analyzeArea);
@@ -1155,7 +1131,7 @@
             }
 
             // 添加口語版（如果用戶選擇顯示）
-            if (showCasual && parsedResponse.casual && (parsedResponse.casual.english || parsedResponse.casual.chinese)) {
+            if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
                 const casualSection = document.createElement('div');
                 casualSection.className = 'ai-response-section';
                 
@@ -1170,7 +1146,7 @@
                 if (parsedResponse.casual.english) {
                     const englishDiv = document.createElement('div');
                     englishDiv.className = 'ai-response-english';
-                    englishDiv.innerHTML = highlightKeywords(parsedResponse.casual.english);
+                    englishDiv.textContent = parsedResponse.casual.english;
                     englishDiv.title = '點擊朗讀';
                     // 添加點擊事件來朗讀這段英文
                     englishDiv.addEventListener('click', () => {
@@ -1179,15 +1155,7 @@
                     casualContent.appendChild(englishDiv);
                 }
                 
-                // 添加繁體中文
-                if (parsedResponse.casual.chinese) {
-                    const chineseDiv = document.createElement('div');
-                    chineseDiv.className = 'ai-response-chinese';
-                    chineseDiv.textContent = parsedResponse.casual.chinese;
-                    casualContent.appendChild(chineseDiv);
-                }
-                
-                // 添加解析區域（在繁體中文後面）
+                // 添加解析區域（在繁體中文翻譯後面）
                 if (parsedResponse.casual.analyze && hasAnalyzeContent(parsedResponse.casual.analyze)) {
                     const analyzeArea = createAnalyzeArea(parsedResponse.casual.analyze);
                     casualContent.appendChild(analyzeArea);
@@ -1231,26 +1199,22 @@
 每種版本的英文內容格式範例：
 "There is a woman in front of the window. She is sitting at a small table. The table has a red cup of coffee on it. The woman looks happy. She is not eating—she is just drinking her coffee."
 
-每種版本都需要包含：
+每種版本只需要包含：
 - 英文內容（按照上述格式要求）
-- 繁體中文翻譯
 
 同時請為每種版本提供詳細解析：
-- 中文原文重點：列出中文翻譯中的關鍵重點
-- 英文對應處理：說明英文版本如何對應處理這些重點
-- 為什麼這麼翻：分析句子中使用的A2語法結構
+- 重點說明：列出這段英文描述的關鍵重點
+- 語法結構：分析句子中使用的A2語法結構
 - A2級別詞彙表：從圖片描述中辨識並列出所有A2級別詞彙，格式為：詞彙 (詞性) 中文意思（例如：woman (n.) 女人）
 - A2級別例句：提供3個使用這些詞彙的A2級別例句
 
 請按照以下格式回覆：
 【正式版】
 [正式英文內容 - 按照範例格式：There is... She is... The table has... 等]
-[正式繁體中文翻譯]
 
 【正式版解析】
-[中文原文重點]
-[英文對應處理]
-[為什麼這麼翻（A2語法結構分析）]
+[重點說明]
+[語法結構（A2語法結構分析）]
 [詞彙表]（A2級別）
 - 詞彙1 (詞性) 中文意思
 - 詞彙2 (詞性) 中文意思
@@ -1262,12 +1226,10 @@
 
 【口語版】
 [口語英文內容 - 按照範例格式：There is... She is... The table has... 等]
-[口語繁體中文翻譯]
 
 【口語版解析】
-[中文原文重點]
-[英文對應處理]
-[為什麼這麼翻（A2語法結構分析）]
+[重點說明]
+[語法結構（A2語法結構分析）]
 [詞彙表]（A2級別）
 - 詞彙1 (詞性) 中文意思
 - 詞彙2 (詞性) 中文意思
@@ -1326,26 +1288,22 @@
             }
         }
 
-        // 解析 AI 回應，提取正式版和口語版的英文、繁體中文和解析內容
+        // 解析 AI 回應，提取正式版和口語版的英文和解析內容
         function parseAIResponse(response) {
             const result = {
                 formal: { 
-                    english: '', 
-                    chinese: '',
+                    english: '',
                     analyze: {
                         keyPoints: '',
-                        englishCorrespondence: '',
                         grammarAnalysis: '',
                         vocabulary: [],
                         examples: []
                     }
                 },
                 casual: { 
-                    english: '', 
-                    chinese: '',
+                    english: '',
                     analyze: {
                         keyPoints: '',
-                        englishCorrespondence: '',
                         grammarAnalysis: '',
                         vocabulary: [],
                         examples: []
@@ -1359,21 +1317,7 @@
             
             if (formalSectionMatch) {
                 const formalContent = formalSectionMatch[1].trim();
-                const lines = formalContent.split('\n').filter(line => line.trim());
-                let englishParts = [];
-                let chineseParts = [];
-                
-                for (let line of lines) {
-                    const trimmedLine = line.trim();
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
-                        chineseParts.push(trimmedLine);
-                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        englishParts.push(trimmedLine);
-                    }
-                }
-                
-                result.formal.english = englishParts.join('\n').trim();
-                result.formal.chinese = chineseParts.join('\n').trim();
+                result.formal.english = formalContent;
             }
 
             if (formalAnalyzeMatch) {
@@ -1387,21 +1331,7 @@
             
             if (casualSectionMatch) {
                 const casualContent = casualSectionMatch[1].trim();
-                const lines = casualContent.split('\n').filter(line => line.trim());
-                let englishParts = [];
-                let chineseParts = [];
-                
-                for (let line of lines) {
-                    const trimmedLine = line.trim();
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
-                        chineseParts.push(trimmedLine);
-                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        englishParts.push(trimmedLine);
-                    }
-                }
-                
-                result.casual.english = englishParts.join('\n').trim();
-                result.casual.chinese = chineseParts.join('\n').trim();
+                result.casual.english = casualContent;
             }
 
             if (casualAnalyzeMatch) {
@@ -1411,29 +1341,7 @@
 
             // 如果沒有匹配到，嘗試簡單格式
             if (!result.formal.english && !result.casual.english) {
-                const allLines = response.split('\n').filter(line => line.trim());
-                let englishParts = [];
-                let chineseParts = [];
-                
-                for (let line of allLines) {
-                    const trimmedLine = line.trim();
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
-                        chineseParts.push(trimmedLine);
-                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        englishParts.push(trimmedLine);
-                    }
-                }
-                
-                if (englishParts.length > 0) {
-                    result.formal.english = englishParts.join('\n').trim();
-                }
-                if (chineseParts.length > 0) {
-                    result.formal.chinese = chineseParts.join('\n').trim();
-                }
-                
-                if (!result.formal.english) {
-                    result.formal.english = response;
-                }
+                result.formal.english = response;
             }
 
             return result;
@@ -1441,21 +1349,15 @@
 
         // 解析解析內容
         function parseAnalyzeContent(content, analyzeObj) {
-            // 提取中文原文重點
-            const keyPointsMatch = content.match(/\[中文原文重點\]\s*([\s\S]*?)(?=\[英文對應處理\]|\[為什麼這麼翻\]|\[詞彙表\]|\[例句\]|$)/i);
+            // 提取重點說明
+            const keyPointsMatch = content.match(/\[重點說明\]\s*([\s\S]*?)(?=\[語法結構\]|\[詞彙表\]|\[例句\]|$)/i);
             if (keyPointsMatch) {
                 analyzeObj.keyPoints = keyPointsMatch[1].trim();
             }
 
-            // 提取英文對應處理
-            const correspondenceMatch = content.match(/\[英文對應處理\]\s*([\s\S]*?)(?=\[為什麼這麼翻\]|\[詞彙表\]|\[例句\]|$)/i);
-            if (correspondenceMatch) {
-                analyzeObj.englishCorrespondence = correspondenceMatch[1].trim();
-            }
-
-            // 提取語法分析（匹配各種可能的格式）
-            const grammarMatch = content.match(/\[為什麼這麼翻[^]*?A2語法結構分析[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i) ||
-                                content.match(/\[為什麼這麼翻[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i);
+            // 提取語法結構分析
+            const grammarMatch = content.match(/\[語法結構[^]*?A2語法結構分析[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i) ||
+                                content.match(/\[語法結構[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i);
             if (grammarMatch) {
                 analyzeObj.grammarAnalysis = grammarMatch[1].trim();
             }
