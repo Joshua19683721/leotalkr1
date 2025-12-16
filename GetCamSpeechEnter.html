@@ -213,6 +213,108 @@
             background-color: rgba(102, 126, 234, 0.2);
         }
 
+        .ai-response-analyze-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px;
+            margin: 8px 0;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .ai-response-analyze-toggle:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .ai-response-analyze-toggle-btn {
+            font-size: 14px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .ai-response-analyze-toggle-text {
+            font-size: 13px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .ai-response-analyze {
+            display: none;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .ai-response-analyze.expanded {
+            display: block;
+        }
+
+        .analyze-section {
+            margin-bottom: 15px;
+        }
+
+        .analyze-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .analyze-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .analyze-content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .vocabulary-list {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0;
+        }
+
+        .vocabulary-item {
+            padding: 4px 0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .vocabulary-word {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .vocabulary-pos {
+            font-size: 12px;
+            color: #888;
+            margin: 0 4px;
+        }
+
+        .example-list {
+            list-style: decimal;
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .example-item {
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
         .ai-response-chinese {
             font-size: 14px;
             line-height: 1.6;
@@ -762,6 +864,141 @@
             conversation.scrollTop = conversation.scrollHeight;
         }
 
+        // 檢查是否有解析內容
+        function hasAnalyzeContent(analyze) {
+            return analyze.keyPoints || analyze.englishCorrespondence || 
+                   analyze.grammarAnalysis || analyze.vocabulary.length > 0 || 
+                   analyze.examples.length > 0;
+        }
+
+        // 創建解析區域
+        function createAnalyzeArea(analyze) {
+            const analyzeContainer = document.createElement('div');
+            analyzeContainer.className = 'ai-response-analyze';
+            
+            // 創建收縮/展開按鈕
+            const toggle = document.createElement('div');
+            toggle.className = 'ai-response-analyze-toggle';
+            const toggleBtn = document.createElement('span');
+            toggleBtn.className = 'ai-response-analyze-toggle-btn';
+            toggleBtn.textContent = '+';
+            const toggleText = document.createElement('span');
+            toggleText.className = 'ai-response-analyze-toggle-text';
+            toggleText.textContent = '翻譯說明與重點解析';
+            toggle.appendChild(toggleBtn);
+            toggle.appendChild(toggleText);
+            
+            // 創建解析內容區域
+            const analyzeContent = document.createElement('div');
+            analyzeContent.className = 'ai-response-analyze';
+            
+            // 中文原文重點
+            if (analyze.keyPoints) {
+                const section = document.createElement('div');
+                section.className = 'analyze-section';
+                const title = document.createElement('div');
+                title.className = 'analyze-title';
+                title.textContent = '📌 中文原文重點';
+                const content = document.createElement('div');
+                content.className = 'analyze-content';
+                content.textContent = analyze.keyPoints;
+                section.appendChild(title);
+                section.appendChild(content);
+                analyzeContent.appendChild(section);
+            }
+            
+            // 英文對應處理
+            if (analyze.englishCorrespondence) {
+                const section = document.createElement('div');
+                section.className = 'analyze-section';
+                const title = document.createElement('div');
+                title.className = 'analyze-title';
+                title.textContent = '🔄 英文對應處理';
+                const content = document.createElement('div');
+                content.className = 'analyze-content';
+                content.textContent = analyze.englishCorrespondence;
+                section.appendChild(title);
+                section.appendChild(content);
+                analyzeContent.appendChild(section);
+            }
+            
+            // 為什麼這麼翻
+            if (analyze.grammarAnalysis) {
+                const section = document.createElement('div');
+                section.className = 'analyze-section';
+                const title = document.createElement('div');
+                title.className = 'analyze-title';
+                title.textContent = '❓ 為什麼這麼翻（A2語法結構分析）';
+                const content = document.createElement('div');
+                content.className = 'analyze-content';
+                content.textContent = analyze.grammarAnalysis;
+                section.appendChild(title);
+                section.appendChild(content);
+                analyzeContent.appendChild(section);
+            }
+            
+            // 詞彙表
+            if (analyze.vocabulary && analyze.vocabulary.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'analyze-section';
+                const title = document.createElement('div');
+                title.className = 'analyze-title';
+                title.textContent = '📚 詞彙表（A2級別）';
+                const vocabList = document.createElement('ul');
+                vocabList.className = 'vocabulary-list';
+                
+                analyze.vocabulary.forEach(vocab => {
+                    const item = document.createElement('li');
+                    item.className = 'vocabulary-item';
+                    item.innerHTML = `- ${vocab}`;
+                    vocabList.appendChild(item);
+                });
+                
+                section.appendChild(title);
+                section.appendChild(vocabList);
+                analyzeContent.appendChild(section);
+            }
+            
+            // 例句
+            if (analyze.examples && analyze.examples.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'analyze-section';
+                const title = document.createElement('div');
+                title.className = 'analyze-title';
+                title.textContent = '💡 A2級別例句';
+                const exampleList = document.createElement('ol');
+                exampleList.className = 'example-list';
+                
+                analyze.examples.forEach(example => {
+                    const item = document.createElement('li');
+                    item.className = 'example-item';
+                    item.textContent = example;
+                    exampleList.appendChild(item);
+                });
+                
+                section.appendChild(title);
+                section.appendChild(exampleList);
+                analyzeContent.appendChild(section);
+            }
+            
+            // 添加點擊事件來展開/收縮
+            toggle.addEventListener('click', () => {
+                const isExpanded = analyzeContent.classList.contains('expanded');
+                if (isExpanded) {
+                    analyzeContent.classList.remove('expanded');
+                    toggleBtn.textContent = '+';
+                } else {
+                    analyzeContent.classList.add('expanded');
+                    toggleBtn.textContent = '-';
+                }
+            });
+            
+            analyzeContainer.appendChild(toggle);
+            analyzeContainer.appendChild(analyzeContent);
+            
+            return analyzeContainer;
+        }
+
         // 添加 AI 訊息到對話
         function addAIMessage(response) {
             const messageDiv = document.createElement('div');
@@ -803,6 +1040,12 @@
                     formalContent.appendChild(englishDiv);
                 }
                 
+                // 添加解析區域（在英文和中文之間）
+                if (parsedResponse.formal.analyze && hasAnalyzeContent(parsedResponse.formal.analyze)) {
+                    const analyzeArea = createAnalyzeArea(parsedResponse.formal.analyze);
+                    formalContent.appendChild(analyzeArea);
+                }
+                
                 // 添加繁體中文
                 if (parsedResponse.formal.chinese) {
                     const chineseDiv = document.createElement('div');
@@ -839,6 +1082,12 @@
                         speakText(parsedResponse.casual.english, 'en-US');
                     });
                     casualContent.appendChild(englishDiv);
+                }
+                
+                // 添加解析區域（在英文和中文之間）
+                if (parsedResponse.casual.analyze && hasAnalyzeContent(parsedResponse.casual.analyze)) {
+                    const analyzeArea = createAnalyzeArea(parsedResponse.casual.analyze);
+                    casualContent.appendChild(analyzeArea);
                 }
                 
                 // 添加繁體中文
@@ -882,14 +1131,47 @@
 - 英文內容
 - 繁體中文翻譯
 
+同時請為每種版本提供詳細解析：
+- 中文原文重點：列出中文翻譯中的關鍵重點
+- 英文對應處理：說明英文版本如何對應處理這些重點
+- 為什麼這麼翻：分析句子中使用的A2語法結構
+- A2級別詞彙表：從圖片描述中辨識並列出所有A2級別詞彙，格式為：詞彙 (詞性) 中文意思（例如：welcome (v./n.) 歡迎）
+- A2級別例句：提供3個使用這些詞彙的A2級別例句
+
 請按照以下格式回覆：
 【正式版】
 [正式英文內容]
 [正式繁體中文翻譯]
 
+【正式版解析】
+[中文原文重點]
+[英文對應處理]
+[為什麼這麼翻（A2語法結構分析）]
+[詞彙表]（A2級別）
+- 詞彙1 (詞性) 中文意思
+- 詞彙2 (詞性) 中文意思
+...
+[例句]
+1. 例句1
+2. 例句2
+3. 例句3
+
 【口語版】
 [口語英文內容]
 [口語繁體中文翻譯]
+
+【口語版解析】
+[中文原文重點]
+[英文對應處理]
+[為什麼這麼翻（A2語法結構分析）]
+[詞彙表]（A2級別）
+- 詞彙1 (詞性) 中文意思
+- 詞彙2 (詞性) 中文意思
+...
+[例句]
+1. 例句1
+2. 例句2
+3. 例句3
 
 用戶問題：${text}`
                     }
@@ -940,29 +1222,48 @@
             }
         }
 
-        // 解析 AI 回應，提取正式版和口語版的英文和繁體中文
+        // 解析 AI 回應，提取正式版和口語版的英文、繁體中文和解析內容
         function parseAIResponse(response) {
             const result = {
-                formal: { english: '', chinese: '' },
-                casual: { english: '', chinese: '' }
+                formal: { 
+                    english: '', 
+                    chinese: '',
+                    analyze: {
+                        keyPoints: '',
+                        englishCorrespondence: '',
+                        grammarAnalysis: '',
+                        vocabulary: [],
+                        examples: []
+                    }
+                },
+                casual: { 
+                    english: '', 
+                    chinese: '',
+                    analyze: {
+                        keyPoints: '',
+                        englishCorrespondence: '',
+                        grammarAnalysis: '',
+                        vocabulary: [],
+                        examples: []
+                    }
+                }
             };
 
-            // 嘗試提取正式版
-            const formalMatch = response.match(/【正式版】\s*([\s\S]*?)(?=【口語版】|$)/i);
-            if (formalMatch) {
-                const formalContent = formalMatch[1].trim();
-                // 嘗試分離英文和中文
+            // 提取正式版和正式版解析
+            const formalSectionMatch = response.match(/【正式版】\s*([\s\S]*?)(?=【正式版解析】|【口語版】|$)/i);
+            const formalAnalyzeMatch = response.match(/【正式版解析】\s*([\s\S]*?)(?=【口語版】|$)/i);
+            
+            if (formalSectionMatch) {
+                const formalContent = formalSectionMatch[1].trim();
                 const lines = formalContent.split('\n').filter(line => line.trim());
                 let englishParts = [];
                 let chineseParts = [];
                 
                 for (let line of lines) {
                     const trimmedLine = line.trim();
-                    // 判斷：如果包含中文字符，就是中文
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
                         chineseParts.push(trimmedLine);
                     } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        // 排除只有標點符號的行
                         englishParts.push(trimmedLine);
                     }
                 }
@@ -971,17 +1272,24 @@
                 result.formal.chinese = chineseParts.join('\n').trim();
             }
 
-            // 嘗試提取口語版
-            const casualMatch = response.match(/【口語版】\s*([\s\S]*?)$/i);
-            if (casualMatch) {
-                const casualContent = casualMatch[1].trim();
+            if (formalAnalyzeMatch) {
+                const analyzeContent = formalAnalyzeMatch[1].trim();
+                parseAnalyzeContent(analyzeContent, result.formal.analyze);
+            }
+
+            // 提取口語版和口語版解析
+            const casualSectionMatch = response.match(/【口語版】\s*([\s\S]*?)(?=【口語版解析】|$)/i);
+            const casualAnalyzeMatch = response.match(/【口語版解析】\s*([\s\S]*?)$/i);
+            
+            if (casualSectionMatch) {
+                const casualContent = casualSectionMatch[1].trim();
                 const lines = casualContent.split('\n').filter(line => line.trim());
                 let englishParts = [];
                 let chineseParts = [];
                 
                 for (let line of lines) {
                     const trimmedLine = line.trim();
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
                         chineseParts.push(trimmedLine);
                     } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
                         englishParts.push(trimmedLine);
@@ -992,9 +1300,13 @@
                 result.casual.chinese = chineseParts.join('\n').trim();
             }
 
-            // 如果沒有匹配到，嘗試其他格式或顯示原始內容
+            if (casualAnalyzeMatch) {
+                const analyzeContent = casualAnalyzeMatch[1].trim();
+                parseAnalyzeContent(analyzeContent, result.casual.analyze);
+            }
+
+            // 如果沒有匹配到，嘗試簡單格式
             if (!result.formal.english && !result.casual.english) {
-                // 嘗試分離英文和中文
                 const allLines = response.split('\n').filter(line => line.trim());
                 let englishParts = [];
                 let chineseParts = [];
@@ -1003,7 +1315,7 @@
                     const trimmedLine = line.trim();
                     if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
                         chineseParts.push(trimmedLine);
-                    } else if (trimmedLine) {
+                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
                         englishParts.push(trimmedLine);
                     }
                 }
@@ -1015,13 +1327,65 @@
                     result.formal.chinese = chineseParts.join('\n').trim();
                 }
                 
-                // 如果還是沒有，就顯示原始內容
                 if (!result.formal.english) {
                     result.formal.english = response;
                 }
             }
 
             return result;
+        }
+
+        // 解析解析內容
+        function parseAnalyzeContent(content, analyzeObj) {
+            // 提取中文原文重點
+            const keyPointsMatch = content.match(/\[中文原文重點\]\s*([\s\S]*?)(?=\[英文對應處理\]|\[為什麼這麼翻\]|\[詞彙表\]|\[例句\]|$)/i);
+            if (keyPointsMatch) {
+                analyzeObj.keyPoints = keyPointsMatch[1].trim();
+            }
+
+            // 提取英文對應處理
+            const correspondenceMatch = content.match(/\[英文對應處理\]\s*([\s\S]*?)(?=\[為什麼這麼翻\]|\[詞彙表\]|\[例句\]|$)/i);
+            if (correspondenceMatch) {
+                analyzeObj.englishCorrespondence = correspondenceMatch[1].trim();
+            }
+
+            // 提取語法分析（匹配各種可能的格式）
+            const grammarMatch = content.match(/\[為什麼這麼翻[^]*?A2語法結構分析[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i) ||
+                                content.match(/\[為什麼這麼翻[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i);
+            if (grammarMatch) {
+                analyzeObj.grammarAnalysis = grammarMatch[1].trim();
+            }
+
+            // 提取詞彙表
+            const vocabularyMatch = content.match(/\[詞彙表\][^]*?A2級別[^]*?\s*([\s\S]*?)(?=\[例句\]|$)/i) ||
+                                  content.match(/\[詞彙表\]\s*([\s\S]*?)(?=\[例句\]|$)/i);
+            if (vocabularyMatch) {
+                const vocabText = vocabularyMatch[1].trim();
+                // 提取所有以 - 開頭的行
+                const vocabLines = vocabText.split('\n')
+                    .filter(line => {
+                        const trimmed = line.trim();
+                        return trimmed.startsWith('-') && trimmed.length > 1;
+                    })
+                    .map(line => line.replace(/^-\s*/, '').trim())
+                    .filter(line => line.length > 0);
+                analyzeObj.vocabulary = vocabLines;
+            }
+
+            // 提取例句
+            const examplesMatch = content.match(/\[例句\]\s*([\s\S]*?)$/i);
+            if (examplesMatch) {
+                const examplesText = examplesMatch[1].trim();
+                // 提取所有以數字開頭的行
+                const exampleLines = examplesText.split('\n')
+                    .filter(line => {
+                        const trimmed = line.trim();
+                        return /^\d+\./.test(trimmed) && trimmed.length > 2;
+                    })
+                    .map(line => line.replace(/^\d+\.\s*/, '').trim())
+                    .filter(line => line.length > 0);
+                analyzeObj.examples = exampleLines;
+            }
         }
 
         // 語音合成（讀取英文）
