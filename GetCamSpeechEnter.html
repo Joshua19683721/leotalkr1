@@ -1095,7 +1095,7 @@
             container.className = 'message-text ai';
 
             // 添加正式版（如果用戶選擇顯示）
-            if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
+            if (showFormal && parsedResponse.formal && (parsedResponse.formal.english || parsedResponse.formal.chinese)) {
                 const formalSection = document.createElement('div');
                 formalSection.className = 'ai-response-section';
                 
@@ -1119,6 +1119,14 @@
                     formalContent.appendChild(englishDiv);
                 }
                 
+                // 添加繁體中文
+                if (parsedResponse.formal.chinese) {
+                    const chineseDiv = document.createElement('div');
+                    chineseDiv.className = 'ai-response-chinese';
+                    chineseDiv.textContent = parsedResponse.formal.chinese;
+                    formalContent.appendChild(chineseDiv);
+                }
+                
                 // 添加解析區域（在繁體中文翻譯後面）
                 if (parsedResponse.formal.analyze && hasAnalyzeContent(parsedResponse.formal.analyze)) {
                     const analyzeArea = createAnalyzeArea(parsedResponse.formal.analyze);
@@ -1131,7 +1139,7 @@
             }
 
             // 添加口語版（如果用戶選擇顯示）
-            if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
+            if (showCasual && parsedResponse.casual && (parsedResponse.casual.english || parsedResponse.casual.chinese)) {
                 const casualSection = document.createElement('div');
                 casualSection.className = 'ai-response-section';
                 
@@ -1153,6 +1161,14 @@
                         speakText(parsedResponse.casual.english, 'en-US');
                     });
                     casualContent.appendChild(englishDiv);
+                }
+                
+                // 添加繁體中文
+                if (parsedResponse.casual.chinese) {
+                    const chineseDiv = document.createElement('div');
+                    chineseDiv.className = 'ai-response-chinese';
+                    chineseDiv.textContent = parsedResponse.casual.chinese;
+                    casualContent.appendChild(chineseDiv);
                 }
                 
                 // 添加解析區域（在繁體中文翻譯後面）
@@ -1199,8 +1215,9 @@
 每種版本的英文內容格式範例：
 "There is a woman in front of the window. She is sitting at a small table. The table has a red cup of coffee on it. The woman looks happy. She is not eating—she is just drinking her coffee."
 
-每種版本只需要包含：
+每種版本都需要包含：
 - 英文內容（按照上述格式要求）
+- 繁體中文翻譯
 
 同時請為每種版本提供詳細解析：
 - 重點說明：列出這段英文描述的關鍵重點
@@ -1211,6 +1228,7 @@
 請按照以下格式回覆：
 【正式版】
 [正式英文內容 - 按照範例格式：There is... She is... The table has... 等]
+[正式繁體中文翻譯]
 
 【正式版解析】
 [重點說明]
@@ -1226,6 +1244,7 @@
 
 【口語版】
 [口語英文內容 - 按照範例格式：There is... She is... The table has... 等]
+[口語繁體中文翻譯]
 
 【口語版解析】
 [重點說明]
@@ -1288,11 +1307,12 @@
             }
         }
 
-        // 解析 AI 回應，提取正式版和口語版的英文和解析內容
+        // 解析 AI 回應，提取正式版和口語版的英文、繁體中文和解析內容
         function parseAIResponse(response) {
             const result = {
                 formal: { 
                     english: '',
+                    chinese: '',
                     analyze: {
                         keyPoints: '',
                         grammarAnalysis: '',
@@ -1302,6 +1322,7 @@
                 },
                 casual: { 
                     english: '',
+                    chinese: '',
                     analyze: {
                         keyPoints: '',
                         grammarAnalysis: '',
@@ -1317,7 +1338,21 @@
             
             if (formalSectionMatch) {
                 const formalContent = formalSectionMatch[1].trim();
-                result.formal.english = formalContent;
+                const lines = formalContent.split('\n').filter(line => line.trim());
+                let englishParts = [];
+                let chineseParts = [];
+                
+                for (let line of lines) {
+                    const trimmedLine = line.trim();
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
+                        chineseParts.push(trimmedLine);
+                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
+                        englishParts.push(trimmedLine);
+                    }
+                }
+                
+                result.formal.english = englishParts.join('\n').trim();
+                result.formal.chinese = chineseParts.join('\n').trim();
             }
 
             if (formalAnalyzeMatch) {
@@ -1331,7 +1366,21 @@
             
             if (casualSectionMatch) {
                 const casualContent = casualSectionMatch[1].trim();
-                result.casual.english = casualContent;
+                const lines = casualContent.split('\n').filter(line => line.trim());
+                let englishParts = [];
+                let chineseParts = [];
+                
+                for (let line of lines) {
+                    const trimmedLine = line.trim();
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
+                        chineseParts.push(trimmedLine);
+                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
+                        englishParts.push(trimmedLine);
+                    }
+                }
+                
+                result.casual.english = englishParts.join('\n').trim();
+                result.casual.chinese = chineseParts.join('\n').trim();
             }
 
             if (casualAnalyzeMatch) {
@@ -1341,7 +1390,29 @@
 
             // 如果沒有匹配到，嘗試簡單格式
             if (!result.formal.english && !result.casual.english) {
-                result.formal.english = response;
+                const allLines = response.split('\n').filter(line => line.trim());
+                let englishParts = [];
+                let chineseParts = [];
+                
+                for (let line of allLines) {
+                    const trimmedLine = line.trim();
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
+                        chineseParts.push(trimmedLine);
+                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
+                        englishParts.push(trimmedLine);
+                    }
+                }
+                
+                if (englishParts.length > 0) {
+                    result.formal.english = englishParts.join('\n').trim();
+                }
+                if (chineseParts.length > 0) {
+                    result.formal.chinese = chineseParts.join('\n').trim();
+                }
+                
+                if (!result.formal.english) {
+                    result.formal.english = response;
+                }
             }
 
             return result;
