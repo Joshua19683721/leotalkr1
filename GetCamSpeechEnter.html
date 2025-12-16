@@ -941,6 +941,9 @@
         // 處理語音輸入
         async function handleVoiceInput(text) {
             if (currentImageData) {
+                // 清除畫面上的資料
+                clearConversationData();
+                
                 // 顯示用戶訊息
                 addUserMessage(currentImageData, text);
                 
@@ -1868,6 +1871,10 @@ ${englishText}
         // 重新啟動相機
         function restartCamera() {
             startCamera();
+            // 確保video元素顯示
+            video.style.display = 'block';
+            // 隱藏預覽圖片（如果有的話）
+            previewImage.style.display = 'none';
         }
 
         // 語音合成（讀取英文）
@@ -1956,12 +1963,19 @@ ${englishText}
             window.speechSynthesis.cancel();
             clearAllHighlights();
 
+            // 關閉相機預覽
+            stopCamera();
+
             // 過濾文本
             let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
             const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
             
             if (!englishOnlyText) {
                 console.log('沒有英文內容可以朗讀');
+                // 如果沒有內容，重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 500);
                 return;
             }
 
@@ -1981,12 +1995,20 @@ ${englishText}
             utterance.onend = () => {
                 element.classList.remove('speaking');
                 status.textContent = '朗讀完成';
+                // 朗讀完成後重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000);
             };
 
             utterance.onerror = (event) => {
                 element.classList.remove('speaking');
                 console.error('語音合成錯誤:', event.error);
                 status.textContent = '朗讀失敗';
+                // 朗讀失敗也重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000);
             };
 
             // 選擇語音並播放
@@ -2098,6 +2120,17 @@ ${englishText}
                 .filter(sentence => sentence.length > 0);
             
             return sentences;
+        }
+
+        // 清除對話區域的資料
+        function clearConversationData() {
+            // 停止任何正在進行的朗讀
+            window.speechSynthesis.cancel();
+            clearAllHighlights();
+            
+            // 清除對話區域內容，但保留空狀態提示
+            const conversation = document.getElementById('conversation');
+            conversation.innerHTML = '<div class="empty-state">還沒有任何對話，開始使用吧！</div>';
         }
 
 
