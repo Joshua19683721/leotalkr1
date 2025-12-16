@@ -82,6 +82,42 @@
             cursor: pointer;
         }
 
+        .version-select {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .version-select-title {
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .version-checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .version-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .version-checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
         .message-text.ai {
             background: #f0f0f0;
             color: #333;
@@ -114,6 +150,21 @@
 
         .ai-response-content.casual {
             border-left-color: #ff6b6b;
+        }
+
+        .ai-response-english {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .ai-response-chinese {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
         }
 
         .loading-indicator {
@@ -386,6 +437,19 @@
                     <input type="checkbox" id="saveApiKey" />
                     <label for="saveApiKey">將 key 存在瀏覽器端</label>
                 </div>
+                <div class="version-select">
+                    <div class="version-select-title">回覆版本選擇：</div>
+                    <div class="version-checkbox-group">
+                        <div class="version-checkbox-item">
+                            <input type="checkbox" id="showFormal" checked />
+                            <label for="showFormal">正式版 (Formal)</label>
+                        </div>
+                        <div class="version-checkbox-item">
+                            <input type="checkbox" id="showCasual" checked />
+                            <label for="showCasual">口語版 (Casual)</label>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -436,6 +500,8 @@
         let conversationHistory = [];
         const apiKeyInput = document.getElementById('apiKey');
         const saveApiKeyCheckbox = document.getElementById('saveApiKey');
+        const showFormalCheckbox = document.getElementById('showFormal');
+        const showCasualCheckbox = document.getElementById('showCasual');
         
         // 從 localStorage 載入保存的 API Key
         const savedApiKey = localStorage.getItem('qwen_api_key');
@@ -544,9 +610,16 @@
                     const parsedResponse = parseAIResponse(aiResponse);
                     addAIMessage(aiResponse);
                     
-                    // 語音朗讀正式版的英文內容
-                    if (parsedResponse.formal) {
-                        speakText(parsedResponse.formal, 'en-US');
+                    // 語音朗讀英文（優先讀正式版，如果沒有則讀口語版）
+                    let textToSpeak = '';
+                    if (parsedResponse.formal && parsedResponse.formal.english) {
+                        textToSpeak = parsedResponse.formal.english;
+                    } else if (parsedResponse.casual && parsedResponse.casual.english) {
+                        textToSpeak = parsedResponse.casual.english;
+                    }
+                    
+                    if (textToSpeak) {
+                        speakText(textToSpeak, 'en-US');
                     }
                     
                 } catch (error) {
@@ -610,12 +683,16 @@
             // 解析回應
             const parsedResponse = parseAIResponse(response);
 
+            // 檢查用戶選擇的版本
+            const showFormal = showFormalCheckbox.checked;
+            const showCasual = showCasualCheckbox.checked;
+
             // 創建容器
             const container = document.createElement('div');
             container.className = 'message-text ai';
 
-            // 添加正式版
-            if (parsedResponse.formal) {
+            // 添加正式版（如果用戶選擇顯示）
+            if (showFormal && parsedResponse.formal && (parsedResponse.formal.english || parsedResponse.formal.chinese)) {
                 const formalSection = document.createElement('div');
                 formalSection.className = 'ai-response-section';
                 
@@ -625,15 +702,30 @@
                 
                 const formalContent = document.createElement('div');
                 formalContent.className = 'ai-response-content formal';
-                formalContent.textContent = parsedResponse.formal;
+                
+                // 添加英文
+                if (parsedResponse.formal.english) {
+                    const englishDiv = document.createElement('div');
+                    englishDiv.className = 'ai-response-english';
+                    englishDiv.textContent = parsedResponse.formal.english;
+                    formalContent.appendChild(englishDiv);
+                }
+                
+                // 添加繁體中文
+                if (parsedResponse.formal.chinese) {
+                    const chineseDiv = document.createElement('div');
+                    chineseDiv.className = 'ai-response-chinese';
+                    chineseDiv.textContent = parsedResponse.formal.chinese;
+                    formalContent.appendChild(chineseDiv);
+                }
                 
                 formalSection.appendChild(formalTitle);
                 formalSection.appendChild(formalContent);
                 container.appendChild(formalSection);
             }
 
-            // 添加口語版
-            if (parsedResponse.casual) {
+            // 添加口語版（如果用戶選擇顯示）
+            if (showCasual && parsedResponse.casual && (parsedResponse.casual.english || parsedResponse.casual.chinese)) {
                 const casualSection = document.createElement('div');
                 casualSection.className = 'ai-response-section';
                 
@@ -643,7 +735,22 @@
                 
                 const casualContent = document.createElement('div');
                 casualContent.className = 'ai-response-content casual';
-                casualContent.textContent = parsedResponse.casual;
+                
+                // 添加英文
+                if (parsedResponse.casual.english) {
+                    const englishDiv = document.createElement('div');
+                    englishDiv.className = 'ai-response-english';
+                    englishDiv.textContent = parsedResponse.casual.english;
+                    casualContent.appendChild(englishDiv);
+                }
+                
+                // 添加繁體中文
+                if (parsedResponse.casual.chinese) {
+                    const chineseDiv = document.createElement('div');
+                    chineseDiv.className = 'ai-response-chinese';
+                    chineseDiv.textContent = parsedResponse.casual.chinese;
+                    casualContent.appendChild(chineseDiv);
+                }
                 
                 casualSection.appendChild(casualTitle);
                 casualSection.appendChild(casualContent);
@@ -674,12 +781,18 @@
 1. 正式版（Formal Version）：使用正式、標準的英文
 2. 口語版（Casual Version）：使用口語、輕鬆的英文
 
+每種版本都需要包含：
+- 英文內容
+- 繁體中文翻譯
+
 請按照以下格式回覆：
 【正式版】
 [正式英文內容]
+[正式繁體中文翻譯]
 
 【口語版】
 [口語英文內容]
+[口語繁體中文翻譯]
 
 用戶問題：${text}`
                     }
@@ -730,42 +843,85 @@
             }
         }
 
-        // 解析 AI 回應，提取正式版和口語版
+        // 解析 AI 回應，提取正式版和口語版的英文和繁體中文
         function parseAIResponse(response) {
             const result = {
-                formal: '',
-                casual: ''
+                formal: { english: '', chinese: '' },
+                casual: { english: '', chinese: '' }
             };
 
-            // 嘗試提取正式版和口語版
+            // 嘗試提取正式版
             const formalMatch = response.match(/【正式版】\s*([\s\S]*?)(?=【口語版】|$)/i);
-            const casualMatch = response.match(/【口語版】\s*([\s\S]*?)$/i);
-
             if (formalMatch) {
-                result.formal = formalMatch[1].trim();
-            }
-
-            if (casualMatch) {
-                result.casual = casualMatch[1].trim();
-            }
-
-            // 如果沒有匹配到，嘗試其他格式
-            if (!result.formal && !result.casual) {
-                const formalMatch2 = response.match(/正式版[：:]\s*([\s\S]*?)(?=口語版|$)/i);
-                const casualMatch2 = response.match(/口語版[：:]\s*([\s\S]*?)$/i);
+                const formalContent = formalMatch[1].trim();
+                // 嘗試分離英文和中文
+                const lines = formalContent.split('\n').filter(line => line.trim());
+                let englishParts = [];
+                let chineseParts = [];
                 
-                if (formalMatch2) {
-                    result.formal = formalMatch2[1].trim();
+                for (let line of lines) {
+                    const trimmedLine = line.trim();
+                    // 判斷：如果包含中文字符，就是中文
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
+                        chineseParts.push(trimmedLine);
+                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
+                        // 排除只有標點符號的行
+                        englishParts.push(trimmedLine);
+                    }
                 }
-                if (casualMatch2) {
-                    result.casual = casualMatch2[1].trim();
-                }
+                
+                result.formal.english = englishParts.join('\n').trim();
+                result.formal.chinese = chineseParts.join('\n').trim();
             }
 
-            // 如果還是沒有，就顯示原始內容
-            if (!result.formal && !result.casual) {
-                result.formal = response;
-                result.casual = '';
+            // 嘗試提取口語版
+            const casualMatch = response.match(/【口語版】\s*([\s\S]*?)$/i);
+            if (casualMatch) {
+                const casualContent = casualMatch[1].trim();
+                const lines = casualContent.split('\n').filter(line => line.trim());
+                let englishParts = [];
+                let chineseParts = [];
+                
+                for (let line of lines) {
+                    const trimmedLine = line.trim();
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
+                        chineseParts.push(trimmedLine);
+                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
+                        englishParts.push(trimmedLine);
+                    }
+                }
+                
+                result.casual.english = englishParts.join('\n').trim();
+                result.casual.chinese = chineseParts.join('\n').trim();
+            }
+
+            // 如果沒有匹配到，嘗試其他格式或顯示原始內容
+            if (!result.formal.english && !result.casual.english) {
+                // 嘗試分離英文和中文
+                const allLines = response.split('\n').filter(line => line.trim());
+                let englishParts = [];
+                let chineseParts = [];
+                
+                for (let line of allLines) {
+                    const trimmedLine = line.trim();
+                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
+                        chineseParts.push(trimmedLine);
+                    } else if (trimmedLine) {
+                        englishParts.push(trimmedLine);
+                    }
+                }
+                
+                if (englishParts.length > 0) {
+                    result.formal.english = englishParts.join('\n').trim();
+                }
+                if (chineseParts.length > 0) {
+                    result.formal.chinese = chineseParts.join('\n').trim();
+                }
+                
+                // 如果還是沒有，就顯示原始內容
+                if (!result.formal.english) {
+                    result.formal.english = response;
+                }
             }
 
             return result;
