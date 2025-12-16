@@ -114,6 +114,64 @@
             background: #000;
         }
 
+        .preview-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .toggle-switch input:focus + .toggle-slider {
+            box-shadow: 0 0 1px #667eea;
+        }
+
         .button-group {
             display: flex;
             gap: 15px;
@@ -231,6 +289,13 @@
     </div>
 
     <div class="camera-controls">
+        <div class="preview-toggle">
+            <span>相機預覽</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="previewToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
         <video id="videoElement" autoplay playsinline></video>
         <canvas id="canvasElement" style="display: none;"></canvas>
         <img id="previewImage" class="camera-preview" alt="預覽" style="display: none;">
@@ -251,6 +316,7 @@
         const recordBtn = document.getElementById('recordBtn');
         const status = document.getElementById('status');
         const previewImage = document.getElementById('previewImage');
+        const previewToggle = document.getElementById('previewToggle');
 
         let stream = null;
         let currentImageData = null;
@@ -349,8 +415,8 @@
         function resetForNextCapture() {
             currentImageData = null;
             previewImage.style.display = 'none';
-            // 恢復 video 預覽
-            video.style.display = 'block';
+            // 恢復 video 預覽（根據開關狀態）
+            video.style.display = previewToggle.checked ? 'block' : 'none';
             status.textContent = '已重置，可以再次拍照';
         }
 
@@ -382,6 +448,15 @@
             // 滾動到底部
             conversation.scrollTop = conversation.scrollHeight;
         }
+
+        // 預覽開關事件
+        previewToggle.addEventListener('change', function() {
+            if (this.checked) {
+                video.style.display = 'block';
+            } else {
+                video.style.display = 'none';
+            }
+        });
 
         // 按鈕事件
         captureBtn.addEventListener('click', capturePhoto);
