@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>語音拍照對話</title>
+    <title>拍照分析對話</title>
     <style>
         * {
             margin: 0;
@@ -641,36 +641,27 @@
             transform: scale(0.95);
         }
 
-        .btn-record {
-            background: #ff6b6b;
+        .btn-submit {
+            background: #28a745;
             color: white;
             flex: 1;
             max-width: 200px;
             position: relative;
         }
 
-        .btn-record:hover:not(:active) {
-            background: #ee5a5a;
+        .btn-submit:hover:not(:active) {
+            background: #218838;
         }
 
-        .btn-record:active,
-        .btn-record.recording {
-            background: #dc3545;
+        .btn-submit:active {
+            background: #1e7e34;
             transform: scale(0.95);
-            box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
         }
 
-        .btn-record.recording::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            animation: pulse 1s infinite;
+        .btn-submit:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .btn-reload {
@@ -739,8 +730,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📸 語音拍照對話</h1>
-            <p>拍照並說出你的想法</p>
+            <h1>📸 拍照分析對話</h1>
+            <p>拍照並直接送出分析</p>
             <div class="config-toggle" id="configToggle">
                 <div class="config-toggle-btn" id="toggleBtn">+</div>
                 <div class="config-toggle-text">設定</div>
@@ -777,7 +768,7 @@
         </div>
 
         <div class="conversation" id="conversation">
-            <div class="empty-state">還沒有任何對話，開始使用吧！</div>
+            <div class="empty-state">還沒有任何對話，拍照並送出分析吧！</div>
         </div>
     </div>
 
@@ -789,7 +780,7 @@
         <div class="button-group">
             <button class="btn btn-capture" id="captureBtn">📷 拍照</button>
             <button class="btn btn-reload" id="reloadBtn" title="重新載入頁面">🔄</button>
-            <button class="btn btn-record" id="recordBtn">🎤 按住說話</button>
+            <button class="btn btn-submit" id="submitBtn">📤 送出照片</button>
         </div>
         
         <div class="status" id="status"></div>
@@ -800,15 +791,13 @@
         const canvas = document.getElementById('canvasElement');
         const conversation = document.getElementById('conversation');
         const captureBtn = document.getElementById('captureBtn');
-        const recordBtn = document.getElementById('recordBtn');
+        const submitBtn = document.getElementById('submitBtn');
         const reloadBtn = document.getElementById('reloadBtn');
         const status = document.getElementById('status');
         const previewImage = document.getElementById('previewImage');
 
         let stream = null;
         let currentImageData = null;
-        let recognition = null;
-        let isRecording = false;
         
         // API 相關變數
         let apiKey = '';
@@ -863,32 +852,6 @@
 
         // 檢查瀏覽器支援
         const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-        const hasSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-
-        // 初始化語音識別
-        if (hasSpeechRecognition) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.lang = 'zh-TW';
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                handleVoiceInput(transcript);
-            };
-
-            recognition.onerror = function(event) {
-                status.textContent = '語音識別錯誤: ' + event.error;
-                isRecording = false;
-                recordBtn.classList.remove('recording');
-            };
-
-            recognition.onend = function() {
-                isRecording = false;
-                recordBtn.classList.remove('recording');
-            };
-        }
 
         // 啟動相機（只啟動一次，保持開啟）
         async function startCamera() {
@@ -935,17 +898,17 @@
             previewImage.src = currentImageData;
             previewImage.style.display = 'block';
             
-            status.textContent = '照片已拍攝，可以開始說話';
+            status.textContent = '照片已拍攝，可以送出分析';
         }
 
-        // 處理語音輸入
-        async function handleVoiceInput(text) {
+        // 處理照片提交
+        async function handlePhotoSubmit() {
             if (currentImageData) {
                 // 清除畫面上的資料
                 clearConversationData();
                 
-                // 顯示用戶訊息
-                addUserMessage(currentImageData, text);
+                // 顯示用戶訊息（不需要語音文字）
+                addUserMessage(currentImageData, "請分析這張照片");
                 
                 // 檢查 API Key
                 if (!apiKey) {
@@ -957,7 +920,7 @@
                 // 調用 qwen3-vl-flash API
                 try {
                     status.textContent = '正在處理...';
-                    const aiResponse = await callQwen2VL72B(currentImageData, text);
+                    const aiResponse = await callQwen2VL72B(currentImageData);
                     
                     // 解析第一次回應
                     const parsedResponse = parseAIResponse(aiResponse);
@@ -1046,7 +1009,7 @@
             previewImage.style.display = 'none';
             // 恢復 video 預覽
             video.style.display = 'block';
-            status.textContent = '已重置，可以再次拍照';
+            status.textContent = '已重置，可以再次拍照並送出';
         }
 
         // 添加用戶訊息到對話
@@ -1434,7 +1397,7 @@
         }
 
         // 調用 qwen3-vl-flash API
-        async function callQwen2VL72B(imageData, text) {
+        async function callQwen2VL72B(imageData) {
             const userMessage = {
                 "role": "user",
                 "content": [
@@ -1502,7 +1465,7 @@
 2. 例句2
 3. 例句3
 
-用戶問題：${text}`
+請分析這張照片並提供詳細的英文描述。`
                     }
                 ]
             };
@@ -2130,7 +2093,7 @@ ${englishText}
             
             // 清除對話區域內容，但保留空狀態提示
             const conversation = document.getElementById('conversation');
-            conversation.innerHTML = '<div class="empty-state">還沒有任何對話，開始使用吧！</div>';
+            conversation.innerHTML = '<div class="empty-state">還沒有任何對話，拍照並送出分析吧！</div>';
         }
 
 
@@ -2143,67 +2106,17 @@ ${englishText}
             location.reload();
         });
 
-        // 語音按鈕事件
-        recordBtn.addEventListener('mousedown', function(e) {
+        // 送出照片按鈕事件
+        submitBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            if (!hasSpeechRecognition) {
-                status.textContent = '您的瀏覽器不支援語音識別';
-                return;
-            }
-            if (isRecording) return;
-
+            
             if (!currentImageData) {
                 status.textContent = '請先拍照';
                 return;
             }
 
-            isRecording = true;
-            recordBtn.classList.add('recording');
-            status.textContent = '正在聆聽...';
-            recognition.start();
-        });
-
-        recordBtn.addEventListener('mouseup', function(e) {
-            e.preventDefault();
-            if (isRecording && recognition) {
-                recognition.stop();
-                status.textContent = '正在處理語音...';
-            }
-        });
-
-        recordBtn.addEventListener('mouseleave', function(e) {
-            if (isRecording && recognition) {
-                recognition.stop();
-                status.textContent = '已停止錄音';
-            }
-        });
-
-        // 觸控事件支援（手機）
-        recordBtn.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            if (!hasSpeechRecognition) {
-                status.textContent = '您的瀏覽器不支援語音識別';
-                return;
-            }
-            if (isRecording) return;
-
-            if (!currentImageData) {
-                status.textContent = '請先拍照';
-                return;
-            }
-
-            isRecording = true;
-            recordBtn.classList.add('recording');
-            status.textContent = '正在聆聽...';
-            recognition.start();
-        });
-
-        recordBtn.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            if (isRecording && recognition) {
-                recognition.stop();
-                status.textContent = '正在處理語音...';
-            }
+            // 直接處理照片提交
+            handlePhotoSubmit();
         });
 
         // API 配置事件
