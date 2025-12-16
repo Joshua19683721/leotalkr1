@@ -1778,9 +1778,9 @@
                 
                 // 如果是單字發音（index包含"word-"），使用較慢語速
                 if (typeof index === 'string' && index.includes('word-')) {
-                    utterance.rate = 0.7;
+                    utterance.rate = 0.8;
                 } else {
-                    utterance.rate = 0.9;
+                    utterance.rate = 0.8;
                 }
                 
                 utterance.onend = () => setSpeaking(null);
