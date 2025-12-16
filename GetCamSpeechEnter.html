@@ -205,9 +205,16 @@
             font-size: 16px;
         }
 
-        /* 隱藏 video 元素（僅用於拍照） */
+        /* 顯示 video 預覽 */
         #videoElement {
-            display: none;
+            width: 100%;
+            max-width: 200px;
+            height: 150px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin: 0 auto 15px;
+            display: block;
+            background: #000;
         }
     </style>
 </head>
@@ -279,9 +286,16 @@
             };
         }
 
-        // 啟動相機
+        // 啟動相機（只啟動一次，保持開啟）
         async function startCamera() {
             try {
+                // 如果已經有 stream 在運行，先不關閉，保持開啟狀態
+                if (stream) {
+                    video.srcObject = stream;
+                    status.textContent = '相機已就緒';
+                    return;
+                }
+                
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment', // 使用後置相機
@@ -312,7 +326,8 @@
             // 轉換為 base64
             currentImageData = canvas.toDataURL('image/jpeg', 0.8);
             
-            // 顯示預覽
+            // 隱藏 video 預覽，顯示拍攝的照片預覽
+            video.style.display = 'none';
             previewImage.src = currentImageData;
             previewImage.style.display = 'block';
             
@@ -323,12 +338,20 @@
         function handleVoiceInput(text) {
             if (currentImageData) {
                 addMessage(currentImageData, text);
-                currentImageData = null;
-                previewImage.style.display = 'none';
-                status.textContent = '訊息已送出';
+                // 重置狀態，準備下一次拍照
+                resetForNextCapture();
             } else {
                 status.textContent = '請先拍照';
             }
+        }
+
+        // 重置狀態，準備下一次拍照
+        function resetForNextCapture() {
+            currentImageData = null;
+            previewImage.style.display = 'none';
+            // 恢復 video 預覽
+            video.style.display = 'block';
+            status.textContent = '已重置，可以再次拍照';
         }
 
         // 添加訊息到對話
@@ -437,6 +460,16 @@
         window.addEventListener('beforeunload', function() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // 頁面可見性改變時保持相機開啟（避免切換標籤頁時關閉）
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && stream && stream.active) {
+                // 頁面重新可見時，確保 video 元素顯示 stream
+                if (video.srcObject !== stream) {
+                    video.srcObject = stream;
+                }
             }
         });
     </script>
