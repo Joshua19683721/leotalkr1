@@ -51,8 +51,8 @@
             gap: 8px;
         }
 
-        .api-config input,
-        .api-config select {
+        .api-config input[type="password"],
+        .api-config input[type="text"] {
             width: 100%;
             padding: 8px;
             border: none;
@@ -61,10 +61,25 @@
             background: rgba(255, 255, 255, 0.9);
         }
 
-        .api-config input:focus,
-        .api-config select:focus {
+        .api-config input[type="password"]:focus,
+        .api-config input[type="text"]:focus {
             outline: none;
             background: white;
+        }
+
+        .save-key-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .save-key-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
         }
 
         .message-text.ai {
@@ -72,6 +87,33 @@
             color: #333;
             margin-left: 0;
             text-align: left;
+        }
+
+        .ai-response-section {
+            margin-bottom: 15px;
+        }
+
+        .ai-response-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .ai-response-content {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            margin-bottom: 8px;
+        }
+
+        .ai-response-content.formal {
+            border-left-color: #667eea;
+        }
+
+        .ai-response-content.casual {
+            border-left-color: #ff6b6b;
         }
 
         .loading-indicator {
@@ -340,14 +382,10 @@
             <p>拍照並說出你的想法</p>
             <div class="api-config">
                 <input type="password" id="apiKey" placeholder="請輸入 API Key" />
-                <select id="regionSelect">
-                    <option value="beijing">北京地區</option>
-                    <option value="singapore">新加坡地區</option>
-                </select>
-                <select id="apiMode">
-                    <option value="local">本地代理</option>
-                    <option value="direct">直接調用</option>
-                </select>
+                <div class="save-key-option">
+                    <input type="checkbox" id="saveApiKey" />
+                    <label for="saveApiKey">將 key 存在瀏覽器端</label>
+                </div>
             </div>
         </div>
 
@@ -393,14 +431,19 @@
         
         // API 相關變數
         let apiKey = '';
-        let beijingUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
-        let singaporeUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
-        let apiUrl = beijingUrl;
-        let apiMode = 'local';
+        // 固定使用新加坡地區，直接調用
+        const apiUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
         let conversationHistory = [];
         const apiKeyInput = document.getElementById('apiKey');
-        const regionSelect = document.getElementById('regionSelect');
-        const apiModeSelect = document.getElementById('apiMode');
+        const saveApiKeyCheckbox = document.getElementById('saveApiKey');
+        
+        // 從 localStorage 載入保存的 API Key
+        const savedApiKey = localStorage.getItem('qwen_api_key');
+        if (savedApiKey) {
+            apiKey = savedApiKey;
+            apiKeyInput.value = savedApiKey;
+            saveApiKeyCheckbox.checked = true;
+        }
 
         // 檢查瀏覽器支援
         const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
@@ -498,10 +541,13 @@
                     const aiResponse = await callQwenVLPlus(currentImageData, text);
                     
                     // 顯示 AI 回應
+                    const parsedResponse = parseAIResponse(aiResponse);
                     addAIMessage(aiResponse);
                     
-                    // 語音朗讀 AI 回應
-                    speakText(aiResponse);
+                    // 語音朗讀正式版的英文內容
+                    if (parsedResponse.formal) {
+                        speakText(parsedResponse.formal, 'en-US');
+                    }
                     
                 } catch (error) {
                     status.textContent = '錯誤: ' + error.message;
@@ -557,15 +603,54 @@
         }
 
         // 添加 AI 訊息到對話
-        function addAIMessage(text) {
+        function addAIMessage(response) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
 
-            const textDiv = document.createElement('div');
-            textDiv.className = 'message-text ai';
-            textDiv.textContent = text;
+            // 解析回應
+            const parsedResponse = parseAIResponse(response);
 
-            messageDiv.appendChild(textDiv);
+            // 創建容器
+            const container = document.createElement('div');
+            container.className = 'message-text ai';
+
+            // 添加正式版
+            if (parsedResponse.formal) {
+                const formalSection = document.createElement('div');
+                formalSection.className = 'ai-response-section';
+                
+                const formalTitle = document.createElement('div');
+                formalTitle.className = 'ai-response-title';
+                formalTitle.textContent = '📝 正式版 (Formal Version)';
+                
+                const formalContent = document.createElement('div');
+                formalContent.className = 'ai-response-content formal';
+                formalContent.textContent = parsedResponse.formal;
+                
+                formalSection.appendChild(formalTitle);
+                formalSection.appendChild(formalContent);
+                container.appendChild(formalSection);
+            }
+
+            // 添加口語版
+            if (parsedResponse.casual) {
+                const casualSection = document.createElement('div');
+                casualSection.className = 'ai-response-section';
+                
+                const casualTitle = document.createElement('div');
+                casualTitle.className = 'ai-response-title';
+                casualTitle.textContent = '💬 口語版 (Casual Version)';
+                
+                const casualContent = document.createElement('div');
+                casualContent.className = 'ai-response-content casual';
+                casualContent.textContent = parsedResponse.casual;
+                
+                casualSection.appendChild(casualTitle);
+                casualSection.appendChild(casualContent);
+                container.appendChild(casualSection);
+            }
+
+            messageDiv.appendChild(container);
             conversation.appendChild(messageDiv);
             
             // 滾動到底部
@@ -585,7 +670,18 @@
                     },
                     {
                         "type": "text",
-                        "text": text
+                        "text": `請用 A2 等級的英文描述這張圖片，並提供兩種版本：
+1. 正式版（Formal Version）：使用正式、標準的英文
+2. 口語版（Casual Version）：使用口語、輕鬆的英文
+
+請按照以下格式回覆：
+【正式版】
+[正式英文內容]
+
+【口語版】
+[口語英文內容]
+
+用戶問題：${text}`
                     }
                 ]
             };
@@ -599,19 +695,13 @@
                 "temperature": 0.7
             };
 
-            let requestUrl = apiUrl;
-            let headers = {
+            const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
                 'X-DashScope-SSE': 'disable'
             };
 
-            if (apiMode === 'local') {
-                requestUrl = 'http://localhost:8080';
-                headers['X-Target-Url'] = apiUrl;
-            }
-
-            const response = await fetch(requestUrl, {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(requestBody)
@@ -640,8 +730,49 @@
             }
         }
 
-        // 語音合成
-        function speakText(text) {
+        // 解析 AI 回應，提取正式版和口語版
+        function parseAIResponse(response) {
+            const result = {
+                formal: '',
+                casual: ''
+            };
+
+            // 嘗試提取正式版和口語版
+            const formalMatch = response.match(/【正式版】\s*([\s\S]*?)(?=【口語版】|$)/i);
+            const casualMatch = response.match(/【口語版】\s*([\s\S]*?)$/i);
+
+            if (formalMatch) {
+                result.formal = formalMatch[1].trim();
+            }
+
+            if (casualMatch) {
+                result.casual = casualMatch[1].trim();
+            }
+
+            // 如果沒有匹配到，嘗試其他格式
+            if (!result.formal && !result.casual) {
+                const formalMatch2 = response.match(/正式版[：:]\s*([\s\S]*?)(?=口語版|$)/i);
+                const casualMatch2 = response.match(/口語版[：:]\s*([\s\S]*?)$/i);
+                
+                if (formalMatch2) {
+                    result.formal = formalMatch2[1].trim();
+                }
+                if (casualMatch2) {
+                    result.casual = casualMatch2[1].trim();
+                }
+            }
+
+            // 如果還是沒有，就顯示原始內容
+            if (!result.formal && !result.casual) {
+                result.formal = response;
+                result.casual = '';
+            }
+
+            return result;
+        }
+
+        // 語音合成（讀取英文）
+        function speakText(text, lang = 'en-US') {
             if (!('speechSynthesis' in window)) {
                 console.log('瀏覽器不支援語音合成');
                 return;
@@ -651,13 +782,36 @@
             window.speechSynthesis.cancel();
 
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-TW';
+            utterance.lang = lang;
             utterance.volume = 0.8;
             utterance.rate = 0.9;
             utterance.pitch = 1;
 
+            // 選擇合適的語音（英文）
+            const getVoices = () => {
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US'));
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                } else {
+                    // 如果沒有美式英語，找任意英語語音
+                    const anyEnglish = voices.find(v => v.lang.startsWith('en'));
+                    if (anyEnglish) {
+                        utterance.voice = anyEnglish;
+                    }
+                }
+                window.speechSynthesis.speak(utterance);
+            };
+
+            // 確保語音列表已加載
+            if (window.speechSynthesis.getVoices().length === 0) {
+                window.speechSynthesis.onvoiceschanged = getVoices;
+            } else {
+                getVoices();
+            }
+
             utterance.onstart = () => {
-                status.textContent = '正在朗讀...';
+                status.textContent = '正在朗讀英文...';
             };
 
             utterance.onend = () => {
@@ -666,9 +820,8 @@
 
             utterance.onerror = (event) => {
                 console.error('語音合成錯誤:', event.error);
+                status.textContent = '朗讀失敗';
             };
-
-            window.speechSynthesis.speak(utterance);
         }
 
         // 預覽開關事件
@@ -749,18 +902,22 @@
         // API 配置事件
         apiKeyInput.addEventListener('input', (e) => {
             apiKey = e.target.value.trim();
-        });
-
-        regionSelect.addEventListener('change', (e) => {
-            if (e.target.value === 'singapore') {
-                apiUrl = singaporeUrl;
-            } else {
-                apiUrl = beijingUrl;
+            // 如果勾選了保存，就保存到 localStorage
+            if (saveApiKeyCheckbox.checked && apiKey) {
+                localStorage.setItem('qwen_api_key', apiKey);
+            } else if (!saveApiKeyCheckbox.checked) {
+                localStorage.removeItem('qwen_api_key');
             }
         });
 
-        apiModeSelect.addEventListener('change', (e) => {
-            apiMode = e.target.value;
+        saveApiKeyCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked && apiKey) {
+                // 保存到 localStorage
+                localStorage.setItem('qwen_api_key', apiKey);
+            } else {
+                // 從 localStorage 移除
+                localStorage.removeItem('qwen_api_key');
+            }
         });
 
         // 頁面載入時啟動相機
