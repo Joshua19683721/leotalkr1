@@ -1523,7 +1523,15 @@
             // 停止當前播放
             window.speechSynthesis.cancel();
 
-            const utterance = new SpeechSynthesisUtterance(text);
+            // 過濾掉中文字符，只保留英文字符、數字、標點符號和空格
+            const englishOnlyText = text.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
+            
+            if (!englishOnlyText) {
+                console.log('沒有英文內容可以朗讀');
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(englishOnlyText);
             utterance.lang = lang;
             utterance.volume = 0.8;
             utterance.rate = parseFloat(speechRateSlider.value); // 使用用戶設定的語速
