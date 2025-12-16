@@ -198,6 +198,19 @@
             line-height: 1.6;
             margin-bottom: 8px;
             color: #333;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .ai-response-english:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .ai-response-english:active {
+            background-color: rgba(102, 126, 234, 0.2);
         }
 
         .ai-response-chinese {
@@ -777,11 +790,16 @@
                 const formalContent = document.createElement('div');
                 formalContent.className = 'ai-response-content formal';
                 
-                // 添加英文
+                // 添加英文（可點擊朗讀）
                 if (parsedResponse.formal.english) {
                     const englishDiv = document.createElement('div');
                     englishDiv.className = 'ai-response-english';
                     englishDiv.textContent = parsedResponse.formal.english;
+                    englishDiv.title = '點擊朗讀';
+                    // 添加點擊事件來朗讀這段英文
+                    englishDiv.addEventListener('click', () => {
+                        speakText(parsedResponse.formal.english, 'en-US');
+                    });
                     formalContent.appendChild(englishDiv);
                 }
                 
@@ -810,11 +828,16 @@
                 const casualContent = document.createElement('div');
                 casualContent.className = 'ai-response-content casual';
                 
-                // 添加英文
+                // 添加英文（可點擊朗讀）
                 if (parsedResponse.casual.english) {
                     const englishDiv = document.createElement('div');
                     englishDiv.className = 'ai-response-english';
                     englishDiv.textContent = parsedResponse.casual.english;
+                    englishDiv.title = '點擊朗讀';
+                    // 添加點擊事件來朗讀這段英文
+                    englishDiv.addEventListener('click', () => {
+                        speakText(parsedResponse.casual.english, 'en-US');
+                    });
                     casualContent.appendChild(englishDiv);
                 }
                 
