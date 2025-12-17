@@ -634,6 +634,27 @@
             user-select: none;
         }
 
+        .continuous-speech-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+            justify-content: flex-end;
+        }
+
+        .continuous-speech-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .continuous-speech-option label {
+            cursor: pointer;
+            user-select: none;
+        }
+
         .btn {
             padding: 15px 30px;
             border: none;
@@ -803,6 +824,11 @@
             <label for="backgroundSpeech">🔊 背景朗讀（螢幕關閉時繼續）</label>
         </div>
         
+        <div class="continuous-speech-option">
+            <input type="checkbox" id="continuousSpeech" checked />
+            <label for="continuousSpeech">🔄 持續朗讀（一直重複朗讀）</label>
+        </div>
+        
         <div class="button-group">
             <button class="btn btn-capture" id="captureBtn">📷 拍照</button>
             <button class="btn btn-reload" id="reloadBtn" title="重新載入頁面">🔄</button>
@@ -840,6 +866,7 @@
         const speechRateSlider = document.getElementById('speechRate');
         const speechRateValue = document.getElementById('speechRateValue');
         const backgroundSpeechCheckbox = document.getElementById('backgroundSpeech');
+        const continuousSpeechCheckbox = document.getElementById('continuousSpeech');
         
         // 從 localStorage 載入保存的 API Key
         const savedApiKey = localStorage.getItem('qwen_api_key');
@@ -876,6 +903,14 @@
             backgroundSpeechCheckbox.checked = savedBackgroundSpeech === 'true';
         } else {
             backgroundSpeechCheckbox.checked = true; // 預設為打勾
+        }
+
+        // 從 localStorage 載入持續朗讀設定
+        const savedContinuousSpeech = localStorage.getItem('continuousSpeech');
+        if (savedContinuousSpeech !== null) {
+            continuousSpeechCheckbox.checked = savedContinuousSpeech === 'true';
+        } else {
+            continuousSpeechCheckbox.checked = true; // 預設為打勾
         }
 
         // 從 localStorage 載入配置區域展開狀態（預設收縮）
@@ -2025,6 +2060,10 @@ ${englishText}
             window.speechSynthesis.speak(utterance);
         }
 
+        // 全域變數來追蹤持續朗讀狀態
+        let continuousSpeechActive = false;
+        let currentSpeechSentences = null;
+
         // 朗讀所有句子
         function speakAllSentences(sentences) {
             if (!sentences || sentences.length === 0) return;
@@ -2033,27 +2072,60 @@ ${englishText}
             window.speechSynthesis.cancel();
             clearAllHighlights();
             
-            // 檢查是否啟用背景朗讀模式
+            // 檢查是否啟用背景朗讀模式和持續朗讀模式
             const isBackgroundMode = backgroundSpeechCheckbox.checked;
+            const isContinuousMode = continuousSpeechCheckbox.checked;
+            
+            // 設定持續朗讀狀態
+            continuousSpeechActive = isContinuousMode;
+            currentSpeechSentences = sentences;
             
             // 朗讀時都關閉相機
             stopCamera();
 
             let currentIndex = 0;
+            let cycleCount = 1;
 
             function speakNext() {
-                if (currentIndex >= sentences.length) {
-                    // 全部朗讀完成
-                    status.textContent = '全部朗讀完成';
+                // 檢查是否應該停止持續朗讀
+                if (!continuousSpeechActive) {
+                    status.textContent = '朗讀已停止';
+                    clearAllHighlights();
                     // 釋放 wake lock
                     if (isBackgroundMode) {
                         releaseWakeLock();
                     }
-                    // 朗讀完成後重新啟動相機
+                    // 朗讀停止後重新啟動相機
                     setTimeout(() => {
                         restartCamera();
                     }, 1000);
                     return;
+                }
+
+                if (currentIndex >= sentences.length) {
+                    // 一輪朗讀完成
+                    if (isContinuousMode && continuousSpeechActive) {
+                        // 持續朗讀模式：重新開始
+                        currentIndex = 0;
+                        cycleCount++;
+                        status.textContent = `持續朗讀第 ${cycleCount} 輪...`;
+                        // 延遲一下再開始下一輪
+                        setTimeout(speakNext, 1000);
+                        return;
+                    } else {
+                        // 全部朗讀完成
+                        status.textContent = '全部朗讀完成';
+                        continuousSpeechActive = false;
+                        // 釋放 wake lock
+                        if (isBackgroundMode) {
+                            releaseWakeLock();
+                        }
+                        // 朗讀完成後重新啟動相機
+                        setTimeout(() => {
+                            restartCamera();
+                        }, 1000);
+                        return;
+                    }
                 }
 
                 const sentence = sentences[currentIndex];
@@ -2085,7 +2157,8 @@ ${englishText}
 
                 utterance.onstart = () => {
                     const prefix = isBackgroundMode ? '正在背景朗讀' : '正在朗讀';
-                    status.textContent = `${prefix} (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`;
+                    const cycleInfo = isContinuousMode ? ` [第${cycleCount}輪]` : '';
+                    status.textContent = `${prefix}${cycleInfo} (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`;
                 };
 
                 utterance.onend = () => {
@@ -2115,6 +2188,18 @@ ${englishText}
             speakNext();
         }
 
+        // 停止持續朗讀的函數
+        function stopContinuousSpeech() {
+            continuousSpeechActive = false;
+            window.speechSynthesis.cancel();
+            clearAllHighlights();
+            status.textContent = '持續朗讀已停止';
+            // 重新啟動相機
+            setTimeout(() => {
+                restartCamera();
+            }, 1000);
+        }
+
         // 清除所有高亮效果
         function clearAllHighlights() {
             const speakingElements = document.querySelectorAll('.ai-response-english.speaking');
@@ -2138,6 +2223,7 @@ ${englishText}
         // 清除對話區域的資料
         function clearConversationData() {
             // 停止任何正在進行的朗讀
+            continuousSpeechActive = false;
             window.speechSynthesis.cancel();
             clearAllHighlights();
             
@@ -2213,6 +2299,20 @@ ${englishText}
                 status.textContent = '已啟用背景朗讀模式';
             } else {
                 status.textContent = '已關閉背景朗讀模式';
+            }
+        });
+
+        // 持續朗讀選項變更事件
+        continuousSpeechCheckbox.addEventListener('change', (e) => {
+            localStorage.setItem('continuousSpeech', e.target.checked.toString());
+            if (e.target.checked) {
+                status.textContent = '已啟用持續朗讀模式';
+            } else {
+                status.textContent = '已關閉持續朗讀模式';
+                // 如果正在持續朗讀，立即停止
+                if (continuousSpeechActive) {
+                    stopContinuousSpeech();
+                }
             }
         });
 
