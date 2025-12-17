@@ -620,7 +620,7 @@
             color: #666;
             font-size: 12px;
             margin-bottom: 10px;
-            justify-content: center;
+            justify-content: flex-end;
         }
 
         .background-speech-option input[type="checkbox"] {
@@ -874,6 +874,8 @@
         const savedBackgroundSpeech = localStorage.getItem('backgroundSpeech');
         if (savedBackgroundSpeech !== null) {
             backgroundSpeechCheckbox.checked = savedBackgroundSpeech === 'true';
+        } else {
+            backgroundSpeechCheckbox.checked = true; // 預設為打勾
         }
 
         // 從 localStorage 載入配置區域展開狀態（預設收縮）
@@ -1897,10 +1899,8 @@ ${englishText}
             // 檢查是否啟用背景朗讀模式
             const isBackgroundMode = backgroundSpeechCheckbox.checked;
             
-            // 只有在非背景模式下才關閉相機
-            if (!isBackgroundMode) {
-                stopCamera();
-            }
+            // 朗讀時都關閉相機
+            stopCamera();
 
             const utterance = new SpeechSynthesisUtterance(englishOnlyText);
             utterance.lang = lang;
@@ -1937,23 +1937,19 @@ ${englishText}
 
             utterance.onend = () => {
                 status.textContent = '朗讀完成';
-                // 只有在非背景模式下才重新啟動相機
-                if (!isBackgroundMode) {
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 1000); // 延遲1秒後重新啟動相機
-                }
+                // 朗讀完成後重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000); // 延遲1秒後重新啟動相機
             };
 
             utterance.onerror = (event) => {
                 console.error('語音合成錯誤:', event.error);
                 status.textContent = '朗讀失敗';
-                // 只有在非背景模式下才重新啟動相機
-                if (!isBackgroundMode) {
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 1000);
-                }
+                // 朗讀失敗也重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000);
             };
         }
 
@@ -1971,10 +1967,8 @@ ${englishText}
             // 檢查是否啟用背景朗讀模式
             const isBackgroundMode = backgroundSpeechCheckbox.checked;
             
-            // 只有在非背景模式下才關閉相機
-            if (!isBackgroundMode) {
-                stopCamera();
-            }
+            // 朗讀時都關閉相機
+            stopCamera();
 
             // 過濾文本
             let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
@@ -1982,12 +1976,10 @@ ${englishText}
             
             if (!englishOnlyText) {
                 console.log('沒有英文內容可以朗讀');
-                // 如果沒有內容且非背景模式，重新啟動相機
-                if (!isBackgroundMode) {
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 500);
-                }
+                // 如果沒有內容，重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 500);
                 return;
             }
 
@@ -2007,24 +1999,20 @@ ${englishText}
             utterance.onend = () => {
                 element.classList.remove('speaking');
                 status.textContent = '朗讀完成';
-                // 只有在非背景模式下才重新啟動相機
-                if (!isBackgroundMode) {
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 1000);
-                }
+                // 朗讀完成後重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000);
             };
 
             utterance.onerror = (event) => {
                 element.classList.remove('speaking');
                 console.error('語音合成錯誤:', event.error);
                 status.textContent = '朗讀失敗';
-                // 只有在非背景模式下才重新啟動相機
-                if (!isBackgroundMode) {
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 1000);
-                }
+                // 朗讀失敗也重新啟動相機
+                setTimeout(() => {
+                    restartCamera();
+                }, 1000);
             };
 
             // 選擇語音並播放
@@ -2048,10 +2036,8 @@ ${englishText}
             // 檢查是否啟用背景朗讀模式
             const isBackgroundMode = backgroundSpeechCheckbox.checked;
             
-            // 只有在非背景模式下才關閉相機
-            if (!isBackgroundMode) {
-                stopCamera();
-            }
+            // 朗讀時都關閉相機
+            stopCamera();
 
             let currentIndex = 0;
 
@@ -2063,12 +2049,10 @@ ${englishText}
                     if (isBackgroundMode) {
                         releaseWakeLock();
                     }
-                    // 只有在非背景模式下才重新啟動相機
-                    if (!isBackgroundMode) {
-                        setTimeout(() => {
-                            restartCamera();
-                        }, 1000);
-                    }
+                    // 朗讀完成後重新啟動相機
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 1000);
                     return;
                 }
 
