@@ -613,6 +613,27 @@
             align-items: center;
         }
 
+        .background-speech-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+            justify-content: center;
+        }
+
+        .background-speech-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .background-speech-option label {
+            cursor: pointer;
+            user-select: none;
+        }
+
         .btn {
             padding: 15px 30px;
             border: none;
@@ -777,6 +798,11 @@
         <canvas id="canvasElement" style="display: none;"></canvas>
         <img id="previewImage" class="camera-preview" alt="預覽" style="display: none;">
         
+        <div class="background-speech-option">
+            <input type="checkbox" id="backgroundSpeech" />
+            <label for="backgroundSpeech">🔊 背景朗讀（螢幕關閉時繼續）</label>
+        </div>
+        
         <div class="button-group">
             <button class="btn btn-capture" id="captureBtn">📷 拍照</button>
             <button class="btn btn-reload" id="reloadBtn" title="重新載入頁面">🔄</button>
@@ -813,6 +839,7 @@
         const toggleBtn = document.getElementById('toggleBtn');
         const speechRateSlider = document.getElementById('speechRate');
         const speechRateValue = document.getElementById('speechRateValue');
+        const backgroundSpeechCheckbox = document.getElementById('backgroundSpeech');
         
         // 從 localStorage 載入保存的 API Key
         const savedApiKey = localStorage.getItem('qwen_api_key');
@@ -841,6 +868,12 @@
         if (savedSpeechRate !== null) {
             speechRateSlider.value = savedSpeechRate;
             speechRateValue.textContent = savedSpeechRate + 'x';
+        }
+
+        // 從 localStorage 載入背景朗讀設定
+        const savedBackgroundSpeech = localStorage.getItem('backgroundSpeech');
+        if (savedBackgroundSpeech !== null) {
+            backgroundSpeechCheckbox.checked = savedBackgroundSpeech === 'true';
         }
 
         // 從 localStorage 載入配置區域展開狀態（預設收縮）
@@ -1861,8 +1894,13 @@ ${englishText}
                 return;
             }
 
-            // 開始朗讀時關閉相機
-            stopCamera();
+            // 檢查是否啟用背景朗讀模式
+            const isBackgroundMode = backgroundSpeechCheckbox.checked;
+            
+            // 只有在非背景模式下才關閉相機
+            if (!isBackgroundMode) {
+                stopCamera();
+            }
 
             const utterance = new SpeechSynthesisUtterance(englishOnlyText);
             utterance.lang = lang;
@@ -1894,24 +1932,28 @@ ${englishText}
             }
 
             utterance.onstart = () => {
-                status.textContent = '正在朗讀英文...';
+                status.textContent = isBackgroundMode ? '正在背景朗讀英文...' : '正在朗讀英文...';
             };
 
             utterance.onend = () => {
                 status.textContent = '朗讀完成';
-                // 朗讀完成後重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000); // 延遲1秒後重新啟動相機
+                // 只有在非背景模式下才重新啟動相機
+                if (!isBackgroundMode) {
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 1000); // 延遲1秒後重新啟動相機
+                }
             };
 
             utterance.onerror = (event) => {
                 console.error('語音合成錯誤:', event.error);
                 status.textContent = '朗讀失敗';
-                // 朗讀失敗也重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000);
+                // 只有在非背景模式下才重新啟動相機
+                if (!isBackgroundMode) {
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 1000);
+                }
             };
         }
 
@@ -1926,8 +1968,13 @@ ${englishText}
             window.speechSynthesis.cancel();
             clearAllHighlights();
 
-            // 關閉相機預覽
-            stopCamera();
+            // 檢查是否啟用背景朗讀模式
+            const isBackgroundMode = backgroundSpeechCheckbox.checked;
+            
+            // 只有在非背景模式下才關閉相機
+            if (!isBackgroundMode) {
+                stopCamera();
+            }
 
             // 過濾文本
             let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
@@ -1935,10 +1982,12 @@ ${englishText}
             
             if (!englishOnlyText) {
                 console.log('沒有英文內容可以朗讀');
-                // 如果沒有內容，重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 500);
+                // 如果沒有內容且非背景模式，重新啟動相機
+                if (!isBackgroundMode) {
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 500);
+                }
                 return;
             }
 
@@ -1952,26 +2001,30 @@ ${englishText}
             utterance.pitch = 1;
 
             utterance.onstart = () => {
-                status.textContent = '正在朗讀: ' + englishOnlyText.substring(0, 30) + '...';
+                status.textContent = (isBackgroundMode ? '正在背景朗讀: ' : '正在朗讀: ') + englishOnlyText.substring(0, 30) + '...';
             };
 
             utterance.onend = () => {
                 element.classList.remove('speaking');
                 status.textContent = '朗讀完成';
-                // 朗讀完成後重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000);
+                // 只有在非背景模式下才重新啟動相機
+                if (!isBackgroundMode) {
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 1000);
+                }
             };
 
             utterance.onerror = (event) => {
                 element.classList.remove('speaking');
                 console.error('語音合成錯誤:', event.error);
                 status.textContent = '朗讀失敗';
-                // 朗讀失敗也重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000);
+                // 只有在非背景模式下才重新啟動相機
+                if (!isBackgroundMode) {
+                    setTimeout(() => {
+                        restartCamera();
+                    }, 1000);
+                }
             };
 
             // 選擇語音並播放
@@ -1992,8 +2045,13 @@ ${englishText}
             window.speechSynthesis.cancel();
             clearAllHighlights();
             
-            // 關閉相機
-            stopCamera();
+            // 檢查是否啟用背景朗讀模式
+            const isBackgroundMode = backgroundSpeechCheckbox.checked;
+            
+            // 只有在非背景模式下才關閉相機
+            if (!isBackgroundMode) {
+                stopCamera();
+            }
 
             let currentIndex = 0;
 
@@ -2001,9 +2059,16 @@ ${englishText}
                 if (currentIndex >= sentences.length) {
                     // 全部朗讀完成
                     status.textContent = '全部朗讀完成';
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 1000);
+                    // 釋放 wake lock
+                    if (isBackgroundMode) {
+                        releaseWakeLock();
+                    }
+                    // 只有在非背景模式下才重新啟動相機
+                    if (!isBackgroundMode) {
+                        setTimeout(() => {
+                            restartCamera();
+                        }, 1000);
+                    }
                     return;
                 }
 
@@ -2035,7 +2100,8 @@ ${englishText}
                 utterance.pitch = 1;
 
                 utterance.onstart = () => {
-                    status.textContent = `正在朗讀 (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`;
+                    const prefix = isBackgroundMode ? '正在背景朗讀' : '正在朗讀';
+                    status.textContent = `${prefix} (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`;
                 };
 
                 utterance.onend = () => {
@@ -2156,6 +2222,16 @@ ${englishText}
             localStorage.setItem('speechRate', rate);
         });
 
+        // 背景朗讀選項變更事件
+        backgroundSpeechCheckbox.addEventListener('change', (e) => {
+            localStorage.setItem('backgroundSpeech', e.target.checked.toString());
+            if (e.target.checked) {
+                status.textContent = '已啟用背景朗讀模式';
+            } else {
+                status.textContent = '已關閉背景朗讀模式';
+            }
+        });
+
         // 展開/收縮配置區域
         configToggle.addEventListener('click', () => {
             const isExpanded = apiConfig.classList.contains('expanded');
@@ -2192,7 +2268,61 @@ ${englishText}
                     video.srcObject = stream;
                 }
             }
+            
+            // 如果啟用背景朗讀模式，在頁面隱藏時保持語音合成活躍
+            if (document.hidden && backgroundSpeechCheckbox.checked) {
+                // 防止頁面被暫停，保持語音合成運行
+                keepSpeechActive();
+            }
         });
+
+        // 保持語音合成在背景運行的函數
+        function keepSpeechActive() {
+            // 創建一個靜音的語音來保持 speechSynthesis 活躍
+            if (window.speechSynthesis && backgroundSpeechCheckbox.checked) {
+                const keepAlive = new SpeechSynthesisUtterance(' ');
+                keepAlive.volume = 0; // 靜音
+                keepAlive.rate = 10; // 快速播放
+                keepAlive.onend = () => {
+                    // 如果仍在背景模式且有語音在播放，繼續保持活躍
+                    if (document.hidden && backgroundSpeechCheckbox.checked && window.speechSynthesis.speaking) {
+                        setTimeout(keepSpeechActive, 5000); // 每5秒重複一次
+                    }
+                };
+                window.speechSynthesis.speak(keepAlive);
+            }
+        }
+
+        // 防止頁面在背景朗讀時進入睡眠模式
+        let wakeLock = null;
+        
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator && backgroundSpeechCheckbox.checked) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake lock 已啟用，防止螢幕關閉');
+                } catch (err) {
+                    console.log('Wake lock 請求失敗:', err);
+                }
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock) {
+                wakeLock.release();
+                wakeLock = null;
+                console.log('Wake lock 已釋放');
+            }
+        }
+
+        // 在開始朗讀時請求 wake lock
+        const originalSpeakAllSentences = speakAllSentences;
+        speakAllSentences = function(sentences) {
+            if (backgroundSpeechCheckbox.checked) {
+                requestWakeLock();
+            }
+            return originalSpeakAllSentences.call(this, sentences);
+        };
     </script>
 </body>
 </html>
