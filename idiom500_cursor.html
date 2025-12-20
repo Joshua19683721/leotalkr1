@@ -389,6 +389,11 @@
                     })
                 });
 
+                // Increment real API call count
+                if (typeof incrementApiCount === 'function') {
+                    incrementApiCount();
+                }
+
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
                     throw new Error(`API Error: ${response.status} ${errData.error?.message || ''}`);
@@ -520,12 +525,28 @@
                     <i class="fa fa-book text-2xl mr-3"></i>
                     <h1 class="text-xl font-bold">成語學習平台</h1>
                     <button onclick="showAllIdiomsModal()" class="ml-4 bg-secondary text-primary px-3 py-1 rounded text-sm font-bold hover:bg-yellow-100 transition-colors">常用成語</button>
+                    <button id="autoPlayBtn" onclick="toggleAutoPlay()" class="ml-2 bg-green-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-green-600 transition-colors flex items-center">
+                        <i class="fa fa-play-circle mr-1"></i>隨機朗讀
+                    </button>
                     <button onclick="showSocialPost()" class="ml-2 bg-pink-500 text-white px-3 py-1 rounded text-sm font-bold hover:bg-pink-600 transition-colors flex items-center">
                         <i class="fa fa-instagram mr-1"></i>成語動態
                     </button>
                 </div>
-                <!-- API Key Input -->
+                <!-- Stats & API Key Input -->
                 <div class="flex items-center">
+                    <!-- Real Stats (Local) -->
+                    <div class="hidden md:flex items-center mr-4 text-xs sm:text-sm text-blue-100 space-x-3 bg-blue-800 bg-opacity-30 px-3 py-1 rounded-full">
+                        <div class="flex items-center" title="DeepSeek API 實際呼叫次數">
+                            <i class="fa fa-server mr-1.5 text-green-300"></i>
+                            <span>API呼叫: <span id="apiCallCount" class="font-mono font-bold">0</span></span>
+                        </div>
+                        <div class="w-px h-3 bg-blue-300 opacity-50"></div>
+                        <div class="flex items-center" title="累積學習互動次數 (查看成語、練習等)">
+                            <i class="fa fa-bar-chart mr-1.5 text-yellow-300"></i>
+                            <span>學習互動: <span id="interactionCount" class="font-mono font-bold">0</span></span>
+                        </div>
+                    </div>
+                    
                     <div class="flex items-center bg-primary-dark rounded px-2 py-1 mr-2">
                         <i class="fa fa-key text-gray-300 mr-2 text-sm"></i>
                         <input type="password" id="deepseekKey" placeholder="DeepSeek API Key" class="bg-transparent border-none text-white text-sm focus:outline-none w-32 placeholder-gray-300">
@@ -8981,7 +9002,19 @@
                 
                 document.getElementById('idiomName').textContent = idiom.name || '';
                 document.getElementById('idiomPinyin').textContent = idiom.pinyin || '';
-                document.getElementById('idiomExplanation').textContent = idiom.explanation || '';
+                
+                // 处理解释文本，支持分句高亮
+                const explanation = idiom.explanation || '';
+                const expContainer = document.getElementById('idiomExplanation');
+                if (explanation) {
+                    const parts = splitIntoSentences(explanation);
+                    expContainer.innerHTML = parts.map((part, i) => 
+                        `<span id="idiomExplanationPart-${i}" class="transition-colors duration-300 rounded px-1">${part}</span>`
+                    ).join('');
+                } else {
+                    expContainer.textContent = '';
+                }
+
                 document.getElementById('idiomStoryShort').textContent = idiom.storyShort || '';
                 document.getElementById('idiomStoryLong').textContent = idiom.storyLong || '';
                 const qualityEl = document.getElementById('idiomQuality');
@@ -9011,7 +9044,7 @@
                     const exampleDiv = document.createElement('div');
                     exampleDiv.className = 'bg-gray-50 p-3 rounded-lg mb-2';
                     exampleDiv.innerHTML = `
-                        <p class="text-gray-700">${example}</p>
+                        <p id="idiomExampleText-${index}" class="text-gray-700 transition-colors duration-300">${example}</p>
                         <button aria-label="播放例句" onclick="playExample(${index + 1})" class="text-accent hover:text-secondary mt-1">
                             <i class="fa fa-volume-up mr-1"></i>播放例句
                         </button>
@@ -9027,6 +9060,14 @@
 
             // 滚动到详情区域
             document.getElementById('idiomDetail').scrollIntoView({ behavior: 'smooth' });
+
+            // Increment real interaction count
+            if (typeof incrementInteractionCount === 'function') {
+                incrementInteractionCount();
+            }
+
+            // 自動朗讀序列
+            playIdiomSequence();
         }
 
             // 播放发音
@@ -9092,7 +9133,180 @@
         }
 
         // Web Speech API 語音朗讀
+        let isReadingSequence = false;
+        let isAutoPlayActive = false;
+        let autoPlayTimer = null;
+
+        function stopReadingSequence() {
+            isReadingSequence = false;
+            window.speechSynthesis.cancel();
+            // Clear all highlights
+            document.querySelectorAll('.bg-yellow-200').forEach(el => el.classList.remove('bg-yellow-200', 'text-black'));
+        }
+
+        function toggleAutoPlay() {
+            const btn = document.getElementById('autoPlayBtn');
+            if (isAutoPlayActive) {
+                // Stop Auto Play
+                isAutoPlayActive = false;
+                stopReadingSequence();
+                if(autoPlayTimer) clearTimeout(autoPlayTimer);
+                btn.innerHTML = '<i class="fa fa-play-circle mr-1"></i>隨機朗讀';
+                btn.classList.replace('bg-red-500', 'bg-green-500');
+                btn.classList.replace('hover:bg-red-600', 'hover:bg-green-600');
+            } else {
+                // Start Auto Play
+                isAutoPlayActive = true;
+                btn.innerHTML = '<i class="fa fa-stop-circle mr-1"></i>停止朗讀';
+                btn.classList.replace('bg-green-500', 'bg-red-500');
+                btn.classList.replace('hover:bg-green-600', 'hover:bg-red-600');
+                playNextRandomIdiom();
+            }
+        }
+
+        function playNextRandomIdiom() {
+            if (!isAutoPlayActive) return;
+
+            // 1. Pick a random category
+            const categories = Object.keys(categoryData);
+            const randomCat = categories[Math.floor(Math.random() * categories.length)];
+            
+            // 2. Switch to that category view first (so UI updates)
+            showCategory(randomCat);
+
+            // 3. Pick a random idiom from that category
+            const idioms = getCategoryIdioms(randomCat);
+            if (idioms.length === 0) {
+                // Retry if empty category
+                setTimeout(playNextRandomIdiom, 100); 
+                return;
+            }
+            const randomIdiom = idioms[Math.floor(Math.random() * idioms.length)];
+
+            // 4. Show Detail
+            showIdiomDetail(randomIdiom);
+            
+            // 5. Sequence is triggered automatically by showIdiomDetail -> playIdiomSequence
+            // But we need to hook into the END of that sequence to trigger the next one.
+            // We'll modify playIdiomSequence to handle the callback.
+        }
+
+        function splitIntoSentences(text) {
+            if (!text) return [];
+            const parts = text.split(/([。！？；]+)/);
+            const sentences = [];
+            for (let i = 0; i < parts.length; i += 2) {
+                let sentence = parts[i];
+                if (i + 1 < parts.length) {
+                    sentence += parts[i+1];
+                }
+                if (sentence.trim()) sentences.push(sentence);
+            }
+            return sentences;
+        }
+
+        function playIdiomSequence() {
+            if (!currentIdiom) return;
+            stopReadingSequence();
+            isReadingSequence = true;
+            
+            const steps = [];
+            
+            // 1. Name
+            steps.push({ 
+                text: currentIdiom.name, 
+                elementId: 'idiomName' 
+            });
+            
+            // 2. Explanation (Split into parts)
+            const expParts = splitIntoSentences(currentIdiom.explanation);
+            if (expParts.length > 0) {
+                 steps.push({ text: "解釋：", elementId: null });
+                 expParts.forEach((part, i) => {
+                     steps.push({
+                         text: part,
+                         elementId: `idiomExplanationPart-${i}`
+                     });
+                 });
+            } else {
+                 steps.push({ 
+                    text: "解釋：" + (currentIdiom.explanation || ''), 
+                    elementId: 'idiomExplanation' 
+                });
+            }
+            
+            // 3. Examples
+            if (currentIdiom.examples && currentIdiom.examples.length > 0) {
+                 steps.push({ 
+                    text: "例句：", 
+                    elementId: null 
+                });
+                currentIdiom.examples.forEach((ex, i) => {
+                    steps.push({
+                        text: ex,
+                        elementId: `idiomExampleText-${i}`
+                    });
+                });
+            }
+
+            executeSequenceStep(steps, 0);
+        }
+
+        function executeSequenceStep(steps, index) {
+            if (!isReadingSequence) {
+                // If stopped manually (e.g. by toggle button), ensure we don't continue
+                return;
+            }
+
+            if (index >= steps.length) {
+                isReadingSequence = false;
+                // Sequence Finished
+                if (isAutoPlayActive) {
+                    // Wait a bit then play next
+                    autoPlayTimer = setTimeout(playNextRandomIdiom, 2000);
+                }
+                return;
+            }
+
+            const step = steps[index];
+            const el = step.elementId ? document.getElementById(step.elementId) : null;
+            
+            if (el) {
+                el.classList.add('bg-yellow-200', 'text-black');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            const utterance = new SpeechSynthesisUtterance(step.text);
+            utterance.lang = 'zh-TW';
+            utterance.rate = 0.9;
+            
+            utterance.onend = () => {
+                if (el) el.classList.remove('bg-yellow-200', 'text-black');
+                // Small pause between items
+                if(isReadingSequence) {
+                    setTimeout(() => executeSequenceStep(steps, index + 1), 300);
+                }
+            };
+            
+            utterance.onerror = (e) => {
+                console.error('Speech error:', e);
+                if (el) el.classList.remove('bg-yellow-200', 'text-black');
+                isReadingSequence = false;
+                // Try next one even if error
+                if (isAutoPlayActive) {
+                    autoPlayTimer = setTimeout(playNextRandomIdiom, 2000);
+                }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
         function speak(text, lang = 'zh-TW') {
+            // Manual speak interaction stops auto-play
+            if (isAutoPlayActive) {
+                toggleAutoPlay(); // Turn off auto play UI
+            }
+            stopReadingSequence(); 
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -9350,6 +9564,10 @@
                         </div>
                     </div>
                 `;
+                // Increment real interaction count
+                if (typeof incrementInteractionCount === 'function') {
+                    incrementInteractionCount();
+                }
             } else {
                 btn.classList.remove('bg-white', 'border-gray-200');
                 btn.classList.add('bg-red-100', 'border-red-500');
@@ -9423,6 +9641,10 @@
                         </div>
                     </div>
                 `;
+                // Increment real interaction count
+                if (typeof incrementInteractionCount === 'function') {
+                    incrementInteractionCount();
+                }
             } else {
                 btn.classList.remove('bg-white', 'border-gray-200');
                 btn.classList.add('bg-red-100', 'border-red-500');
@@ -9531,6 +9753,10 @@
                         <p class="mt-2 text-sm">正確句子：${correctSentence}</p>
                     </div>
                 `;
+                // Increment real interaction count
+                if (typeof incrementInteractionCount === 'function') {
+                    incrementInteractionCount();
+                }
             } else {
                 resultDiv.innerHTML = `
                     <div class="bg-red-100 text-red-800 p-3 rounded-lg">
@@ -9625,6 +9851,44 @@
             content.innerHTML = html;
             modal.classList.remove('hidden');
         }
+
+        // --- Real Stats (Local Storage) ---
+        function updateStatsDisplay() {
+            const apiCountEl = document.getElementById('apiCallCount');
+            const interactCountEl = document.getElementById('interactionCount');
+            
+            if (apiCountEl) {
+                const count = parseInt(localStorage.getItem('realApiCallCount') || '0');
+                apiCountEl.textContent = count.toLocaleString();
+            }
+            
+            if (interactCountEl) {
+                const count = parseInt(localStorage.getItem('realInteractionCount') || '0');
+                interactCountEl.textContent = count.toLocaleString();
+            }
+        }
+
+        function incrementApiCount() {
+            let count = parseInt(localStorage.getItem('realApiCallCount') || '0');
+            count++;
+            localStorage.setItem('realApiCallCount', count);
+            updateStatsDisplay();
+        }
+
+        function incrementInteractionCount() {
+            let count = parseInt(localStorage.getItem('realInteractionCount') || '0');
+            count++;
+            localStorage.setItem('realInteractionCount', count);
+            updateStatsDisplay();
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatsDisplay();
+            initStats(); // Keep simulated logic? No, remove it.
+        });
+        
+        // Removed simulated initStats function to ensure real data only.
     </script>
 </body>
 </html>
