@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>巨人的花園 - 圈詞閃卡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/v4-shims.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B4513',
+                        secondary: '#D2B48C',
+                        accent: '#CD853F',
+                        light: '#F5DEB3',
+                        dark: '#A0522D'
+                    },
+                    fontFamily: {
+                        chinese: ['Noto Sans TC', 'Microsoft JhengHei', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-flip {
+                transition: transform 0.6s;
+                transform-style: preserve-3d;
+            }
+            .card-front, .card-back {
+                backface-visibility: hidden;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+            .card-back {
+                transform: rotateY(180deg);
+            }
+            .flipped {
+                transform: rotateY(180deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-light to-secondary min-h-screen font-chinese">
+    <!-- 頁首 -->
+    <header class="bg-primary text-white p-6 shadow-lg">
+        <div class="container mx-auto">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-center mb-2">
+                <i class="fa fa-book mr-3"></i>巨人的花園 - 圈詞閃卡
+            </h1>
+            <p class="text-center text-light/90">
+                結合語音朗讀功能的互動式學習工具
+            </p>
+        </div>
+    </header>
+
+    <!-- 主要內容 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 分數顯示 -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-bold text-primary">
+                    <i class="fa fa-trophy mr-2"></i>當前分數
+                </h2>
+                <p class="text-2xl font-bold text-accent" id="score">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-bold text-primary">
+                    <i class="fa fa-question-circle mr-2"></i>題目進度
+                </h2>
+                <p class="text-2xl font-bold text-accent">
+                    <span id="current-question">1</span>/<span id="total-questions">100</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- 閃卡區域 -->
+        <div class="max-w-2xl mx-auto">
+            <div class="relative h-96 mb-8">
+                <!-- 閃卡本體 -->
+                <div class="card-flip relative w-full h-full" id="flashcard">
+                    <!-- 正面：題目 -->
+                    <div class="card-front bg-white rounded-xl shadow-xl p-8 flex flex-col justify-center items-center">
+                        <div class="text-center mb-6">
+                            <h3 class="text-xl font-bold text-primary mb-4">
+                                <i class="fa fa-question mr-2"></i>請圈出正確的字詞
+                            </h3>
+                            <p class="text-lg text-gray-700 leading-relaxed mb-6" id="question-text">
+                                題目將在此顯示
+                            </p>
+                            <div class="bg-light/50 rounded-lg p-4 mb-6">
+                                <h4 class="text-lg font-bold text-dark mb-2">
+                                    <i class="fa fa-star mr-2"></i>重點字詞
+                                </h4>
+                                <p class="text-2xl font-bold text-primary" id="target-word">
+                                    目標字詞
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- 選項按鈕 -->
+                        <div class="grid grid-cols-2 gap-4 w-full max-w-md" id="options-container">
+                            <!-- 選項將動態生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 背面：答案 -->
+                    <div class="card-back bg-gradient-to-br from-accent to-primary text-white rounded-xl shadow-xl p-8 flex flex-col justify-center items-center">
+                        <div class="text-center">
+                            <h3 class="text-xl font-bold mb-6">
+                                <i class="fa fa-check-circle mr-2"></i>正確答案
+                            </h3>
+                            <div class="bg-white/20 rounded-lg p-6 mb-6">
+                                <p class="text-2xl font-bold mb-4" id="correct-answer">
+                                    正確答案
+                                </p>
+                                <p class="text-lg opacity-90" id="answer-explanation">
+                                    答案解釋
+                                </p>
+                            </div>
+                            <div class="text-lg font-bold" id="answer-result">
+                                <!-- 答對/答錯結果 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制按鈕 -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <button id="speak-btn" class="bg-primary hover:bg-dark text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300 flex items-center">
+                    <i class="fa fa-volume-up mr-2"></i>
+                    朗讀題目
+                </button>
+                <button id="check-btn" class="bg-accent hover:bg-dark text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300 flex items-center">
+                    <i class="fa fa-check mr-2"></i>
+                    檢查答案
+                </button>
+                <button id="next-btn" class="bg-secondary hover:bg-dark text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300 flex items-center">
+                    <i class="fa fa-arrow-right mr-2"></i>
+                    下一題
+                </button>
+                <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300 flex items-center">
+                    <i class="fa fa-bullseye mr-2"></i>
+                    重新開始
+                </button>
+            </div>
+
+            <!-- 進度條 -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                    <div class="bg-gradient-to-r from-primary to-accent h-4 rounded-full transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="text-right text-sm text-gray-600">
+                    完成度: <span id="progress-percentage">0%</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="bg-primary text-white p-6 mt-12">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2025 巨人的花園 - 圈詞閃卡練習</p>
+            <p class="text-light/80 text-sm mt-2">
+                適用於 GitHub Pages 部署 | 支援語音朗讀 | 響應式設計
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // 100題圈詞题库
+        const questionBank = [
+            {
+                question: "巨人這才恍然大悟的說：",
+                target: "恍然大悟",
+                options: ["恍然大悟", "晃然大悟", "慌然大悟", "荒然大悟"],
+                answer: "恍然大悟",
+                explanation: "恍然大悟：突然明白過來的意思。恍：突然、忽然。"
+            },
+            {
+                question: "把圍牆拆除：",
+                target: "拆除",
+                options: ["拆除", "折除", "柝除", "斥除"],
+                answer: "拆除",
+                explanation: "拆除：拆掉、除去的意思。拆：把結構破壞或拆開。"
+            },
+            {
+                question: "開心極了！",
+                target: "極了",
+                options: ["極了", "及了", "級了", "急了"],
+                answer: "極了",
+                explanation: "極了：表示程度很深的意思。極：達到最高程度。"
+            },
+            {
+                question: "這時百花盛開：",
+                target: "盛開",
+                options: ["盛開", "勝開", "聖開", "乘開"],
+                answer: "盛開",
+                explanation: "盛開：花朵開得很茂盛的樣子。盛：茂盛、旺盛。"
+            },
+            {
+                question: "春天隨著孩子們的笑聲：",
+                target: "隨著",
+                options: ["隨著", "隋著", "髓著", "綏著"],
+                answer: "隨著",
+                explanation: "隨著：跟著、伴隨著的意思。隨：跟從、伴隨。"
+            },
+            {
+                question: "心情就特別愉悅：",
+                target: "愉悅",
+                options: ["愉悅", "說悅", "閱悅", "脫悅"],
+                answer: "愉悅",
+                explanation: "愉悅：快樂、高興的心情。悅：快樂、高興。"
+            },
+            {
+                question: "巨人出遠門去拜訪朋友：",
+                target: "拜訪",
+                options: ["拜訪", "敗訪", "掰訪", "湃訪"],
+                answer: "拜訪",
+                explanation: "拜訪：拜見訪問的意思。拜：恭敬地見面。"
+            },
+            {
+                question: "免得孩子們跑進來：",
+                target: "免得",
+                options: ["免得", "勉得", "娩得", "冕得"],
+                answer: "免得",
+                explanation: "免得：避免、以防的意思。免：避免、防止。"
+            },
+            {
+                question: "築起了一道高高的牆：",
+                target: "築起",
+                options: ["築起", "祝起", "篤起", "鑄起"],
+                answer: "築起",
+                explanation: "築起：建造起來的意思。築：建造、修築。"
+            },
+            {
+                question: "失望的離開：",
+                target: "離開",
+                options: ["離開", "璃開", "籬開", "麗開"],
+                answer: "離開",
+                explanation: "離開：告別、遠去的意思。離：分開、告別。"
+            },
+            {
+                question: "冬天顯得特別漫長：",
+                target: "顯得",
+                options: ["顯得", "現得", "獻得", "憲得"],
+                answer: "顯得",
+                explanation: "顯得：表現出、看出來的意思。顯：表現、露出。"
+            },
+            {
+                question: "漫長的冬天：",
+                target: "漫長",
+                options: ["漫長", "慢長", "蔓長", "幔長"],
+                answer: "漫長",
+                explanation: "漫長：時間很長的意思。漫：長、遠。"
+            },
+            {
+                question: "天天盼望花園裡乾枯的春天：",
+                target: "盼望",
+                options: ["盼望", "扮望", "判望", "叛望"],
+                answer: "盼望",
+                explanation: "盼望：殷切地期望的意思。盼：期望、盼望。"
+            },
+            {
+                question: "乾枯的樹枝：",
+                target: "乾枯",
+                options: ["乾枯", "苦枯", "骷枯", "庫枯"],
+                answer: "乾枯",
+                explanation: "乾枯：乾燥枯萎的意思。枯：枯萎、乾涸。"
+            },
+            {
+                question: "從洞口鑽進花園：",
+                target: "鑽進",
+                options: ["鑽進", "贊進", "攥進", "鑄進"],
+                answer: "鑽進",
+                explanation: "鑽進：鑽入、進入的意思。鑽：穿孔、進入。"
+            },
+            {
+                question: "自由自在的進來遊玩：",
+                target: "自由自在",
+                options: ["自由自在", "自言自語", "自作自受", "自高自大"],
+                answer: "自由自在",
+                explanation: "自由自在：不受約束，隨心所欲的樣子。"
+            },
+            {
+                question: "鳥語花香：",
+                target: "鳥語花香",
+                options: ["鳥語花香", "鳥語花紅", "鳥鳴花香", "鳥唱花香"],
+                answer: "鳥語花香",
+                explanation: "鳥語花香：形容春天美好的景象，鳥兒歌唱，花香撲鼻。"
+            },
+            {
+                question: "冷冷清清：",
+                target: "冷冷清清",
+                options: ["冷冷清清", "冷冷冰冰", "清清爽爽", "安安靜靜"],
+                answer: "冷冷清清",
+                explanation: "冷冷清清：形容環境寂靜，沒有人氣的樣子。"
+            },
+            {
+                question: "快快綻放：",
+                target: "綻放",
+                options: ["綻放", "開放", "盛開", "放出"],
+                answer: "綻放",
+                explanation: "綻放：花朵開放的意思，比普通的開放更為生動美麗。"
+            },
+            {
+                question: "熱鬧了起來：",
+                target: "熱鬧",
+                options: ["熱鬧", "熱情", "熱切", "熱心"],
+                answer: "熱鬧",
+                explanation: "熱鬧：氣氛活潑，人多興奮的樣子。"
+            },
+            {
+                question: "終於明白：",
+                target: "終於",
+                options: ["終於", "終究", "最後", "結終"],
+                answer: "終於",
+                explanation: "終於：表示經過較長過程最後出現某種結果。"
+            },
+            // 第21-40題
+            {
+                question: "巨人蓋了一座大花園：",
+                target: "蓋了",
+                options: ["蓋了", "蓋子", "蓋住", "蓋房"],
+                answer: "蓋了",
+                explanation: "蓋了：建造了的意思。蓋：建造、搭建。"
+            },
+            {
+                question: "美麗的花朵：",
+                target: "美麗",
+                options: ["美麗", "美麗", "美麗", "美麗"],
+                answer: "美麗",
+                explanation: "美麗：好看、漂亮的意思。麗：美麗、漂亮。"
+            },
+            {
+                question: "美妙的歌曲：",
+                target: "美妙",
+                options: ["美妙", "美秒", "美渺", "美藐"],
+                answer: "美妙",
+                explanation: "美妙：美好奇妙的意思。妙：美妙、奇妙。"
+            },
+            {
+                question: "過了很久還沒回來：",
+                target: "很久",
+                options: ["很久", "很九", "很玖", "很酒"],
+                answer: "很久",
+                explanation: "很久：時間很長的意思。久：長時間。"
+            },
+            {
+                question: "附近的孩子：",
+                target: "附近",
+                options: ["附近", "附進", "附斤", "附今"],
+                answer: "附近",
+                explanation: "附近：靠近的地方。近：距離短。"
+            },
+            {
+                question: "發現孩子們：",
+                target: "發現",
+                options: ["發現", "發現", "發現", "發現"],
+                answer: "發現",
+                explanation: "發現：看到或找到以前不知道的事物。"
+            },
+            {
+                question: "生氣的大叫：",
+                target: "生氣",
+                options: ["生氣", "生氣", "生氣", "生氣"],
+                answer: "生氣",
+                explanation: "生氣：因不滿而情緒激動。"
+            },
+            {
+                question: "花園是我的！",
+                target: "我的",
+                options: ["我的", "我得", "我地", "我底"],
+                answer: "我的",
+                explanation: "我的：表示所有權，屬於我。"
+            },
+            {
+                question: "你們怎麼可以跑進來呢？",
+                target: "怎麼",
+                options: ["怎麼", "怎摸", "怎磨", "怎末"],
+                answer: "怎麼",
+                explanation: "怎麼：詢問方式或原因。"
+            },
+            {
+                question: "孩子們望著高高的圍牆：",
+                target: "望著",
+                options: ["望著", "忘著", "妄著", "旺著"],
+                answer: "望著",
+                explanation: "望著：看著、注視著的意思。望：看、遠望。"
+            },
+            {
+                question: "心裡想：",
+                target: "心裡",
+                options: ["心裡", "心理", "心力", "心裡"],
+                answer: "心裡",
+                explanation: "心裡：內心、心中的意思。"
+            },
+            {
+                question: "美麗的花園：",
+                target: "花園",
+                options: ["花園", "花圓", "花園", "花園"],
+                answer: "花園",
+                explanation: "花園：種植花草的園地。"
+            },
+            {
+                question: "為什麼被圍起來了呢？",
+                target: "為什麼",
+                options: ["為什麼", "為什麼", "為什麼", "為什麼"],
+                answer: "為什麼",
+                explanation: "為什麼：詢問原因的疑問詞。"
+            },
+            {
+                question: "他們進不去：",
+                target: "進不去",
+                options: ["進不去", "進不去", "進不去", "進不去"],
+                answer: "進不去",
+                explanation: "進不去：無法進入的意思。"
+            },
+            {
+                question: "只好失望的離開：",
+                target: "只好",
+                options: ["只好", "只好看", "只得", "只能"],
+                answer: "只好",
+                explanation: "只好：不得不、只能的意思。"
+            },
+            {
+                question: "秋天過了：",
+                target: "秋天",
+                options: ["秋天", "秋田", "秋添", "秋甜"],
+                answer: "秋天",
+                explanation: "秋天：四季中的第三季，收穫的季節。"
+            },
+            {
+                question: "冬天來了：",
+                target: "冬天",
+                options: ["冬天", "冬田", "冬添", "冬甜"],
+                answer: "冬天",
+                explanation: "冬天：四季中的第四季，天氣寒冷的季節。"
+            },
+            {
+                question: "園裡的花謝了：",
+                target: "謝了",
+                options: ["謝了", "謝了", "謝了", "謝了"],
+                answer: "謝了",
+                explanation: "謝了：花朵凋謝的意思。謝：凋謝、衰落。"
+            },
+            {
+                question: "小鳥也飛走了：",
+                target: "飛走了",
+                options: ["飛走了", "飛走了", "飛走了", "飛走了"],
+                answer: "飛走了",
+                explanation: "飛走了：飛翔離去的意思。"
+            },
+            {
+                question: "花園裡從少了孩子的笑聲：",
+                target: "少了",
+                options: ["少了", "少了", "少了", "少了"],
+                answer: "少了",
+                explanation: "少了：減少了、缺乏了的意思。"
+            },
+            // 第41-60題
+            {
+                question: "直到第二年春天：",
+                target: "直到",
+                options: ["直到", "直道", "直導", "直搗"],
+                answer: "直到",
+                explanation: "直到：一直到、直至的意思。"
+            },
+            {
+                question: "花園裡還是冷冷清清：",
+                target: "還是",
+                options: ["還是", "還是的", "還要", "還在"],
+                answer: "還是",
+                explanation: "還是：仍然、依舊的意思。"
+            },
+            {
+                question: "巨人天天盼望：",
+                target: "天天",
+                options: ["天天", "天田", "天添", "天甜"],
+                answer: "天天",
+                explanation: "天天：每天、每一天的意思。"
+            },
+            {
+                question: "花園裡乾枯的樹枝：",
+                target: "樹枝",
+                options: ["樹枝", "樹支", "樹知", "樹芝"],
+                answer: "樹枝",
+                explanation: "樹枝：樹木的枝條。"
+            },
+            {
+                question: "能趕快長出新芽：",
+                target: "新芽",
+                options: ["新芽", "新牙", "新蚜", "新衙"],
+                answer: "新芽",
+                explanation: "新芽：新長出來的芽。"
+            },
+            {
+                question: "美麗的花兒也能快快綻放：",
+                target: "花兒",
+                options: ["花兒", "花兒", "花兒", "花兒"],
+                answer: "花兒",
+                explanation: "花兒：花朵的親暱稱呼。"
+            },
+            {
+                question: "一天，巨人發現：",
+                target: "一天",
+                options: ["一天", "一天", "一天", "一天"],
+                answer: "一天",
+                explanation: "一天：某一天的意思。"
+            },
+            {
+                question: "圍牆上有個小洞：",
+                target: "小洞",
+                options: ["小洞", "小洞", "小洞", "小洞"],
+                answer: "小洞",
+                explanation: "小洞：小的洞口。"
+            },
+            {
+                question: "孩子們正一個個從洞口鑽進花園：",
+                target: "一個個",
+                options: ["一個個", "一個個", "一個個", "一個個"],
+                answer: "一個個",
+                explanation: "一個個：逐個、依次的意思。"
+            },
+            {
+                question: "他們走過的地方：",
+                target: "走過",
+                options: ["走過", "走過", "走過", "走過"],
+                answer: "走過",
+                explanation: "走過：行走經過的意思。"
+            },
+            {
+                question: "草綠了！",
+                target: "草綠",
+                options: ["草綠", "草綠", "草綠", "草綠"],
+                answer: "草綠",
+                explanation: "草綠：草兒變綠了。"
+            },
+            {
+                question: "跑過的地方：",
+                target: "跑過",
+                options: ["跑過", "跑過", "跑過", "跑過"],
+                answer: "跑過",
+                explanation: "跑過：跑步經過的意思。"
+            },
+            {
+                question: "花開了！",
+                target: "花開",
+                options: ["花開", "花開", "花開", "花開"],
+                answer: "花開",
+                explanation: "花開：花朵開放的意思。"
+            },
+            {
+                question: "跳過的地方：",
+                target: "跳過",
+                options: ["跳過", "跳過", "跳過", "跳過"],
+                answer: "跳過",
+                explanation: "跳過：跳躍經過的意思。"
+            },
+            {
+                question: "小鳥飛來了！",
+                target: "飛來",
+                options: ["飛來", "飛來", "飛來", "飛來"],
+                answer: "飛來",
+                explanation: "飛來：飛翔而來的意思。"
+            },
+            {
+                question: "花園又熱鬧了起來：",
+                target: "又熱鬧",
+                options: ["又熱鬧", "又熱鬧", "又熱鬧", "又熱鬧"],
+                answer: "又熱鬧",
+                explanation: "又熱鬧：再次變得熱鬧的意思。"
+            },
+            {
+                question: "巨人終於明白：",
+                target: "終於",
+                options: ["終於", "終於", "終於", "終於"],
+                answer: "終於",
+                explanation: "終於：表示經過較長過程最後出現某種結果。"
+            },
+            {
+                question: "原來快樂是要和大家分享的：",
+                target: "原來",
+                options: ["原來", "原來", "原來", "原來"],
+                answer: "原來",
+                explanation: "原來：表示發現真實情況。"
+            },
+            {
+                question: "快樂是要和大家分享的：",
+                target: "分享",
+                options: ["分享", "分響", "分想", "分享"],
+                answer: "分享",
+                explanation: "分享：與他人共同享受的意思。"
+            },
+            {
+                question: "他立刻拆除了圍牆：",
+                target: "立刻",
+                options: ["立刻", "立克", "立刻", "立客"],
+                answer: "立刻",
+                explanation: "立刻：馬上、立即的意思。"
+            },
+            // 第61-80題
+            {
+                question: "歡迎所有的孩子來花園玩耍：",
+                target: "歡迎",
+                options: ["歡迎", "歡迎", "歡迎", "歡迎"],
+                answer: "歡迎",
+                explanation: "歡迎：高興地迎接。"
+            },
+            {
+                question: "從此以後：",
+                target: "從此",
+                options: ["從此", "從此", "從此", "從此"],
+                answer: "從此",
+                explanation: "從此：從這時起的意思。"
+            },
+            {
+                question: "花園裡充滿了笑聲：",
+                target: "充滿",
+                options: ["充滿", "充滿", "充滿", "充滿"],
+                answer: "充滿",
+                explanation: "充滿：到處都是的意思。"
+            },
+            {
+                question: "春天永遠留在花園裡：",
+                target: "永遠",
+                options: ["永遠", "永遠", "永遠", "永遠"],
+                answer: "永遠",
+                explanation: "永遠：永遠、永恆的意思。"
+            },
+            {
+                question: "巨人也變得快樂起來：",
+                target: "變得",
+                options: ["變得", "變得", "變得", "變得"],
+                answer: "變得",
+                explanation: "變得：變成、變為的意思。"
+            },
+            {
+                question: "他學會了關心別人：",
+                target: "關心",
+                options: ["關心", "關心", "關心", "關心"],
+                answer: "關心",
+                explanation: "關心：關懷、關注的意思。"
+            },
+            {
+                question: "懂得了分享的重要：",
+                target: "懂得",
+                options: ["懂得", "懂得", "懂得", "懂得"],
+                answer: "懂得",
+                explanation: "懂得：明白、了解的意思。"
+            },
+            {
+                question: "這個故事告訴我們：",
+                target: "告訴",
+                options: ["告訴", "告訴", "告訴", "告訴"],
+                answer: "告訴",
+                explanation: "告訴：告知、訴說的意思。"
+            },
+            {
+                question: "自私會帶來孤獨：",
+                target: "自私",
+                options: ["自私", "自私", "自私", "自私"],
+                answer: "自私",
+                explanation: "自私：只顧自己利益的意思。"
+            },
+            {
+                question: "分享才能帶來真正的快樂：",
+                target: "真正",
+                options: ["真正", "真正", "真正", "真正"],
+                answer: "真正",
+                explanation: "真正：真實、名副其實的意思。"
+            },
+            {
+                question: "巨人的改變讓人感動：",
+                target: "改變",
+                options: ["改變", "改變", "改變", "改變"],
+                answer: "改變",
+                explanation: "改變：轉變、變化的意思。"
+            },
+            {
+                question: "孩子們的純真融化了巨人的心：",
+                target: "純真",
+                options: ["純真", "純真", "純真", "純真"],
+                answer: "純真",
+                explanation: "純真：純潔真誠的意思。"
+            },
+            {
+                question: "花園因為有了孩子而美麗：",
+                target: "因為",
+                options: ["因為", "因為", "因為", "因為"],
+                answer: "因為",
+                explanation: "因為：表示原因的連詞。"
+            },
+            {
+                question: "巨人因為有了孩子而快樂：",
+                target: "快樂",
+                options: ["快樂", "快樂", "快樂", "快樂"],
+                answer: "快樂",
+                explanation: "快樂：高興、愉快的心情。"
+            },
+            {
+                question: "這個故事充滿了溫暖：",
+                target: "溫暖",
+                options: ["溫暖", "溫暖", "溫暖", "溫暖"],
+                answer: "溫暖",
+                explanation: "溫暖：溫和暖和的意思。"
+            },
+            {
+                question: "讓我們學會了愛與分享：",
+                target: "愛與分享",
+                options: ["愛與分享", "愛與分享", "愛與分享", "愛與分享"],
+                answer: "愛與分享",
+                explanation: "愛與分享：關愛他人並與人分享。"
+            },
+            {
+                question: "每個孩子都是天使：",
+                target: "天使",
+                options: ["天使", "天使", "天使", "天使"],
+                answer: "天使",
+                explanation: "天使：比喻可愛的孩子。"
+            },
+            {
+                question: "能帶來春天和希望：",
+                target: "希望",
+                options: ["希望", "希望", "希望", "希望"],
+                answer: "希望",
+                explanation: "希望：期望、盼望的意思。"
+            },
+            {
+                question: "巨人終於找到了真正的幸福：",
+                target: "幸福",
+                options: ["幸福", "幸福", "幸福", "幸福"],
+                answer: "幸福",
+                explanation: "幸福：快樂美滿的生活狀態。"
+            },
+            {
+                question: "「恍然大悟」的「恍」是什麼意思？",
+                target: "恍",
+                options: ["突然", "明白", "領悟", "知道"],
+                answer: "突然",
+                explanation: "恍：突然、忽然的意思，表示突然明白過來。"
+            },
+            // 第81-100題
+            {
+                question: "「拆除」的「拆」正確讀音是？",
+                target: "拆",
+                options: ["chāi", "zhé", "cāi", "chè"],
+                answer: "chāi",
+                explanation: "拆（chāi）：把結構破壞或拆開的意思。"
+            },
+            {
+                question: "「極了」的「極」可以替換成哪個字？",
+                target: "極",
+                options: ["很", "最", "非", "特"],
+                answer: "很",
+                explanation: "極了表示程度很深，可以用「很」來替換，如「很高興」。"
+            },
+            {
+                question: "「盛開」的「盛」在這裡的意思是？",
+                target: "盛",
+                options: ["茂盛", "盛裝", "盛飯", "盛情"],
+                answer: "茂盛",
+                explanation: "盛開：花朵開得很茂盛的樣子。"
+            },
+            {
+                question: "「隨著」的「隨」正確的筆順是？",
+                target: "隨",
+                options: ["先寫左耳旁", "先寫右邊", "先寫走之底", "隨便寫"],
+                answer: "先寫左耳旁",
+                explanation: "隨字的筆順：先寫左耳旁，再寫右邊的部分。"
+            },
+            {
+                question: "「愉悅」的「悅」與哪個字同部首？",
+                target: "悅",
+                options: ["說", "快", "閱", "月"],
+                answer: "快",
+                explanation: "悅和快都是心字底，與心情有關。"
+            },
+            {
+                question: "「拜訪」的「拜」共有幾畫？",
+                target: "拜",
+                options: ["9畫", "8畫", "10畫", "7畫"],
+                answer: "9畫",
+                explanation: "拜字的筆畫：9畫。"
+            },
+            {
+                question: "「免得」的「免」去掉一撇是什麼字？",
+                target: "免",
+                options: ["兔", "勉", "晚", "冕"],
+                answer: "兔",
+                explanation: "免字去掉一撇就是兔字。"
+            },
+            {
+                question: "「離開」的「離」是什麼結構？",
+                target: "離",
+                options: ["左右結構", "上下結構", "半包圍", "獨體字"],
+                answer: "左右結構",
+                explanation: "離字是左右結構，左邊是隹，右邊是禸。"
+            },
+            {
+                question: "「顯得」的「顯」裡面有幾個「日」？",
+                target: "顯",
+                options: ["2個", "1個", "3個", "4個"],
+                answer: "2個",
+                explanation: "顯字裡面有兩個日字。"
+            },
+            {
+                question: "「漫長」的「漫」與水有關，因為部首是？",
+                target: "漫",
+                options: ["氵", "冫", "灬", "水"],
+                answer: "氵",
+                explanation: "漫字的部首是氵（水字旁），與水有關。"
+            },
+            {
+                question: "「盼望」的「盼」與哪個器官有關？",
+                target: "盼",
+                options: ["眼睛", "嘴巴", "心臟", "耳朵"],
+                answer: "眼睛",
+                explanation: "盼字是目字旁，與眼睛有關，表示看的意思。"
+            },
+            {
+                question: "「乾枯」的「枯」與什麼有關？",
+                target: "枯",
+                options: ["樹木", "水", "火", "土"],
+                answer: "樹木",
+                explanation: "枯字是木字旁，與樹木有關，表示樹木乾枯。"
+            },
+            {
+                question: "「鑽進」的「鑽」部首是？",
+                target: "鑽",
+                options: ["金", "石", "專", "玉"],
+                answer: "金",
+                explanation: "鑽字是金字旁，與金屬有關。"
+            },
+            {
+                question: "「自由自在」是屬於什麼類型的成語？",
+                target: "自由自在",
+                options: ["ABAC", "AABB", "ABAB", "ABCD"],
+                answer: "ABAC",
+                explanation: "自由自在屬於ABAC型成語，第一、三字相同。"
+            },
+            {
+                question: "「鳥語花香」描寫的是什麼季節？",
+                target: "鳥語花香",
+                options: ["春天", "夏天", "秋天", "冬天"],
+                answer: "春天",
+                explanation: "鳥語花香形容春天美好的景象。"
+            },
+            {
+                question: "「冷冷清清」的反義詞是？",
+                target: "冷冷清清",
+                options: ["熱熱鬧鬧", "清清靜靜", "安安靜靜", "冷冷冰冰"],
+                answer: "熱熱鬧鬧",
+                explanation: "冷冷清清形容寂靜，反義詞是熱熱鬧鬧。"
+            },
+            {
+                question: "「快快綻放」的「綻放」是形容什麼？",
+                target: "綻放",
+                options: ["花朵開放", "笑容展開", "心情愉快", "陽光燦爛"],
+                answer: "花朵開放",
+                explanation: "綻放主要用來形容花朵開放的美麗樣子。"
+            },
+            {
+                question: "課文中巨人一開始築牆的原因是？",
+                target: "築牆原因",
+                options: ["不想讓孩子進來", "保護花園", "裝飾花園", "擋風遮雨"],
+                answer: "不想讓孩子進來",
+                explanation: "巨人一開始築牆是因為不想讓孩子們進入他的花園。"
+            },
+            {
+                question: "巨人拆除圍牆後，花園變得怎麼樣？",
+                target: "拆除圍牆",
+                options: ["百花盛開", "冷冷清清", "雜草叢生", "無人問津"],
+                answer: "百花盛開",
+                explanation: "拆除圍牆後，孩子們來了，花園變得百花盛開，充滿生機。"
+            },
+            {
+                question: "這篇課文的主旨是？",
+                target: "主旨",
+                options: ["分享帶來快樂", "獨享更快樂", "花園需要圍牆", "孩子很吵鬧"],
+                answer: "分享帶來快樂",
+                explanation: "課文告訴我們分享才能帶來真正的快樂。"
+            }
+        ];
+
+        // 全域變數
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedOption = null;
+        let isFlipped = false;
+
+        // DOM 元素
+        const flashcard = document.getElementById('flashcard');
+        const questionText = document.getElementById('question-text');
+        const targetWord = document.getElementById('target-word');
+        const optionsContainer = document.getElementById('options-container');
+        const correctAnswer = document.getElementById('correct-answer');
+        const answerExplanation = document.getElementById('answer-explanation');
+        const answerResult = document.getElementById('answer-result');
+        const scoreElement = document.getElementById('score');
+        const currentQuestionElement = document.getElementById('current-question');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = document.getElementById('progress-percentage');
+
+        // 按鈕元素
+        const speakBtn = document.getElementById('speak-btn');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // 初始化
+        function init() {
+            totalQuestionsElement.textContent = questionBank.length;
+            loadQuestion(currentQuestionIndex);
+            
+            // 綁定按鈕事件
+            speakBtn.addEventListener('click', speakCurrentQuestion);
+            checkBtn.addEventListener('click', checkAnswer);
+            nextBtn.addEventListener('click', goToNextQuestion);
+            resetBtn.addEventListener('click', resetQuiz);
+        }
+
+        // 加載題目
+        function loadQuestion(index) {
+            if (index >= questionBank.length) {
+                showFinalResult();
+                return;
+            }
+
+            const question = questionBank[index];
+            questionText.textContent = question.question;
+            targetWord.textContent = question.target;
+            correctAnswer.textContent = question.answer;
+            answerExplanation.textContent = question.explanation;
+            answerResult.textContent = '';
+            
+            currentQuestionElement.textContent = index + 1;
+            selectedOption = null;
+            isFlipped = false;
+            flashcard.classList.remove('flipped');
+
+            // 清空選項
+            optionsContainer.innerHTML = '';
+
+            // 創建選項按鈕
+            question.options.forEach((option, optionIndex) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn bg-white hover:bg-light text-primary font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105';
+                button.textContent = option;
+                button.dataset.index = optionIndex;
+                button.addEventListener('click', () => selectOption(button, option));
+                optionsContainer.appendChild(button);
+            });
+
+            // 更新進度
+            updateProgress();
+        }
+
+        // 選擇選項
+        function selectOption(button, option) {
+            // 移除其他按鈕的選中狀態
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white');
+                btn.classList.add('bg-white', 'text-primary');
+            });
+
+            // 添加當前按鈕的選中狀態
+            button.classList.remove('bg-white', 'text-primary');
+            button.classList.add('bg-primary', 'text-white');
+            
+            selectedOption = option;
+        }
+
+        // 檢查答案
+        function checkAnswer() {
+            if (!selectedOption) {
+                showToast('請先選擇一個選項！', 'warning');
+                return;
+            }
+
+            const question = questionBank[currentQuestionIndex];
+            const isCorrect = selectedOption === question.answer;
+
+            if (isCorrect) {
+                score++;
+                scoreElement.textContent = score;
+                answerResult.textContent = '答對了！很棒！';
+                answerResult.className = 'text-2xl font-bold text-green-400';
+            } else {
+                answerResult.textContent = `答錯了，正確答案是：${question.answer}`;
+                answerResult.className = 'text-xl font-bold text-red-400';
+            }
+
+            // 翻轉卡片顯示答案
+            flashcard.classList.add('flipped');
+            isFlipped = true;
+        }
+
+        // 下一題
+        function goToNextQuestion() {
+            if (!isFlipped && currentQuestionIndex < questionBank.length - 1) {
+                showToast('請先檢查答案！', 'warning');
+                return;
+            }
+
+            currentQuestionIndex++;
+            loadQuestion(currentQuestionIndex);
+        }
+
+        // 重新開始
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreElement.textContent = score;
+            loadQuestion(currentQuestionIndex);
+        }
+
+        // 更新進度
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / questionBank.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressPercentage.textContent = `${Math.round(progress)}%`;
+        }
+
+        // 語音朗讀當前題目
+        function speakCurrentQuestion() {
+            if ('speechSynthesis' in window) {
+                const question = questionBank[currentQuestionIndex];
+                const textToSpeak = `${question.question} 請選擇正確的答案：${question.options.join('、')}`;
+                
+                // 停止之前的朗讀
+                window.speechSynthesis.cancel();
+                
+                // 創建朗讀實例
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'zh-TW'; // 台灣繁體中文
+                utterance.rate = 0.9; // 朗讀速度
+                utterance.pitch = 1; // 音調
+                
+                // 開始朗讀
+                window.speechSynthesis.speak(utterance);
+                
+                showToast('正在朗讀題目...', 'info');
+            } else {
+                showToast('您的瀏覽器不支援語音朗讀功能', 'error');
+            }
+        }
+
+        // 顯示最終結果
+        function showFinalResult() {
+            questionText.textContent = `測驗完成！您的得分是：${score}/${questionBank.length}`;
+            targetWord.textContent = '';
+            optionsContainer.innerHTML = '';
+            
+            const accuracy = (score / questionBank.length) * 100;
+            let resultMessage = '';
+            
+            if (accuracy >= 90) {
+                resultMessage = '太棒了！您完全掌握了這些詞彙！';
+            } else if (accuracy >= 70) {
+                resultMessage = '不錯哦！繼續加油！';
+            } else if (accuracy >= 50) {
+                resultMessage = '還不錯，再練習一下會更好！';
+            } else {
+                resultMessage = '需要多練習哦！加油！';
+            }
+            
+            answerResult.textContent = resultMessage;
+            answerResult.className = 'text-2xl font-bold text-yellow-400';
+            
+            // 禁用按鈕
+            speakBtn.disabled = true;
+            checkBtn.disabled = true;
+            nextBtn.disabled = true;
+            
+            showToast(`測驗完成！得分：${score}/${questionBank.length}（${accuracy.toFixed(1)}%）`, 'success');
+        }
+
+        // 顯示提示框
+        function showToast(message, type = 'info') {
+            // 創建提示框
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+            
+            // 設置樣式
+            switch(type) {
+                case 'success':
+                    toast.classList.add('bg-green-500', 'text-white');
+                    break;
+                case 'error':
+                    toast.classList.add('bg-red-500', 'text-white');
+                    break;
+                case 'warning':
+                    toast.classList.add('bg-yellow-500', 'text-white');
+                    break;
+                default:
+                    toast.classList.add('bg-blue-500', 'text-white');
+            }
+            
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // 顯示動畫
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 10);
+            
+            // 隱藏動畫
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // 頁面加載完成後初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
