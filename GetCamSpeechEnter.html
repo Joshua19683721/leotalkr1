@@ -3,107 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>語音自動拍照版</title>
+    <title>拍照分析對話 - 英語學習版</title>
     <style>
-        /* 基礎樣式保持一致 */
-        body { font-family: sans-serif; background: #1a1a1a; color: white; margin: 0; padding: 20px; text-align: center; }
-        #videoElement { width: 100%; max-width: 400px; border-radius: 15px; border: 3px solid #667eea; margin-top: 10px; }
-        .status-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .voice-log { color: #aaa; font-size: 14px; margin-top: 5px; font-style: italic; }
-        .btn-start { background: #ff4757; color: white; padding: 15px 30px; border: none; border-radius: 50px; font-size: 18px; cursor: pointer; margin-bottom: 20px; }
-        .recording { animation: pulse 1.5s infinite; color: #2ecc71; font-weight: bold; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            padding-bottom: 160px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 10px; }
+        .config-toggle {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 6px 12px;
+            margin-bottom: 10px; cursor: pointer;
+        }
+        .api-config {
+            background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 15px;
+            margin-bottom: 10px; display: none; flex-direction: column; gap: 10px;
+        }
+        .api-config.expanded { display: flex; }
+        .conversation {
+            background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px;
+            min-height: 300px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .message { margin-bottom: 20px; display: flex; flex-direction: column; }
+        .message.user { align-items: flex-end; }
+        .message.ai { align-items: flex-start; }
+        .message-text {
+            padding: 12px 16px; border-radius: 18px; max-width: 90%; font-size: 15px;
+        }
+        .message-text.user { background: #667eea; color: white; }
+        .message-text.ai { background: #f0f0f0; color: #333; width: 100%; }
+        
+        /* 英語內容樣式 */
+        .eng-sentence {
+            color: #2196F3; font-size: 18px; font-weight: 500; cursor: pointer;
+            padding: 5px; border-radius: 5px; display: block; transition: 0.2s;
+        }
+        .eng-sentence:hover { background: rgba(33, 150, 243, 0.1); }
+        .eng-sentence.speaking { background: #ffeb3b; color: #000; transform: scale(1.02); }
+        .tra-sentence { color: #666; font-size: 14px; margin-bottom: 12px; padding-left: 5px; }
+
+        /* 相機控制 */
+        .camera-controls {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; padding: 15px; border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); z-index: 100;
+        }
+        #videoElement {
+            position: fixed; bottom: 130px; left: 15px; width: 80px; height: 110px;
+            object-fit: cover; border-radius: 8px; border: 2px solid white; background: #000;
+        }
+        .button-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; }
+        .btn-capture { background: #667eea; color: white; }
+        .btn-submit { background: #28a745; color: white; }
+        .status { text-align: center; font-size: 12px; color: #666; margin-top: 8px; }
     </style>
 </head>
 <body>
 
-    <div class="status-box">
-        <h2>🎙 語音辨識狀態</h2>
-        <button id="startVoiceBtn" class="btn-start">點擊此處：啟動語音監聽</button>
-        <div id="voiceStatus">尚未啟動</div>
-        <div id="lastHeard" class="voice-log">聽到的內容會顯示在這裡...</div>
+<div class="container">
+    <div class="header">
+        <h1>📸 拍照學英語</h1>
+        <div class="config-toggle" onclick="toggleConfig()">⚙️ 設定 API Key / 語速</div>
+        <div class="api-config" id="apiConfig">
+            <input type="password" id="apiKey" placeholder="輸入 DashScope API Key" style="padding:8px;">
+            <label><input type="checkbox" id="saveApiKey" checked> 儲存金鑰</label>
+            <hr>
+            <div>語速：<input type="range" id="speechRate" min="0.5" max="1.5" step="0.1" value="0.8" oninput="updateRateLabel(this.value)"> <span id="rateVal">0.8x</span></div>
+            <label><input type="checkbox" id="continuousSpeech" checked> 自動循環播放</label>
+        </div>
     </div>
 
+    <div class="conversation" id="conversation">
+        <div style="text-align:center; color:#999; margin-top:50px;">拍一張照，我會用英文跟你聊天！</div>
+    </div>
+</div>
+
+<div class="camera-controls">
     <video id="videoElement" autoplay playsinline></video>
-    <canvas id="canvasElement" style="display: none;"></canvas>
-
-    <div style="margin-top: 20px;">
-        <p>請說：<strong>「拍照」</strong>、<strong>「照相」</strong> 或 <strong>「拍一張」</strong></p>
+    <img id="previewImage" style="display:none; position:fixed; bottom:130px; left:15px; width:80px; height:110px; object-fit:cover; border-radius:8px; border:2px solid #fff;">
+    
+    <div class="button-group">
+        <button class="btn btn-capture" onclick="capturePhoto()">📷 拍照</button>
+        <button class="btn btn-submit" onclick="handleSubmit()">📤 送出分析</button>
     </div>
+    <div class="status" id="status">相機啟動中...</div>
+</div>
 
-    <script>
+<canvas id="canvasElement" style="display:none;"></canvas>
+
+<script>
+    let stream;
+    let currentImageData = null;
+    const synth = window.speechSynthesis;
+    let isSpeaking = false;
+
+    // 初始化相機
+    async function initCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } 
+            });
+            document.getElementById('videoElement').srcObject = stream;
+            document.getElementById('status').innerText = "相機已就緒";
+        } catch (err) {
+            document.getElementById('status').innerText = "相機開啟失敗";
+        }
+    }
+
+    function toggleConfig() {
+        document.getElementById('apiConfig').classList.toggle('expanded');
+    }
+
+    function updateRateLabel(val) {
+        document.getElementById('rateVal').innerText = val + 'x';
+    }
+
+    function capturePhoto() {
         const video = document.getElementById('videoElement');
         const canvas = document.getElementById('canvasElement');
-        const voiceStatus = document.getElementById('voiceStatus');
-        const lastHeard = document.getElementById('lastHeard');
-        const startVoiceBtn = document.getElementById('startVoiceBtn');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        currentImageData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        const preview = document.getElementById('previewImage');
+        preview.src = currentImageData;
+        preview.style.display = 'block';
+        document.getElementById('status').innerText = "照片已就緒，請點擊送出";
+    }
 
-        // 1. 初始化相機
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(s => video.srcObject = s);
+    async function handleSubmit() {
+        const key = document.getElementById('apiKey').value;
+        if (!key || !currentImageData) return alert("請輸入 API Key 並先拍照");
+        if (document.getElementById('saveApiKey').checked) localStorage.setItem('qwen_api_key', key);
 
-        // 2. 核心拍照功能
-        function takePhoto() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            
-            // 視覺回饋：閃一下白光
-            document.body.style.backgroundColor = "white";
-            setTimeout(() => document.body.style.backgroundColor = "#1a1a1a", 100);
-            
-            console.log("語音觸發拍照成功！");
-            // 此處可接 handlePhotoSubmit();
-        }
-
-        // 3. 語音辨識設定
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            voiceStatus.innerHTML = "❌ 你的瀏覽器不支援語音辨識，請使用 Chrome";
-        } else {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'zh-TW';
-            recognition.continuous = true;     // 持續監聽
-            recognition.interimResults = true; // 顯示中間辨識結果，反應更快
-
-            recognition.onstart = () => {
-                voiceStatus.innerHTML = "<span class='recording'>● 正在聽你說話...</span>";
-                startVoiceBtn.style.display = "none";
-            };
-
-            recognition.onresult = (event) => {
-                let resultText = "";
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    resultText += event.results[i][0].transcript;
-                }
-                
-                lastHeard.innerText = "聽到的是：" + resultText;
-
-                // 擴大辨識範圍，只要包含這些字眼就觸發
-                const keywords = ["拍照", "照相", "拍一張", "攝影", "茄子"];
-                if (keywords.some(key => resultText.includes(key))) {
-                    takePhoto();
-                    // 為了防止重複拍照，辨識到後先停一下再重開
-                    recognition.stop();
-                }
-            };
-
-            recognition.onerror = (e) => {
-                console.error("辨識錯誤:", e.error);
-                if(e.error === 'not-allowed') alert("請允許麥克風權限！");
-            };
-
-            // 自動重啟：當辨識結束或拍照後自動再開啟
-            recognition.onend = () => {
-                console.log("辨識結束，重新啟動...");
-                recognition.start();
-            };
-
-            // 必須透過點擊按鈕來啟動
-            startVoiceBtn.addEventListener('click', () => {
-                recognition.start();
+        document.getElementById('status').innerText = "AI 正在思考中...";
+        
+        try {
+            const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: "qwen-vl-max",
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: "請分析這張照片。請直接輸出3句相關的英文句子，每句英文後面緊跟中文翻譯。格式如下：\nSentence 1.\n中文翻譯1\nSentence 2.\n中文翻譯2" },
+                                { type: "image_url", image_url: { url: currentImageData } }
+                            ]
+                        }
+                    ]
+                })
             });
+
+            const data = await response.json();
+            const content = data.choices[0].message.content;
+            displayResponse(content);
+            document.getElementById('status').innerText = "分析完成";
+        } catch (err) {
+            alert("API 請求出錯: " + err.message);
         }
-    </script>
+    }
+
+    function displayResponse(text) {
+        const container = document.getElementById('conversation');
+        container.innerHTML = ""; // 清空
+        
+        const msgDiv = document.createElement('div');
+        msgDiv.className = "message ai";
+        const textDiv = document.createElement('div');
+        textDiv.className = "message-text ai";
+
+        // 簡單解析：假設奇數行為英文，偶數行為中文
+        const lines = text.split('\n').filter(l => l.trim() !== "");
+        let sentencesToRead = [];
+
+        for (let i = 0; i < lines.length; i += 2) {
+            const eng = lines[i];
+            const chi = lines[i+1] || "";
+            
+            const engSpan = document.createElement('span');
+            engSpan.className = "eng-sentence";
+            engSpan.innerText = eng;
+            engSpan.onclick = () => speak(eng, engSpan);
+            
+            const chiDiv = document.createElement('div');
+            chiDiv.className = "tra-sentence";
+            chiDiv.innerText = chi;
+
+            textDiv.appendChild(engSpan);
+            textDiv.appendChild(chiDiv);
+            sentencesToRead.push({ text: eng, el: engSpan });
+        }
+
+        msgDiv.appendChild(textDiv);
+        container.appendChild(msgDiv);
+
+        // 自動開始朗讀第一句
+        if (sentencesToRead.length > 0) {
+            autoReadFlow(sentencesToRead, 0);
+        }
+    }
+
+    function autoReadFlow(list, index) {
+        if (index >= list.length) {
+            if (document.getElementById('continuousSpeech').checked) {
+                setTimeout(() => autoReadFlow(list, 0), 2000); // 循環
+            }
+            return;
+        }
+        speak(list[index].text, list[index].el, () => {
+            setTimeout(() => autoReadFlow(list, index + 1), 500);
+        });
+    }
+
+    function speak(text, element, callback) {
+        synth.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US';
+        utter.rate = document.getElementById('speechRate').value;
+
+        utter.onstart = () => element.classList.add('speaking');
+        utter.onend = () => {
+            element.classList.remove('speaking');
+            if (callback) callback();
+        };
+
+        synth.speak(utter);
+    }
+
+    // 載入存檔
+    window.onload = () => {
+        const saved = localStorage.getItem('qwen_api_key');
+        if (saved) document.getElementById('apiKey').value = saved;
+        initCamera();
+    };
+</script>
+
 </body>
 </html>
