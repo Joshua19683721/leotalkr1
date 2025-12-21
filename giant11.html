@@ -99,11 +99,8 @@
                                 題目將在此顯示
                             </p>
                             <div class="bg-light/50 rounded-lg p-4 mb-6">
-                                <h4 class="text-lg font-bold text-dark mb-2">
-                                    <i class="fa fa-star mr-2"></i>重點字詞
-                                </h4>
-                                <p class="text-2xl font-bold text-primary" id="target-word">
-                                    目標字詞
+                                <p class="text-xl font-bold text-primary text-center">
+                                    <i class="fa fa-hand-pointer-o mr-2"></i>請選擇下方答案
                                 </p>
                             </div>
                         </div>
@@ -905,7 +902,7 @@
         // DOM 元素
         const flashcard = document.getElementById('flashcard');
         const questionText = document.getElementById('question-text');
-        const targetWord = document.getElementById('target-word');
+        // targetWord element removed
         const optionsContainer = document.getElementById('options-container');
         const correctAnswer = document.getElementById('correct-answer');
         const answerExplanation = document.getElementById('answer-explanation');
@@ -1029,7 +1026,7 @@
 
             const question = questionBank[index];
             questionText.textContent = question.question;
-            targetWord.textContent = question.target;
+            // targetWord.textContent = question.target; // Removed
             correctAnswer.textContent = question.answer;
             answerExplanation.textContent = question.explanation;
             answerResult.textContent = '';
@@ -1043,7 +1040,14 @@
             optionsContainer.innerHTML = '';
 
             // 創建選項按鈕
-            question.options.forEach((option, optionIndex) => {
+            // 複製並打亂選項順序
+            const shuffledOptions = [...question.options];
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+
+            shuffledOptions.forEach((option, optionIndex) => {
                 const button = document.createElement('button');
                 button.className = 'option-btn bg-white hover:bg-light text-primary font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105';
                 button.textContent = option;
@@ -1166,7 +1170,7 @@
         // 顯示最終結果
         function showFinalResult() {
             questionText.textContent = `測驗完成！您的得分是：${score}/${questionBank.length}`;
-            targetWord.textContent = '';
+            // targetWord.textContent = ''; // Removed
             optionsContainer.innerHTML = '';
             
             const accuracy = (score / questionBank.length) * 100;
