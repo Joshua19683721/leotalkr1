@@ -3,46 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>S29 指環連動：拍照分析對話</title>
+    <title>語音控制拍照分析</title>
     <style>
-        /* 保留你原本的所有 CSS 樣式 */
+        /* ... 保持原本的 CSS 樣式 ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 10px; padding-bottom: 120px; }
         .container { max-width: 600px; margin: 0 auto; }
         .header { text-align: center; color: white; margin-bottom: 10px; }
-        .header h1 { font-size: 20px; margin-bottom: 4px; }
-        .config-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 6px 12px; margin-bottom: 10px; cursor: pointer; color: white; }
-        .api-config { background: rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: none; flex-direction: column; gap: 8px; }
-        .api-config.expanded { display: flex; }
-        .api-config input { width: 100%; padding: 8px; border-radius: 6px; border: none; }
-        .conversation { background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; min-height: 400px; max-height: calc(100vh - 280px); overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
-        .message { margin-bottom: 20px; display: flex; flex-direction: column; }
-        .message-text { padding: 12px 16px; border-radius: 18px; max-width: 90%; margin-bottom: 8px; font-size: 14px; }
-        .message-text.user { background: #667eea; color: white; align-self: flex-end; }
-        .message-text.ai { background: #f0f0f0; color: #333; align-self: flex-start; }
-        .message-image { width: 100%; border-radius: 12px; margin-top: 8px; }
-        .camera-controls { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.98); padding: 15px; border-top-left-radius: 25px; border-top-right-radius: 25px; z-index: 100; }
-        #videoElement { position: fixed; bottom: 130px; left: 20px; width: 80px; height: 142px; border-radius: 8px; object-fit: cover; background: #000; z-index: 50; border: 2px solid white; }
+        .conversation { background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; min-height: 400px; max-height: calc(100vh - 280px); overflow-y: auto; }
+        .camera-controls { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.98); padding: 15px; border-top-left-radius: 25px; z-index: 100; }
+        #videoElement { position: fixed; bottom: 130px; left: 20px; width: 80px; height: 142px; border-radius: 8px; object-fit: cover; background: #000; border: 2px solid white; }
         .button-group { display: flex; gap: 10px; justify-content: center; }
         .btn { padding: 12px 20px; border: none; border-radius: 25px; font-weight: 600; cursor: pointer; }
         .btn-capture { background: #667eea; color: white; }
         .btn-submit { background: #28a745; color: white; }
-        .status { text-align: center; color: #666; font-size: 12px; margin-top: 8px; }
+        .status { text-align: center; color: #666; font-size: 13px; margin-top: 8px; font-weight: bold; }
+        .voice-indicator { color: #ffeb3b; font-size: 12px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📸 S29 指環自動化分析</h1>
-            <p>按下指環音量上鍵自動拍照</p>
-            <div class="config-toggle" onclick="document.getElementById('apiConfig').classList.toggle('expanded')">⚙️ 設定 API</div>
-            <div class="api-config" id="apiConfig">
-                <input type="password" id="apiKey" placeholder="貼上 API Key" />
-            </div>
+            <h1>🎙 語音感應分析儀</h1>
+            <p>對著手機說「**拍照**」即可自動執行</p>
+            <div id="voiceStatus" class="voice-indicator">正在啟動語音監聽...</div>
         </div>
-        <div class="conversation" id="conversation">
-            <div class="status" id="keyDebugger">等待指環訊號...</div>
-        </div>
+        <div class="conversation" id="conversation"></div>
     </div>
 
     <div class="camera-controls">
@@ -52,100 +38,86 @@
             <button class="btn btn-capture" id="captureBtn">📷 拍照</button>
             <button class="btn btn-submit" id="submitBtn">📤 送出</button>
         </div>
-        <div class="status" id="status">相機啟動中...</div>
+        <div class="status" id="status">等待指令...</div>
     </div>
 
     <script>
-        // --- 核心變數 ---
         const video = document.getElementById('videoElement');
         const canvas = document.getElementById('canvasElement');
         const status = document.getElementById('status');
-        const keyDebugger = document.getElementById('keyDebugger');
+        const voiceStatus = document.getElementById('voiceStatus');
         let currentImageData = null;
-        let isProcessing = false;
 
-        // --- 1. S29 指環攔截邏輯 ---
-        document.addEventListener('keydown', function(event) {
-            const keyName = event.key;
-            keyDebugger.innerText = "偵測到按鍵: " + keyName; // 方便你在手機上看按鍵名稱
-
-            // Android 上 S29 音量上鍵對應名稱
-            if (keyName === 'AudioVolumeUp' || keyName === 'VolumeUp') {
-                event.preventDefault(); 
-                if (isProcessing) return; // 防止重複觸發
-                
-                status.textContent = "🚀 指環觸發：正在拍照...";
-                triggerRingAction();
-            }
-        }, { passive: false });
-
-        async function triggerRingAction() {
-            isProcessing = true;
-            capturePhoto();
-            
-            // 延遲一下確保圖片生成，然後自動送出
-            setTimeout(async () => {
-                if (currentImageData) {
-                    status.textContent = "📤 圖片生成成功，正在上傳分析...";
-                    await handlePhotoSubmit();
-                } else {
-                    status.textContent = "❌ 拍照失敗，請手動點擊網頁獲取權限";
-                    isProcessing = false;
-                }
-            }, 600);
-        }
-
-        // --- 2. 相機功能 ---
+        // --- 1. 相機啟動 ---
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment', width: 1280, height: 720 } 
+                    video: { facingMode: 'environment' } 
                 });
                 video.srcObject = stream;
-                status.textContent = "✅ 相機就緒，可用指環控制";
             } catch (err) {
-                status.textContent = "❌ 相機失敗: " + err.message;
+                status.textContent = "相機啟動失敗";
             }
         }
 
-        function capturePhoto() {
+        // --- 2. 核心拍照動作 ---
+        function performCapture() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
             currentImageData = canvas.toDataURL('image/jpeg', 0.8);
-            status.textContent = "📸 已拍攝！";
-        }
-
-        // --- 3. 模擬原本的送出邏輯 (請確保此處與你原有的 API 函式對接) ---
-        async function handlePhotoSubmit() {
-            const apiKey = document.getElementById('apiKey').value;
-            if (!apiKey) {
-                status.textContent = "⚠️ 請先填寫 API Key";
-                isProcessing = false;
-                return;
-            }
-
-            // 這裡呼叫你原有的 callQwen2VL72B 等 API 處理函式...
-            // 執行完畢後記得將 isProcessing 設回 false
-            console.log("正在發送 API 請求...");
+            status.textContent = "📸 已自動拍照！正在送出...";
             
-            // 示範完畢後重置
-            // isProcessing = false; 
+            // 這裡直接觸發你的 API 送出邏輯
+            // handlePhotoSubmit(); 
         }
 
-        // 頁面載入自動執行
-        window.addEventListener('load', () => {
-            startCamera();
-            // 從 LocalStorage 讀取 API Key 的邏輯可加在此處
-        });
+        // --- 3. 語音辨識監聽 (關鍵字：拍照) ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true; // 持續監聽
+            recognition.interimResults = false; // 只取最終結果
+            recognition.lang = 'zh-TW';
 
-        // 加入點擊頁面激活語音/相機的提醒
-        document.body.addEventListener('click', () => {
-            if (status.textContent.includes("手動點擊")) {
-                startCamera();
-            }
-        }, { once: true });
+            recognition.onstart = () => {
+                voiceStatus.textContent = "🟢 語音監聽中：請說「拍照」";
+            };
 
+            recognition.onresult = (event) => {
+                const lastResult = event.results[event.results.length - 1][0].transcript;
+                console.log("聽到語音：", lastResult);
+
+                if (lastResult.includes("拍照")) {
+                    performCapture();
+                    // 拍照後可以給一個震動回饋 (如果手機支援)
+                    if (navigator.vibrate) navigator.vibrate(100);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("語音辨識錯誤：", event.error);
+                voiceStatus.textContent = "🟡 語音暫中斷，點擊頁面重啟";
+            };
+
+            // 自動重連，確保監聽不中斷
+            recognition.onend = () => {
+                recognition.start();
+            };
+
+            // 啟動辨識 (需使用者手動點過頁面後生效)
+            document.body.addEventListener('click', () => {
+                recognition.start();
+            }, { once: true });
+
+        } else {
+            voiceStatus.textContent = "❌ 此瀏覽器不支持語音辨識";
+        }
+
+        // 按鈕點擊事件 (保留手動功能)
+        document.getElementById('captureBtn').addEventListener('click', performCapture);
+
+        window.onload = startCamera;
     </script>
 </body>
 </html>
