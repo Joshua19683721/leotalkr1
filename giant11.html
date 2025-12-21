@@ -899,6 +899,8 @@
         let score = 0;
         let selectedOption = null;
         let isFlipped = false;
+        let drillActive = false; // Control auto-drill loop
+        let autoDrillTimeout = null; // Store timeout ID for cleanup
 
         // DOM 元素
         const flashcard = document.getElementById('flashcard');
@@ -932,8 +934,94 @@
             resetBtn.addEventListener('click', resetQuiz);
         }
 
+        // 停止自動朗讀
+        function stopAutoDrill() {
+            drillActive = false;
+            if (autoDrillTimeout) {
+                clearTimeout(autoDrillTimeout);
+                autoDrillTimeout = null;
+            }
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        // 開始自動朗讀循環 (10次)
+        function startAutoDrill() {
+            stopAutoDrill();
+            drillActive = true;
+            let count = 0;
+            const maxCount = 10;
+            const question = questionBank[currentQuestionIndex];
+            // 只朗讀題目內容，不包含選項，避免過長
+            const textToSpeak = question.question;
+
+            function playNext() {
+                if (!drillActive) return;
+                if (count >= maxCount) {
+                    // 朗讀完成，自動選擇並檢查答案
+                    autoSelectAndCheck();
+                    return;
+                }
+
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                    utterance.lang = 'zh-TW';
+                    utterance.rate = 1.0;
+                    utterance.onend = () => {
+                        if (drillActive) {
+                            count++;
+                            setTimeout(playNext, 300); // 短暫停頓後繼續下一次
+                        }
+                    };
+                    utterance.onerror = (e) => {
+                        console.error('Speech error:', e);
+                        drillActive = false;
+                    };
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    drillActive = false;
+                }
+            }
+            
+            // 開始第一次朗讀
+            playNext();
+        }
+
+        // 自動選擇正確答案並檢查
+        function autoSelectAndCheck() {
+            if (!drillActive) return;
+            
+            const question = questionBank[currentQuestionIndex];
+            const correctOption = question.answer;
+            
+            // 找到正確選項的按鈕
+            const buttons = optionsContainer.querySelectorAll('.option-btn');
+            let correctBtn = null;
+            buttons.forEach(btn => {
+                if (btn.textContent === correctOption) {
+                    correctBtn = btn;
+                }
+            });
+
+            if (correctBtn) {
+                // 模擬點擊選項
+                selectOption(correctBtn, correctOption);
+                
+                // 模擬點擊檢查答案 (延遲一下讓使用者看到選擇)
+                setTimeout(() => {
+                    if (drillActive) {
+                        checkAnswer();
+                        drillActive = false; // 任務完成，停止 drill 狀態
+                    }
+                }, 500);
+            }
+        }
+
         // 加載題目
         function loadQuestion(index) {
+            stopAutoDrill(); // 確保切換題目時停止舊的朗讀
+
             if (index >= questionBank.length) {
                 showFinalResult();
                 return;
@@ -960,12 +1048,19 @@
                 button.className = 'option-btn bg-white hover:bg-light text-primary font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105';
                 button.textContent = option;
                 button.dataset.index = optionIndex;
-                button.addEventListener('click', () => selectOption(button, option));
+                button.addEventListener('click', () => {
+                    stopAutoDrill(); // 使用者手動操作時停止自動朗讀
+                    selectOption(button, option);
+                });
                 optionsContainer.appendChild(button);
             });
 
             // 更新進度
             updateProgress();
+
+            // 啟動自動朗讀流程
+            // 使用 setTimeout 確保 DOM 渲染完成後再開始，並給使用者一點緩衝時間
+            autoDrillTimeout = setTimeout(startAutoDrill, 800);
         }
 
         // 選擇選項
@@ -1021,6 +1116,15 @@
 
         // 重新開始
         function resetQuiz() {
+            if (!confirm('確定要重新開始嗎？目前的進度將會歸零。')) {
+                return;
+            }
+            
+            // 重新啟用按鈕
+            speakBtn.disabled = false;
+            checkBtn.disabled = false;
+            nextBtn.disabled = false;
+
             currentQuestionIndex = 0;
             score = 0;
             scoreElement.textContent = score;
@@ -1036,6 +1140,7 @@
 
         // 語音朗讀當前題目
         function speakCurrentQuestion() {
+            stopAutoDrill(); // 停止自動朗讀循環，避免衝突
             if ('speechSynthesis' in window) {
                 const question = questionBank[currentQuestionIndex];
                 const textToSpeak = `${question.question} 請選擇正確的答案：${question.options.join('、')}`;
