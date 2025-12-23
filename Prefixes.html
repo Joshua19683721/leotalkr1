@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 萬用單字骨架 9.6 - 聯網 API 版</title>
+    <style>
+        :root { --prefix-clr: #ef4444; --root-clr: #2563eb; --suffix-clr: #10b981; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1200px; width: 100%; }
+        .lab-station { background: #fff; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; position: sticky; top: 10px; z-index: 1000; }
+        .display-area { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .part-box { padding: 10px 20px; border-radius: 12px; background: #e2e8f0; font-weight: 800; font-size: 1.5rem; transition: 0.3s; }
+        .part-box.active { color: white; background: #64748b; }
+        .result-panel { background: #1e293b; color: #f8fafc; padding: 25px; border-radius: 20px; text-align: left; display: none; margin-top: 15px; border-left: 6px solid #fbbf24; }
+        .api-status { font-size: 0.8rem; color: #fbbf24; margin-bottom: 5px; font-weight: bold; }
+        .translation-text { font-size: 2.2rem; color: #fbbf24; font-weight: 900; }
+        .audio-btn { background: #4f46e5; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; margin-left: 10px; font-size: 0.9rem; }
+        .control-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .column { background: #fff; padding: 15px; border-radius: 18px; height: 50vh; overflow-y: auto; border: 1px solid #e2e8f0; }
+        button { width: 100%; padding: 12px; margin: 4px 0; border: 1px solid #f1f5f9; border-radius: 10px; cursor: pointer; background: #f8fafc; text-align: left; display: flex; justify-content: space-between; }
+        button.active { background: #1e293b !important; color: white !important; }
+        .definition-list { margin-top: 10px; font-size: 0.95rem; color: #cbd5e1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="lab-station">
+        <div class="api-status" id="apiStatus">狀態：等待輸入中</div>
+        <div class="display-area">
+            <div class="part-box" id="boxPre">-</div>
+            <div class="part-box" id="boxRoot">請選零件</div>
+            <div class="part-box" id="boxSuf">-</div>
+        </div>
+        <h2 id="resultWord" style="margin: 0; font-size: 2.8rem; text-transform: lowercase;">---</h2>
+        
+        <div class="result-panel" id="resultPanel">
+            <div style="display: flex; align-items: center;">
+                <div id="wordTrans" class="translation-text">查詢中...</div>
+                <button id="audioBtn" class="audio-btn" style="display:none;">🔊 發音</button>
+            </div>
+            <div id="wordPos" style="color:#10b981; font-weight:bold; margin: 5px 0;"></div>
+            <div id="apiContent" class="definition-list"></div>
+            <div id="logicBreakdown" style="border-top:1px solid #334155; margin-top:15px; padding-top:15px; color:#94a3b8; font-size:0.9rem;"></div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="column" id="preCol"><h3>1. 前綴</h3><button onclick="selectPart('pre', '')">∅ NONE</button></div>
+        <div class="column" id="rootCol"><h3>2. 字根</h3><button onclick="selectPart('root', '')">∅ NONE</button></div>
+        <div class="column" id="sufCol"><h3>3. 後綴</h3><button onclick="selectPart('suf', '')">∅ NONE</button></div>
+    </div>
+</div>
+
+<script>
+    const config = {
+        pre: { "In": "內/不", "Ex": "外", "Re": "回/再", "Pro": "前", "Trans": "橫跨", "Sub": "下", "Con": "共", "De": "下/去", "Pre": "預" },
+        root: { "Act": "動", "Port": "搬", "Vis": "看", "Spect": "察", "Dict": "說", "Ject": "投", "Mit": "送", "Struct": "建", "Scrib": "寫", "Tract": "拉", "Press": "壓", "Mot": "動" },
+        suf: { "ion": "名詞", "ive": "形容詞", "able": "形容詞(能)", "or": "人/物", "ly": "副詞", "ment": "名詞(結)", "ate": "動詞" }
+    };
+
+    let state = { pre: '', root: '', suf: '' };
+    let currentAudio = null;
+
+    function init() {
+        ['pre', 'root', 'suf'].forEach(type => {
+            const container = document.getElementById(`${type}Col`);
+            Object.entries(config[type]).forEach(([k, v]) => {
+                const b = document.createElement('button');
+                b.id = `btn-${type}-${k}`;
+                b.innerHTML = `<span><strong>${k}</strong></span> <small>${v}</small>`;
+                b.onclick = () => selectPart(type, k);
+                container.appendChild(b);
+            });
+        });
+    }
+
+    function selectPart(type, key) {
+        state[type] = key;
+        document.querySelectorAll(`#${type}Col button`).forEach(btn => btn.classList.remove('active'));
+        if(key) document.getElementById(`btn-${type}-${key}`).classList.add('active');
+        document.getElementById(`box${type.charAt(0).toUpperCase() + type.slice(1)}`).innerText = key || '-';
+        
+        const word = (state.pre + state.root + state.suf).toLowerCase();
+        document.getElementById('resultWord').innerText = word || "---";
+        if(word.length > 2) fetchDefinition(word);
+    }
+
+    async function fetchDefinition(word) {
+        const panel = document.getElementById('resultPanel');
+        const apiStatus = document.getElementById('apiStatus');
+        const apiContent = document.getElementById('apiContent');
+        panel.style.display = 'block';
+        apiStatus.innerText = "🌐 正在調用 Merriam/Google 數據庫...";
+        apiContent.innerHTML = "正在即時解析單字語義...";
+
+        try {
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            const entry = data[0];
+
+            apiStatus.innerText = "✅ 聯網查詢成功";
+            document.getElementById('wordTrans').innerText = word.toUpperCase();
+            document.getElementById('wordPos').innerText = entry.meanings[0].partOfSpeech.toUpperCase();
+            
+            // 抓取解釋
+            let defs = entry.meanings[0].definitions.slice(0, 2).map(d => `<li>${d.definition}</li>`).join('');
+            apiContent.innerHTML = `<ul style="padding-left:20px;">${defs}</ul>`;
+
+            // 處理發音
+            const audioUrl = entry.phonetics.find(p => p.audio)?.audio;
+            if (audioUrl) {
+                currentAudio = new Audio(audioUrl);
+                document.getElementById('audioBtn').style.display = 'inline-block';
+                document.getElementById('audioBtn').onclick = () => currentAudio.play();
+            } else {
+                document.getElementById('audioBtn').style.display = 'none';
+            }
+        } catch (e) {
+            apiStatus.innerText = "⚠️ 字典未收錄該拼法，切換至 AI 邏輯推測";
+            document.getElementById('wordTrans').innerText = "未收錄單字";
+            apiContent.innerHTML = "提示：這可能是一個罕見組合，或請檢查拼寫（如 reporter vs reportor）。";
+        }
+
+        // 永遠顯示字根邏輯解構
+        document.getElementById('logicBreakdown').innerHTML = `
+            <strong>字根邏輯：</strong> ${config.pre[state.pre] || ''} (${state.pre}) + 
+            ${config.root[state.root] || ''} (${state.root}) + 
+            ${config.suf[state.suf] || ''} (${state.suf})
+        `;
+    }
+
+    init();
+</script>
+</body>
+</html>
