@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>繁體中文填空閃卡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/v4-shims.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF6B35',
+                        secondary: '#4ECDC4',
+                        accent: '#FFE66D',
+                        dark: '#292F36'
+                    },
+                    fontFamily: {
+                        chinese: ['Noto Sans TC', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-flip {
+                transform-style: preserve-3d;
+                transition: transform 0.6s;
+            }
+            .card-flipped {
+                transform: rotateY(180deg);
+            }
+            .card-front, .card-back {
+                backface-visibility: hidden;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+            .card-back {
+                transform: rotateY(180deg);
+            }
+            .fill-blank {
+                border-bottom: 3px solid #FF6B35;
+                padding: 0 10px;
+                margin: 0 5px;
+                color: transparent;
+                min-width: 60px;
+                display: inline-block;
+                text-align: center;
+            }
+            .answer-revealed {
+                color: #292F36;
+                background-color: #FFE66D;
+                border-radius: 4px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-green-50 min-h-screen font-chinese">
+    <!-- 頁首 -->
+    <header class="bg-primary text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-[clamp(1.8rem,4vw,3rem)] font-bold mb-2">
+                <i class="fa fa-book text-accent mr-3"></i>
+                繁體中文填空閃卡
+            </h1>
+            <p class="text-[clamp(1rem,2vw,1.2rem)] opacity-90">《奇特的朋友》課文重點字詞練習</p>
+        </div>
+    </header>
+
+    <!-- 主要內容 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 控制區域 -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <button onclick="prevCard()" class="bg-secondary hover:bg-secondary/90 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    <i class="fa fa-arrow-left mr-2"></i>上一題
+                </button>
+                <button onclick="toggleAnswer()" class="bg-accent hover:bg-accent/90 text-dark px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    <i class="fa fa-eye mr-2"></i>顯示答案
+                </button>
+                <button onclick="nextCard()" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    下一題<i class="fa fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+            
+            <div class="flex justify-center gap-4">
+                <button onclick="speakCurrent()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-all duration-300">
+                    <i class="fa fa-volume-up mr-2"></i>朗讀題目
+                </button>
+                <button onclick="shuffleCards()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg transition-all duration-300">
+                    <i class="fa fa-random mr-2"></i>隨機排序
+                </button>
+            </div>
+        </div>
+
+        <!-- 進度指示器 -->
+        <div class="text-center mb-8">
+            <div class="inline-block bg-white rounded-full px-6 py-3 shadow-md">
+                <span id="currentCard" class="text-xl font-bold text-primary">1</span>
+                <span class="text-gray-600">/</span>
+                <span id="totalCards" class="text-xl font-bold text-gray-600">20</span>
+                <span class="ml-4 text-gray-500">題目</span>
+            </div>
+        </div>
+
+        <!-- 閃卡區域 -->
+        <div class="max-w-4xl mx-auto perspective-1000">
+            <div id="card" class="card-flip relative h-[400px] w-full">
+                <!-- 卡片正面 (題目) -->
+                <div class="card-front bg-white rounded-2xl shadow-xl p-8 flex flex-col justify-center items-center">
+                    <div class="w-full">
+                        <h2 class="text-2xl font-bold text-dark mb-6 text-center">
+                            <i class="fa fa-question-circle text-primary mr-2"></i>填空題
+                        </h2>
+                        <div id="questionText" class="text-[clamp(1.1rem,2.5vw,1.4rem)] leading-relaxed text-gray-800 mb-8">
+                            請填入正確的字詞
+                        </div>
+                        <div class="text-center">
+                            <button onclick="speakCurrent()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all duration-300">
+                                <i class="fa fa-volume-up mr-2"></i>朗讀
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片背面 (答案) -->
+                <div class="card-back bg-gradient-to-br from-secondary to-primary rounded-2xl shadow-xl p-8 flex flex-col justify-center items-center text-white">
+                    <div class="w-full">
+                        <h2 class="text-2xl font-bold mb-6 text-center">
+                            <i class="fa fa-check-circle mr-2"></i>正確答案
+                        </h2>
+                        <div id="answerText" class="text-[clamp(1.1rem,2.5vw,1.4rem)] leading-relaxed mb-8">
+                            答案將顯示於此
+                        </div>
+                        <div class="text-center">
+                            <button onclick="speakAnswer()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all duration-300">
+                                <i class="fa fa-volume-up mr-2"></i>朗讀答案
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-dark text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">《奇特的朋友》課文重點字詞練習</p>
+            <p class="text-sm opacity-70">適用於GitHub Pages部署</p>
+        </div>
+    </footer>
+
+    <script>
+        // 題目數據
+        const cards = [
+            {
+                question: "那一天，因為飛機<span class='fill-blank' data-answer='故障'></span>，我一個人在<span class='fill-blank' data-answer='沙漠'></span>過了一夜。",
+                answer: "那一天，因為飛機<span class='answer-revealed'>故障</span>，我一個人在<span class='answer-revealed'>沙漠</span>過了一夜。",
+                reading: "那一天，因為飛機故障，我一個人在沙漠過了一夜。"
+            },
+            {
+                question: "第二天早上，有個細細的聲音叫醒我：「請你……幫我畫一隻<span class='fill-blank' data-answer='綿羊'></span>！」",
+                answer: "第二天早上，有個細細的聲音叫醒我：「請你……幫我畫一隻<span class='answer-revealed'>綿羊</span>！」",
+                reading: "第二天早上，有個細細的聲音叫醒我：「請你……幫我畫一隻綿羊！」"
+            },
+            {
+                question: "我跳了起來，不敢相信的<span class='fill-blank' data-answer='揉著眼'></span>，這裡是<span class='fill-blank' data-answer='沙漠'></span>正<span class='fill-blank' data-answer='中央'></span>。",
+                answer: "我跳了起來，不敢相信的<span class='answer-revealed'>揉著眼</span>，這裡是<span class='answer-revealed'>沙漠</span>正<span class='answer-revealed'>中央</span>。",
+                reading: "我跳了起來，不敢相信的揉著眼，這裡是沙漠正中央。"
+            },
+            {
+                question: "這離<span class='fill-blank' data-answer='人煙'></span>快要兩千公里，這個小<span class='fill-blank' data-answer='男'></span>孩怎麼出現的？",
+                answer: "這離<span class='answer-revealed'>人煙</span>快要兩千公里，這個小<span class='answer-revealed'>男</span>孩怎麼出現的？",
+                reading: "這離人煙快要兩千公里，這個小男孩怎麼出現的？"
+            },
+            {
+                question: "看我不說話，他溫柔而客氣的<span class='fill-blank' data-answer='重複'></span>說著：「請你畫一隻綿羊給我好嗎？」",
+                answer: "看我不說話，他溫柔而客氣的<span class='answer-revealed'>重複</span>說著：「請你畫一隻綿羊給我好嗎？」",
+                reading: "看我不說話，他溫柔而客氣的重複說著：「請你畫一隻綿羊給我好嗎？」"
+            },
+            {
+                question: "他是誰？他從哪兒來？他為什麼要一隻綿羊？那時的我，竟然沒說出心中的<span class='fill-blank' data-answer='疑問'></span>。",
+                answer: "他是誰？他從哪兒來？他為什麼要一隻綿羊？那時的我，竟然沒說出心中的<span class='answer-revealed'>疑問</span>。",
+                reading: "他是誰？他從哪兒來？他為什麼要一隻綿羊？那時的我，竟然沒說出心中的疑問。"
+            },
+            {
+                question: "就拿出紙和筆，<span class='fill-blank' data-answer='打算'></span>幫他的忙。",
+                answer: "就拿出紙和筆，<span class='answer-revealed'>打算</span>幫他的忙。",
+                reading: "就拿出紙和筆，打算幫他的忙。"
+            },
+            {
+                question: "我不太會畫畫，上一次畫畫是在六<span class='fill-blank' data-answer='歲'></span>的時候。",
+                answer: "我不太會畫畫，上一次畫畫是在六<span class='answer-revealed'>歲</span>的時候。",
+                reading: "我不太會畫畫，上一次畫畫是在六歲的時候。"
+            },
+            {
+                question: "我畫了一張畫，畫完後直冒冷汗，心裡害怕極了！可是每個大人都很<span class='fill-blank' data-answer='不以為然'></span>的說。",
+                answer: "我畫了一張畫，畫完後直冒冷汗，心裡害怕極了！可是每個大人都很<span class='answer-revealed'>不以為然</span>的說。",
+                reading: "我畫了一張畫，畫完後直冒冷汗，心裡害怕極了！可是每個大人都很不以為然的說。"
+            },
+            {
+                question: "「不過是一頂<span class='fill-blank' data-answer='帽子'></span>，怎麼會可怕呢？」",
+                answer: "「不過是一頂<span class='answer-revealed'>帽子</span>，怎麼會可怕呢？」",
+                reading: "「不過是一頂帽子，怎麼會可怕呢？」"
+            },
+            {
+                question: "那時，我剛讀完一本關於<span class='fill-blank' data-answer='原始'></span>森林的書，我畫的真的不是帽子。",
+                answer: "那時，我剛讀完一本關於<span class='answer-revealed'>原始</span>森林的書，我畫的真的不是帽子。",
+                reading: "那時，我剛讀完一本關於原始森林的書，我畫的真的不是帽子。"
+            },
+            {
+                question: "小男孩一看到就<span class='fill-blank' data-answer='後退'></span>一大步：「不！不！這太可怕了。」",
+                answer: "小男孩一看到就<span class='answer-revealed'>後退</span>一大步：「不！不！這太可怕了。」",
+                reading: "小男孩一看到就後退一大步：「不！不！這太可怕了。」"
+            },
+            {
+                question: "我不要一條<span class='fill-blank' data-answer='吞下'></span><span class='fill-blank' data-answer='大象'></span>的<span class='fill-blank' data-answer='蟒蛇'></span>！",
+                answer: "我不要一條<span class='answer-revealed'>吞下</span><span class='answer-revealed'>大象</span>的<span class='answer-revealed'>蟒蛇</span>！",
+                reading: "我不要一條吞下大象的蟒蛇！"
+            },
+            {
+                question: "這時，換我<span class='fill-blank' data-answer='驚訝'></span>得說不出話來，他怎麼知道的？",
+                answer: "這時，換我<span class='answer-revealed'>驚訝</span>得說不出話來，他怎麼知道的？",
+                reading: "這時，換我驚訝得說不出話來，他怎麼知道的？"
+            },
+            {
+                question: "我畫的就是一條正在消化大象的<span class='fill-blank' data-answer='蟒蛇'></span>？",
+                answer: "我畫的就是一條正在消化大象的<span class='answer-revealed'>蟒蛇</span>？",
+                reading: "我畫的就是一條正在消化大象的蟒蛇？"
+            },
+            {
+                question: "這就是我和「小王子」認識的經過，在他離開前，我聽他說了很多的故事。",
+                answer: "這就是我和「小王子」認識的經過，在他離開前，我聽他說了很多的故事。",
+                reading: "這就是我和「小王子」認識的經過，在他離開前，我聽他說了很多的故事。"
+            },
+            {
+                question: "一直到現在，他還是我心中那位最<span class='fill-blank' data-answer='奇特'></span>的朋友。",
+                answer: "一直到現在，他還是我心中那位最<span class='answer-revealed'>奇特</span>的朋友。",
+                reading: "一直到現在，他還是我心中那位最奇特的朋友。"
+            },
+            {
+                question: "飛機發生<span class='fill-blank' data-answer='故障'></span>，迫降在<span class='fill-blank' data-answer='沙漠'></span>中。",
+                answer: "飛機發生<span class='answer-revealed'>故障</span>，迫降在<span class='answer-revealed'>沙漠</span>中。",
+                reading: "飛機發生故障，迫降在沙漠中。"
+            },
+            {
+                question: "他是一個很<span class='fill-blank' data-answer='奇特'></span>的小<span class='fill-blank' data-answer='男'></span>孩。",
+                answer: "他是一個很<span class='answer-revealed'>奇特</span>的小<span class='answer-revealed'>男</span>孩。",
+                reading: "他是一個很奇特的小男孩。"
+            },
+            {
+                question: "在沙漠的正<span class='fill-blank' data-answer='中央'></span>，竟然遇到了一隻<span class='fill-blank' data-answer='綿羊'></span>。",
+                answer: "在沙漠的正<span class='answer-revealed'>中央</span>，竟然遇到了一隻<span class='answer-revealed'>綿羊</span>。",
+                reading: "在沙漠的正中央，竟然遇到了一隻綿羊。"
+            }
+        ];
+
+        let currentCardIndex = 0;
+        let isAnswerRevealed = false;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCurrentCard();
+            updateCardCounter();
+        });
+
+        // 渲染當前卡片
+        function renderCurrentCard() {
+            const card = cards[currentCardIndex];
+            document.getElementById('questionText').innerHTML = card.question;
+            document.getElementById('answerText').innerHTML = card.answer;
+            isAnswerRevealed = false;
+            
+            // 重置卡片翻轉狀態
+            const cardElement = document.getElementById('card');
+            cardElement.classList.remove('card-flipped');
+        }
+
+        // 更新卡片計數器
+        function updateCardCounter() {
+            document.getElementById('currentCard').textContent = currentCardIndex + 1;
+            document.getElementById('totalCards').textContent = cards.length;
+        }
+
+        // 上一題
+        function prevCard() {
+            currentCardIndex = (currentCardIndex - 1 + cards.length) % cards.length;
+            renderCurrentCard();
+            updateCardCounter();
+        }
+
+        // 下一題
+        function nextCard() {
+            currentCardIndex = (currentCardIndex + 1) % cards.length;
+            renderCurrentCard();
+            updateCardCounter();
+        }
+
+        // 切換答案顯示
+        function toggleAnswer() {
+            const cardElement = document.getElementById('card');
+            cardElement.classList.toggle('card-flipped');
+            isAnswerRevealed = !isAnswerRevealed;
+        }
+
+        // 朗讀當前題目
+        function speakCurrent() {
+            const text = isAnswerRevealed ? 
+                cards[currentCardIndex].reading : 
+                cards[currentCardIndex].reading;
+            
+            speakText(text);
+        }
+
+        // 朗讀答案
+        function speakAnswer() {
+            speakText(cards[currentCardIndex].reading);
+        }
+
+        // 文字轉語音
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                // 停止任何正在進行的朗讀
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+                utterance.volume = 1;
+                
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('您的瀏覽器不支援文字轉語音功能');
+            }
+        }
+
+        // 隨機排序
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+            currentCardIndex = 0;
+            renderCurrentCard();
+            updateCardCounter();
+        }
+
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    prevCard();
+                    break;
+                case 'ArrowRight':
+                    nextCard();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    toggleAnswer();
+                    break;
+                case 'Enter':
+                    speakCurrent();
+                    break;
+            }
+        });
+
+        // 觸控手勢支援
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.getElementById('card').addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.getElementById('card').addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    nextCard(); // 向左滑動
+                } else {
+                    prevCard(); // 向右滑動
+                }
+            }
+        }
+    </script>
+</body>
+</html>
