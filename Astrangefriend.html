@@ -90,6 +90,9 @@
                 <button onclick="nextCard()" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
                     下一題<i class="fa fa-arrow-right ml-2"></i>
                 </button>
+                <button onclick="showLessonInfo()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    <i class="fa fa-info-circle mr-2"></i>課文說明
+                </button>
             </div>
             
             <div class="flex justify-center gap-4">
@@ -147,6 +150,90 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 課文說明模態框 -->
+        <div id="lessonModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-dark">
+                            <i class="fa fa-book text-primary mr-2"></i>課文核心價值
+                        </h3>
+                        <button onclick="closeLessonInfo()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-xl font-bold text-primary mb-3">
+                                <i class="fa fa-star mr-2"></i>核心價值
+                            </h4>
+                            <ul class="space-y-2 text-gray-700">
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                    <span>珍惜純真的心靈：透過小王子的純真與成人世界的對比，提醒我們保持內心的純真</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                    <span>重視真摯的友誼：強調人與人之間真誠相處的重要性</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                    <span>勇於面對內心：鼓勵讀者勇於表達自己的想法和感受</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-check-circle text-green-500 mt-1 mr-2"></i>
+                                    <span>尊重個體差異：接納並尊重與自己不同的想法和興趣</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xl font-bold text-primary mb-3">
+                                <i class="fa fa-lightbulb-o mr-2"></i>帶給讀者的啟示
+                            </h4>
+                            <ul class="space-y-2 text-gray-700">
+                                <li class="flex items-start">
+                                    <i class="fa fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>不要被世俗的眼光束縛，保持對世界的好奇心和想像力</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>真實的友誼建立在相互理解和尊重的基礎上</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>勇於表達自己的想法，不要害怕與他人不同</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fa fa-arrow-right text-blue-500 mt-1 mr-2"></i>
+                                    <span>學會從不同的角度看待事物，理解他人的感受</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xl font-bold text-primary mb-3">
+                                <i class="fa fa-info-circle mr-2"></i>課文背景
+                            </h4>
+                            <p class="text-gray-700 leading-relaxed">
+                                《奇特的朋友》改寫自法國作家安東尼·聖修伯里的經典作品《小王子》。
+                                故事透過飛行員與小王子在沙漠中的相遇，展現了童真與成人世界的衝突，
+                                以及真摯友誼的珍貴。這篇課文不僅是語文學習的素材，更是引導學生思考
+                                人生價值和人際關係的重要文本。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t text-center">
+                    <button onclick="closeLessonInfo()" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg transition-all duration-300">
+                        <i class="fa fa-times mr-2"></i>關閉
+                    </button>
                 </div>
             </div>
         </div>
@@ -400,6 +487,33 @@
                 }
             }
         }
+
+        // 課文說明模態框控制
+        function showLessonInfo() {
+            document.getElementById('lessonModal').classList.remove('hidden');
+            // 防止背景滾動
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLessonInfo() {
+            document.getElementById('lessonModal').classList.add('hidden');
+            // 恢復背景滾動
+            document.body.style.overflow = '';
+        }
+
+        // 點擊模態框背景關閉
+        document.getElementById('lessonModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLessonInfo();
+            }
+        });
+
+        // ESC鍵關閉模態框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !document.getElementById('lessonModal').classList.contains('hidden')) {
+                closeLessonInfo();
+            }
+        });
     </script>
 </body>
 </html>
