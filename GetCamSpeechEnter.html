@@ -5,768 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>拍照分析對話</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 10px;
-            padding-bottom: 100px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 10px;
-        }
-
-        .header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .header p {
-            font-size: 13px;
-            margin: 0;
-        }
-
-        .config-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            padding: 6px 12px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-            user-select: none;
-        }
-
-        .config-toggle:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .config-toggle-btn {
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .config-toggle-text {
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .api-config {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .api-config.expanded {
-            display: flex;
-        }
-
-        .api-config input[type="password"],
-        .api-config input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        .api-config input[type="password"]:focus,
-        .api-config input[type="text"]:focus {
-            outline: none;
-            background: white;
-        }
-
-        .save-key-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: white;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .save-key-option input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .version-select {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .version-select-title {
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .version-checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .version-checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: white;
-            font-size: 12px;
-        }
-
-        .version-checkbox-item input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .speech-rate-control {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .speech-rate-title {
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .speech-rate-slider-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .speech-rate-label {
-            color: white;
-            font-size: 11px;
-            min-width: 20px;
-            text-align: center;
-        }
-
-        .speech-rate-slider {
-            flex: 1;
-            height: 4px;
-            border-radius: 2px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            cursor: pointer;
-        }
-
-        .speech-rate-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .speech-rate-slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .speech-rate-value {
-            color: white;
-            font-size: 11px;
-            text-align: center;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 8px;
-            border-radius: 10px;
-            min-width: 40px;
-        }
-
-        .keyword-highlight {
-            color: #2196F3;
-            font-weight: 600;
-            background: rgba(33, 150, 243, 0.1);
-            padding: 1px 3px;
-            border-radius: 3px;
-        }
-
-        .message-text.ai {
-            background: #f0f0f0;
-            color: #333;
-            margin-left: 0;
-            text-align: left;
-        }
-
-        .ai-response-section {
-            margin-bottom: 15px;
-        }
-
-        .ai-response-title {
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 5px;
-            color: #555;
-        }
-
-        .ai-response-content {
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            border-left: 3px solid #667eea;
-            margin-bottom: 8px;
-        }
-
-        .ai-response-content.formal {
-            border-left-color: #667eea;
-        }
-
-        .ai-response-content.casual {
-            border-left-color: #ff6b6b;
-        }
-
-        .ai-response-english {
-            font-size: 15px;
-            line-height: 1.6;
-            margin-bottom: 8px;
-            color: #2196F3;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-            user-select: none;
-        }
-
-        .ai-response-english:hover {
-            background-color: rgba(102, 126, 234, 0.1);
-        }
-
-        .ai-response-english:active {
-            background-color: rgba(102, 126, 234, 0.2);
-        }
-
-        .ai-response-analyze-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 8px;
-            margin: 8px 0;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            user-select: none;
-        }
-
-        .ai-response-analyze-toggle:hover {
-            background: rgba(102, 126, 234, 0.2);
-        }
-
-        .ai-response-analyze-toggle-btn {
-            font-size: 14px;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .ai-response-analyze-toggle-text {
-            font-size: 13px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        .ai-response-analyze {
-            display: none;
-            padding: 12px;
-            margin: 8px 0;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-        }
-
-        .ai-response-analyze.expanded {
-            display: block;
-        }
-
-        .analyze-section {
-            margin-bottom: 15px;
-        }
-
-        .analyze-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .analyze-title {
-            font-weight: 600;
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 2px solid #667eea;
-        }
-
-        .analyze-content {
-            font-size: 13px;
-            line-height: 1.6;
-            color: #555;
-        }
-
-        .vocabulary-list {
-            list-style: none;
-            padding: 0;
-            margin: 8px 0;
-        }
-
-        .vocabulary-item {
-            padding: 4px 0;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .vocabulary-word {
-            font-weight: 600;
-            color: #667eea;
-        }
-
-        .vocabulary-pos {
-            font-size: 12px;
-            color: #888;
-            margin: 0 4px;
-        }
-
-        .example-list {
-            list-style: decimal;
-            padding-left: 20px;
-            margin: 8px 0;
-        }
-
-        .example-item {
-            font-size: 13px;
-            line-height: 1.6;
-            margin-bottom: 6px;
-            color: #555;
-        }
-
-        .ai-response-chinese {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #666;
-            padding-top: 0;
-        }
-
-        .ai-response-sentence-translation {
-            font-size: 13px;
-            line-height: 1.5;
-            color: #888;
-            margin-bottom: 8px;
-            padding-left: 10px;
-            border-left: 3px solid #e0e0e0;
-            font-style: italic;
-        }
-
-        .ai-response-english.speaking {
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            color: white;
-            animation: speakingGlow 1s ease-in-out infinite alternate;
-            transform: scale(1.02);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        @keyframes speakingGlow {
-            0% {
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            }
-            100% {
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-            }
-        }
-
-        .btn-play-all {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            margin: 10px 0;
-            transition: all 0.3s ease;
-        }
-
-        .btn-play-all:hover {
-            background: #218838;
-            transform: scale(1.05);
-        }
-
-        .btn-play-all:active {
-            transform: scale(0.95);
-        }
-
-        .loading-indicator {
-            text-align: center;
-            padding: 10px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .conversation {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 15px;
-            min-height: 400px;
-            max-height: calc(100vh - 250px);
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .message {
-            margin-bottom: 20px;
-            animation: fadeIn 0.3s ease-in;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .message-image {
-            width: 100%;
-            max-width: 100%;
-            max-height: 50vh;
-            height: auto;
-            border-radius: 12px;
-            margin-top: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            display: block;
-            object-fit: contain;
-        }
-
-        .message-text {
-            background: #f0f0f0;
-            padding: 12px 16px;
-            border-radius: 18px;
-            line-height: 1.5;
-            color: #333;
-            font-size: clamp(14px, 3vw, 16px);
-            word-wrap: break-word;
-            max-width: 90%;
-            margin-bottom: 8px;
-            width: fit-content;
-        }
-
-        .message-text.user {
-            background: #667eea;
-            color: white;
-            margin-left: auto;
-            text-align: right;
-        }
-
-        .camera-controls {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.98);
-            padding: 20px;
-            border-top-left-radius: 25px;
-            border-top-right-radius: 25px;
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-        }
-
-        .camera-preview {
-            position: fixed;
-            bottom: 120px;
-            left: 20px;
-            width: 80px;
-            height: 142px;
-            border-radius: 8px;
-            object-fit: cover;
-            display: block;
-            background: #000;
-            z-index: 50;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .preview-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 26px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.3s;
-            border-radius: 26px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: 0.3s;
-            border-radius: 50%;
-        }
-
-        .toggle-switch input:checked + .toggle-slider {
-            background-color: #667eea;
-        }
-
-        .toggle-switch input:checked + .toggle-slider:before {
-            transform: translateX(24px);
-        }
-
-        .toggle-switch input:focus + .toggle-slider {
-            box-shadow: 0 0 1px #667eea;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .background-speech-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 10px;
-            justify-content: flex-end;
-        }
-
-        .background-speech-option input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .background-speech-option label {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .continuous-speech-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 10px;
-            justify-content: flex-end;
-        }
-
-        .continuous-speech-option input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        .continuous-speech-option label {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            outline: none;
-            font-family: inherit;
-        }
-
-        .btn-capture {
-            background: #667eea;
-            color: white;
-            flex: 1;
-            max-width: 150px;
-        }
-
-        .btn-capture:hover {
-            background: #5568d3;
-            transform: scale(1.05);
-        }
-
-        .btn-capture:active {
-            transform: scale(0.95);
-        }
-
-        .btn-submit {
-            background: #28a745;
-            color: white;
-            flex: 1;
-            max-width: 200px;
-            position: relative;
-        }
-
-        .btn-submit:hover:not(:active) {
-            background: #218838;
-        }
-
-        .btn-submit:active {
-            background: #1e7e34;
-            transform: scale(0.95);
-        }
-
-        .btn-submit:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .btn-reload {
-            background: #28a745;
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin: 0 10px;
-        }
-
-        .btn-reload:hover {
-            background: #218838;
-            transform: scale(1.05);
-        }
-
-        .btn-reload:active {
-            transform: scale(0.95);
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
-        }
-
-        .status {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-top: 10px;
-            min-height: 20px;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 60px 20px;
-            font-size: 16px;
-        }
-
-        /* 顯示 video 預覽 - 9:16 規格，固定在左下角 */
-        #videoElement {
-            position: fixed;
-            bottom: 120px;
-            left: 20px;
-            width: 80px;
-            height: 142px;
-            border-radius: 8px;
-            object-fit: cover;
-            display: block;
-            background: #000;
-            z-index: 50;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 10px; padding-bottom: 100px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 10px; }
+        .header h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+        .header p { font-size: 13px; margin: 0; }
+        .config-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 6px 12px; margin-bottom: 10px; cursor: pointer; transition: background 0.3s ease; user-select: none; }
+        .config-toggle:hover { background: rgba(255, 255, 255, 0.3); }
+        .config-toggle-btn { font-size: 16px; font-weight: bold; color: white; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: rgba(255, 255, 255, 0.2); }
+        .config-toggle-text { color: white; font-size: 12px; font-weight: 600; }
+        .api-config { background: rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: none; flex-direction: column; gap: 8px; }
+        .api-config.expanded { display: flex; }
+        .api-config input[type="password"], .api-config input[type="text"] { width: 100%; padding: 8px; border: none; border-radius: 6px; font-size: 12px; background: rgba(255, 255, 255, 0.9); }
+        .api-config input[type="password"]:focus, .api-config input[type="text"]:focus { outline: none; background: white; }
+        .save-key-option { display: flex; align-items: center; gap: 8px; color: white; font-size: 12px; margin-top: 5px; }
+        .save-key-option input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+        .version-select { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.3); }
+        .version-select-title { color: white; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+        .version-checkbox-group { display: flex; flex-direction: column; gap: 6px; }
+        .version-checkbox-item { display: flex; align-items: center; gap: 8px; color: white; font-size: 12px; }
+        .version-checkbox-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+        .speech-rate-control { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.3); }
+        .speech-rate-title { color: white; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+        .speech-rate-slider-container { display: flex; align-items: center; gap: 10px; }
+        .speech-rate-label { color: white; font-size: 11px; min-width: 20px; text-align: center; }
+        .speech-rate-slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.3); outline: none; cursor: pointer; }
+        .speech-rate-slider::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .speech-rate-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: white; cursor: pointer; border: none; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .speech-rate-value { color: white; font-size: 11px; text-align: center; font-weight: 600; background: rgba(255, 255, 255, 0.2); padding: 2px 8px; border-radius: 10px; min-width: 40px; }
+        .keyword-highlight { color: #2196F3; font-weight: 600; background: rgba(33, 150, 243, 0.1); padding: 1px 3px; border-radius: 3px; }
+        .message-text.ai { background: #f0f0f0; color: #333; margin-left: 0; text-align: left; }
+        .ai-response-section { margin-bottom: 15px; }
+        .ai-response-title { font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #555; }
+        .ai-response-content { padding: 10px; background: white; border-radius: 8px; border-left: 3px solid #667eea; margin-bottom: 8px; }
+        .ai-response-content.formal { border-left-color: #667eea; }
+        .ai-response-content.casual { border-left-color: #ff6b6b; }
+        .ai-response-english { font-size: 15px; line-height: 1.6; margin-bottom: 8px; color: #2196F3; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background-color 0.2s ease; user-select: none; }
+        .ai-response-english:hover { background-color: rgba(102, 126, 234, 0.1); }
+        .ai-response-english:active { background-color: rgba(102, 126, 234, 0.2); }
+        .ai-response-chinese { font-size: 14px; line-height: 1.6; color: #666; padding-top: 0; }
+        .reader-overlay { position: fixed; inset: 0; background: #000; color: #fff; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .reader-container { max-width: 900px; width: 100%; }
+        .reader-english { font-size: clamp(28px, 6vw, 56px); line-height: 1.4; margin-bottom: 12px; color: #fff; }
+        .reader-chinese { font-size: clamp(28px, 6vw, 56px); line-height: 1.4; color: #ffd; }
+        .ai-response-sentence-translation { font-size: 13px; line-height: 1.5; color: #888; margin-bottom: 8px; padding-left: 10px; border-left: 3px solid #e0e0e0; font-style: italic; }
+        .ai-response-english.speaking { background: linear-gradient(90deg, #667eea, #764ba2); color: white; animation: speakingGlow 1s ease-in-out infinite alternate; transform: scale(1.02); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        @keyframes speakingGlow { 0% { box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); } 100% { box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); } }
+        .btn-play-all { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; margin: 10px 0; transition: all 0.3s ease; }
+        .btn-play-all:hover { background: #218838; transform: scale(1.05); }
+        .btn-play-all:active { transform: scale(0.95); }
+        .loading-indicator { text-align: center; padding: 10px; color: #666; font-size: 14px; }
+        .conversation { background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 15px; min-height: 400px; max-height: calc(100vh - 250px); overflow-y: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+        .message { margin-bottom: 20px; animation: fadeIn 0.3s ease-in; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-end; }
+        .message-image { width: 100%; max-width: 100%; max-height: 50vh; height: auto; border-radius: 12px; margin-top: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); display: block; object-fit: contain; }
+        .message-text { background: #f0f0f0; padding: 12px 16px; border-radius: 18px; line-height: 1.5; color: #333; font-size: clamp(14px, 3vw, 16px); word-wrap: break-word; max-width: 90%; margin-bottom: 8px; width: fit-content; }
+        .message-text.user { background: #667eea; color: white; margin-left: auto; text-align: right; }
+        .camera-controls { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.98); padding: 20px; border-top-left-radius: 25px; border-top-right-radius: 25px; box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1); z-index: 100; }
+        .camera-preview { position: fixed; bottom: 120px; left: 20px; width: 80px; height: 142px; border-radius: 8px; object-fit: cover; display: block; background: #000; z-index: 50; border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+        .button-group { display: flex; gap: 15px; justify-content: center; align-items: center; }
+        .btn { padding: 15px 30px; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; outline: none; font-family: inherit; }
+        .btn-capture { background: #667eea; color: white; flex: 1; max-width: 180px; }
+        .btn-reload { background: #28a745; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 10px; }
+        .status { text-align: center; color: #666; font-size: 14px; margin-top: 10px; min-height: 20px; }
+        #videoElement { position: fixed; bottom: 120px; left: 20px; width: 80px; height: 142px; border-radius: 8px; object-fit: cover; display: block; background: #000; z-index: 50; border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
     </style>
 </head>
 <body>
@@ -830,12 +132,18 @@
         </div>
         
         <div class="button-group">
-            <button class="btn btn-capture" id="captureBtn">📷 拍照</button>
+            <button class="btn btn-capture" id="captureBtn">📷 拍照並分析</button>
             <button class="btn btn-reload" id="reloadBtn" title="重新載入頁面">🔄</button>
-            <button class="btn btn-submit" id="submitBtn">📤 送出照片</button>
         </div>
         
         <div class="status" id="status"></div>
+    </div>
+
+    <div id="readerOverlay" class="reader-overlay">
+        <div class="reader-container">
+            <div id="readerEnglish" class="reader-english"></div>
+            <div id="readerChinese" class="reader-chinese"></div>
+        </div>
     </div>
 
     <script>
@@ -843,17 +151,17 @@
         const canvas = document.getElementById('canvasElement');
         const conversation = document.getElementById('conversation');
         const captureBtn = document.getElementById('captureBtn');
-        const submitBtn = document.getElementById('submitBtn');
         const reloadBtn = document.getElementById('reloadBtn');
         const status = document.getElementById('status');
         const previewImage = document.getElementById('previewImage');
+        const readerOverlay = document.getElementById('readerOverlay');
+        const readerEnglish = document.getElementById('readerEnglish');
+        const readerChinese = document.getElementById('readerChinese');
 
         let stream = null;
         let currentImageData = null;
         
-        // API 相關變數
         let apiKey = '';
-        // 固定使用新加坡地區，直接調用
         const apiUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
         let conversationHistory = [];
         const apiKeyInput = document.getElementById('apiKey');
@@ -868,78 +176,41 @@
         const backgroundSpeechCheckbox = document.getElementById('backgroundSpeech');
         const continuousSpeechCheckbox = document.getElementById('continuousSpeech');
         
-        // 從 localStorage 載入保存的 API Key
+        function showOverlay(englishText, chineseText) {
+            readerEnglish.textContent = englishText || '';
+            readerChinese.textContent = chineseText || '';
+            readerOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function hideOverlay() {
+            readerOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
         const savedApiKey = localStorage.getItem('qwen_api_key');
         if (savedApiKey) {
             apiKey = savedApiKey;
             apiKeyInput.value = savedApiKey;
             saveApiKeyCheckbox.checked = true;
         }
-
-        // 從 localStorage 載入保存的版本選擇
         const savedShowFormal = localStorage.getItem('showFormal');
         const savedShowCasual = localStorage.getItem('showCasual');
-        if (savedShowFormal !== null) {
-            showFormalCheckbox.checked = savedShowFormal === 'true';
-        } else {
-            showFormalCheckbox.checked = true; // 預設選中
-        }
-        if (savedShowCasual !== null) {
-            showCasualCheckbox.checked = savedShowCasual === 'true';
-        } else {
-            showCasualCheckbox.checked = true; // 預設選中
-        }
-
-        // 從 localStorage 載入保存的語音速度
+        showFormalCheckbox.checked = savedShowFormal !== null ? savedShowFormal === 'true' : true;
+        showCasualCheckbox.checked = savedShowCasual !== null ? savedShowCasual === 'true' : true;
         const savedSpeechRate = localStorage.getItem('speechRate');
-        if (savedSpeechRate !== null) {
-            speechRateSlider.value = savedSpeechRate;
-            speechRateValue.textContent = savedSpeechRate + 'x';
-        }
-
-        // 從 localStorage 載入背景朗讀設定
+        if (savedSpeechRate !== null) { speechRateSlider.value = savedSpeechRate; speechRateValue.textContent = savedSpeechRate + 'x'; }
         const savedBackgroundSpeech = localStorage.getItem('backgroundSpeech');
-        if (savedBackgroundSpeech !== null) {
-            backgroundSpeechCheckbox.checked = savedBackgroundSpeech === 'true';
-        } else {
-            backgroundSpeechCheckbox.checked = true; // 預設為打勾
-        }
-
-        // 從 localStorage 載入持續朗讀設定
+        backgroundSpeechCheckbox.checked = savedBackgroundSpeech !== null ? savedBackgroundSpeech === 'true' : true;
         const savedContinuousSpeech = localStorage.getItem('continuousSpeech');
-        if (savedContinuousSpeech !== null) {
-            continuousSpeechCheckbox.checked = savedContinuousSpeech === 'true';
-        } else {
-            continuousSpeechCheckbox.checked = true; // 預設為打勾
-        }
-
-        // 從 localStorage 載入配置區域展開狀態（預設收縮）
+        continuousSpeechCheckbox.checked = savedContinuousSpeech !== null ? savedContinuousSpeech === 'true' : true;
         const savedConfigExpanded = localStorage.getItem('configExpanded');
-        if (savedConfigExpanded === 'true') {
-            apiConfig.classList.add('expanded');
-            toggleBtn.textContent = '-';
-        }
+        if (savedConfigExpanded === 'true') { apiConfig.classList.add('expanded'); toggleBtn.textContent = '-'; }
 
-        // 檢查瀏覽器支援
         const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-
-        // 啟動相機（只啟動一次，保持開啟）
         async function startCamera() {
             try {
-                // 如果已經有 stream 在運行，先不關閉，保持開啟狀態
-                if (stream) {
-                    video.srcObject = stream;
-                    status.textContent = '相機已就緒';
-                    return;
-                }
-                
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment', // 使用後置相機
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    } 
-                });
+                if (stream) { video.srcObject = stream; status.textContent = '相機已就緒'; return; }
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
                 video.srcObject = stream;
                 status.textContent = '相機已就緒';
             } catch (err) {
@@ -948,1467 +219,255 @@
             }
         }
 
-        // 拍照
         function capturePhoto() {
-            if (!stream) {
-                status.textContent = '請先啟動相機';
-                return;
-            }
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
-
-            // 轉換為 base64
+            if (!stream) { status.textContent = '請先啟動相機'; return; }
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0);
             currentImageData = canvas.toDataURL('image/jpeg', 0.8);
-            
-            // 隱藏 video 預覽，顯示拍攝的照片預覽
-            video.style.display = 'none';
-            previewImage.src = currentImageData;
-            previewImage.style.display = 'block';
-            
-            status.textContent = '照片已拍攝，可以送出分析';
+            video.style.display = 'none'; previewImage.src = currentImageData; previewImage.style.display = 'block';
+            status.textContent = '照片已拍攝，正在送出分析...';
+            setTimeout(() => { handlePhotoSubmit(); }, 400);
         }
 
-        // 處理照片提交
         async function handlePhotoSubmit() {
-            if (currentImageData) {
-                // 清除畫面上的資料
-                clearConversationData();
-                
-                // 顯示用戶訊息（不需要語音文字）
-                addUserMessage(currentImageData, "請分析這張照片");
-                
-                // 檢查 API Key
-                if (!apiKey) {
-                    status.textContent = '請先輸入 API Key';
-                    resetForNextCapture();
-                    return;
-                }
-                
-                // 調用 qwen3-vl-flash API
-                try {
-                    status.textContent = '正在處理...';
-                    const aiResponse = await callQwen2VL72B(currentImageData);
-                    
-                    // 解析第一次回應
-                    const parsedResponse = parseAIResponse(aiResponse);
-                    
-                    // 第二次API調用：翻譯英文句子
-                    status.textContent = '正在翻譯英文句子...';
-                    const translatedResponse = await translateEnglishSentences(parsedResponse);
-                    
-                    // 顯示 AI 回應（包含翻譯）
-                    addAIMessage(aiResponse, translatedResponse);
-                    
-                    // 自動朗讀英文（根據用戶選擇：優先讀口語版，如果沒有則讀正式版）
-                    setTimeout(() => {
-                        const showCasual = showCasualCheckbox.checked;
-                        const showFormal = showFormalCheckbox.checked;
-                        
-                        // 優先讀口語版
-                        if (showCasual && translatedResponse && translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
+            if (!currentImageData) { status.textContent = '請先拍照'; return; }
+            clearConversationData();
+            addUserMessage(currentImageData, "請分析這張照片");
+            if (!apiKey) { status.textContent = '請先輸入 API Key'; resetForNextCapture(); return; }
+            try {
+                status.textContent = '正在處理...';
+                const aiResponse = await callQwen2VL72B(currentImageData);
+                const parsedResponse = parseAIResponse(aiResponse);
+                status.textContent = '正在翻譯英文句子...';
+                const translatedResponse = await translateEnglishSentences(parsedResponse);
+                addAIMessage(aiResponse, translatedResponse);
+                setTimeout(() => {
+                    const showCasual = showCasualCheckbox.checked;
+                    const showFormal = showFormalCheckbox.checked;
+                    if (showCasual && translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
+                        const casualSentences = [];
+                        translatedResponse.casual.sentences.forEach((sentence, index) => {
+                            const element = document.getElementById(`casual-sentence-${index}`);
+                            if (element) { casualSentences.push({ element, text: sentence.english }); }
+                        });
+                        if (casualSentences.length > 0) { speakAllSentences(casualSentences); }
+                    } else if (showFormal && translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
+                        const formalSentences = [];
+                        translatedResponse.formal.sentences.forEach((sentence, index) => {
+                            const element = document.getElementById(`formal-sentence-${index}`);
+                            if (element) { formalSentences.push({ element, text: sentence.english }); }
+                        });
+                        if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
+                    } else {
+                        if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
                             const casualSentences = [];
-                            translatedResponse.casual.sentences.forEach((sentence, index) => {
+                            const sentences = splitIntoSentences(parsedResponse.casual.english);
+                            sentences.forEach((sentence, index) => {
                                 const element = document.getElementById(`casual-sentence-${index}`);
-                                if (element) {
-                                    casualSentences.push({ element: element, text: sentence.english });
-                                }
+                                if (element) { casualSentences.push({ element, text: sentence }); }
                             });
-                            if (casualSentences.length > 0) {
-                                speakAllSentences(casualSentences);
-                            }
-                        } else if (showFormal && translatedResponse && translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
-                            // 如果沒有口語版或未選擇口語版，則讀正式版
+                            if (casualSentences.length > 0) { speakAllSentences(casualSentences); }
+                        } else if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
                             const formalSentences = [];
-                            translatedResponse.formal.sentences.forEach((sentence, index) => {
+                            const sentences = splitIntoSentences(parsedResponse.formal.english);
+                            sentences.forEach((sentence, index) => {
                                 const element = document.getElementById(`formal-sentence-${index}`);
-                                if (element) {
-                                    formalSentences.push({ element: element, text: sentence.english });
-                                }
+                                if (element) { formalSentences.push({ element, text: sentence }); }
                             });
-                            if (formalSentences.length > 0) {
-                                speakAllSentences(formalSentences);
-                            }
-                        } else {
-                            // 回退到原始朗讀方式（如果沒有翻譯結果）- 也使用逐句朗讀
-                            if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
-                                const casualSentences = [];
-                                const sentences = splitIntoSentences(parsedResponse.casual.english);
-                                sentences.forEach((sentence, index) => {
-                                    const element = document.getElementById(`casual-sentence-${index}`);
-                                    if (element) {
-                                        casualSentences.push({ element: element, text: sentence });
-                                    }
-                                });
-                                if (casualSentences.length > 0) {
-                                    speakAllSentences(casualSentences);
-                                }
-                            } else if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
-                                const formalSentences = [];
-                                const sentences = splitIntoSentences(parsedResponse.formal.english);
-                                sentences.forEach((sentence, index) => {
-                                    const element = document.getElementById(`formal-sentence-${index}`);
-                                    if (element) {
-                                        formalSentences.push({ element: element, text: sentence });
-                                    }
-                                });
-                                if (formalSentences.length > 0) {
-                                    speakAllSentences(formalSentences);
-                                }
-                            }
+                            if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
                         }
-                    }, 500); // 延遲500ms讓DOM元素完全渲染
-                    
-                } catch (error) {
-                    status.textContent = '錯誤: ' + error.message;
-                    console.error('API 調用失敗:', error);
-                }
-                
-                // 重置狀態，準備下一次拍照
-                resetForNextCapture();
-            } else {
-                status.textContent = '請先拍照';
+                    }
+                }, 500);
+            } catch (error) {
+                status.textContent = '錯誤: ' + error.message;
+                console.error('API 調用失敗:', error);
             }
+            resetForNextCapture();
         }
 
-        // 重置狀態，準備下一次拍照
         function resetForNextCapture() {
             currentImageData = null;
             previewImage.style.display = 'none';
-            // 恢復 video 預覽
             video.style.display = 'block';
             status.textContent = '已重置，可以再次拍照並送出';
         }
 
-        // 添加用戶訊息到對話
         function addUserMessage(imageData, text) {
-            // 移除空狀態
-            const emptyState = conversation.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-
-            // 先添加文字（會顯示在上方）
-            const textDiv = document.createElement('div');
-            textDiv.className = 'message-text user';
-            textDiv.textContent = text;
-
-            // 再添加照片（會顯示在下方）
-            const img = document.createElement('img');
-            img.src = imageData;
-            img.className = 'message-image';
-            img.alt = '拍攝的照片';
-
-            // 先添加文字，再添加照片
-            messageDiv.appendChild(textDiv);
-            messageDiv.appendChild(img);
-
+            const emptyState = conversation.querySelector('.empty-state'); if (emptyState) { emptyState.remove(); }
+            const messageDiv = document.createElement('div'); messageDiv.className = 'message';
+            const textDiv = document.createElement('div'); textDiv.className = 'message-text user'; textDiv.textContent = text;
+            const img = document.createElement('img'); img.src = imageData; img.className = 'message-image'; img.alt = '拍攝的照片';
+            messageDiv.appendChild(textDiv); messageDiv.appendChild(img);
             conversation.appendChild(messageDiv);
-            
-            // 滾動到底部
             conversation.scrollTop = conversation.scrollHeight;
         }
 
-        // 檢查是否有解析內容
-        function hasAnalyzeContent(analyze) {
-            return analyze.keyPoints || analyze.grammarAnalysis || 
-                   analyze.vocabulary.length > 0 || analyze.examples.length > 0;
-        }
-
-        // 創建解析區域
-        function createAnalyzeArea(analyze) {
-            const analyzeContainer = document.createElement('div');
-            analyzeContainer.className = 'ai-response-analyze';
-            
-            // 創建收縮/展開按鈕
-            const toggle = document.createElement('div');
-            toggle.className = 'ai-response-analyze-toggle';
-            const toggleBtn = document.createElement('span');
-            toggleBtn.className = 'ai-response-analyze-toggle-btn';
-            toggleBtn.textContent = '+';
-            const toggleText = document.createElement('span');
-            toggleText.className = 'ai-response-analyze-toggle-text';
-            toggleText.textContent = '📖 單字片語文法重點解析';
-            toggle.appendChild(toggleBtn);
-            toggle.appendChild(toggleText);
-            
-            // 創建解析內容區域
-            const analyzeContent = document.createElement('div');
-            analyzeContent.className = 'ai-response-analyze';
-            
-            // 重點說明
-            if (analyze.keyPoints) {
-                const section = document.createElement('div');
-                section.className = 'analyze-section';
-                const title = document.createElement('div');
-                title.className = 'analyze-title';
-                title.textContent = '📌 重點說明';
-                const content = document.createElement('div');
-                content.className = 'analyze-content';
-                content.textContent = analyze.keyPoints;
-                section.appendChild(title);
-                section.appendChild(content);
-                analyzeContent.appendChild(section);
-            }
-            
-            // 語法結構
-            if (analyze.grammarAnalysis) {
-                const section = document.createElement('div');
-                section.className = 'analyze-section';
-                const title = document.createElement('div');
-                title.className = 'analyze-title';
-                title.textContent = '📝 語法結構（A2語法結構分析）';
-                const content = document.createElement('div');
-                content.className = 'analyze-content';
-                content.textContent = analyze.grammarAnalysis;
-                section.appendChild(title);
-                section.appendChild(content);
-                analyzeContent.appendChild(section);
-            }
-            
-            // 詞彙表
-            if (analyze.vocabulary && analyze.vocabulary.length > 0) {
-                const section = document.createElement('div');
-                section.className = 'analyze-section';
-                const title = document.createElement('div');
-                title.className = 'analyze-title';
-                title.textContent = '📚 詞彙表（A2級別）';
-                const vocabList = document.createElement('ul');
-                vocabList.className = 'vocabulary-list';
-                
-                analyze.vocabulary.forEach(vocab => {
-                    const item = document.createElement('li');
-                    item.className = 'vocabulary-item';
-                    item.innerHTML = `- ${vocab}`;
-                    vocabList.appendChild(item);
-                });
-                
-                section.appendChild(title);
-                section.appendChild(vocabList);
-                analyzeContent.appendChild(section);
-            }
-            
-            // 例句
-            if (analyze.examples && analyze.examples.length > 0) {
-                const section = document.createElement('div');
-                section.className = 'analyze-section';
-                const title = document.createElement('div');
-                title.className = 'analyze-title';
-                title.textContent = '💡 A2級別例句';
-                const exampleList = document.createElement('ol');
-                exampleList.className = 'example-list';
-                
-                analyze.examples.forEach(example => {
-                    const item = document.createElement('li');
-                    item.className = 'example-item';
-                    item.textContent = example;
-                    exampleList.appendChild(item);
-                });
-                
-                section.appendChild(title);
-                section.appendChild(exampleList);
-                analyzeContent.appendChild(section);
-            }
-            
-            // 添加點擊事件來展開/收縮
-            toggle.addEventListener('click', () => {
-                const isExpanded = analyzeContent.classList.contains('expanded');
-                if (isExpanded) {
-                    analyzeContent.classList.remove('expanded');
-                    toggleBtn.textContent = '+';
-                } else {
-                    analyzeContent.classList.add('expanded');
-                    toggleBtn.textContent = '-';
-                }
-            });
-            
-            analyzeContainer.appendChild(toggle);
-            analyzeContainer.appendChild(analyzeContent);
-            
-            return analyzeContainer;
-        }
-
-        // 添加 AI 訊息到對話
-        function addAIMessage(response, translatedResponse = null) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-
-            // 解析回應
-            const parsedResponse = parseAIResponse(response);
-
-            // 檢查用戶選擇的版本
-            const showFormal = showFormalCheckbox.checked;
-            const showCasual = showCasualCheckbox.checked;
-
-            // 創建容器
-            const container = document.createElement('div');
-            container.className = 'message-text ai';
-
-            // 添加正式版（如果用戶選擇顯示）
-            if (showFormal && parsedResponse.formal && (parsedResponse.formal.english || parsedResponse.formal.chinese)) {
-                const formalSection = document.createElement('div');
-                formalSection.className = 'ai-response-section';
-                
-                const formalTitle = document.createElement('div');
-                formalTitle.className = 'ai-response-title';
-                formalTitle.textContent = '📝 正式版 (Formal Version)';
-                
-                const formalContent = document.createElement('div');
-                formalContent.className = 'ai-response-content formal';
-                
-                // 添加英文（可點擊朗讀）
-                if (parsedResponse.formal.english) {
-                    // 如果有翻譯結果，逐句顯示
-                    if (translatedResponse && translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
-                        const formalSentences = [];
-                        translatedResponse.formal.sentences.forEach((sentence, index) => {
-                            // 英文句子
-                            const englishDiv = document.createElement('div');
-                            englishDiv.className = 'ai-response-english';
-                            englishDiv.id = `formal-sentence-${index}`;
-                            englishDiv.textContent = sentence.english;
-                            englishDiv.title = '點擊朗讀';
-                            englishDiv.addEventListener('click', () => {
-                                speakSentenceWithHighlight(sentence.english, englishDiv);
-                            });
-                            formalContent.appendChild(englishDiv);
-                            formalSentences.push({ element: englishDiv, text: sentence.english });
-                            
-                            // 中文翻譯（緊跟在英文下方）
-                            const chineseDiv = document.createElement('div');
-                            chineseDiv.className = 'ai-response-sentence-translation';
-                            chineseDiv.textContent = sentence.chinese;
-                            formalContent.appendChild(chineseDiv);
-                        });
-                        
-                        // 為整個正式版添加全部朗讀功能
-                        const playAllBtn = document.createElement('button');
-                        playAllBtn.className = 'btn-play-all';
-                        playAllBtn.textContent = '🔊 朗讀全部';
-                        playAllBtn.addEventListener('click', () => {
-                            speakAllSentences(formalSentences);
-                        });
-                        formalContent.appendChild(playAllBtn);
-                    } else {
-                        // 沒有翻譯結果時的原始顯示方式 - 拆分成句子
-                        const sentences = splitIntoSentences(parsedResponse.formal.english);
-                        const formalSentences = [];
-                        
-                        sentences.forEach((sentence, index) => {
-                            const englishDiv = document.createElement('div');
-                            englishDiv.className = 'ai-response-english';
-                            englishDiv.id = `formal-sentence-${index}`;
-                            englishDiv.textContent = sentence;
-                            englishDiv.title = '點擊朗讀';
-                            englishDiv.addEventListener('click', () => {
-                                speakSentenceWithHighlight(sentence, englishDiv);
-                            });
-                            formalContent.appendChild(englishDiv);
-                            formalSentences.push({ element: englishDiv, text: sentence });
-                        });
-                        
-                        // 添加全部朗讀按鈕
-                        if (formalSentences.length > 1) {
-                            const playAllBtn = document.createElement('button');
-                            playAllBtn.className = 'btn-play-all';
-                            playAllBtn.textContent = '🔊 朗讀全部';
-                            playAllBtn.addEventListener('click', () => {
-                                speakAllSentences(formalSentences);
-                            });
-                            formalContent.appendChild(playAllBtn);
-                        }
-                        
-                        // 保存句子引用供自動朗讀使用
-                        formalContent.dataset.sentences = JSON.stringify(formalSentences.map(s => s.text));
-                    }
-                }
-                
-                // 添加繁體中文
-                if (parsedResponse.formal.chinese) {
-                    // 添加分隔線
-                    const hrElement = document.createElement('hr');
-                    hrElement.style.margin = '15px 0';
-                    hrElement.style.border = 'none';
-                    hrElement.style.borderTop = '1px solid #e0e0e0';
-                    formalContent.appendChild(hrElement);
-                    
-                    const chineseDiv = document.createElement('div');
-                    chineseDiv.className = 'ai-response-chinese';
-                    chineseDiv.textContent = parsedResponse.formal.chinese;
-                    formalContent.appendChild(chineseDiv);
-                }
-                
-                // 添加解析區域（在繁體中文翻譯後面）
-                if (parsedResponse.formal.analyze && hasAnalyzeContent(parsedResponse.formal.analyze)) {
-                    const analyzeArea = createAnalyzeArea(parsedResponse.formal.analyze);
-                    formalContent.appendChild(analyzeArea);
-                }
-                
-                formalSection.appendChild(formalTitle);
-                formalSection.appendChild(formalContent);
-                container.appendChild(formalSection);
-            }
-
-            // 添加口語版（如果用戶選擇顯示）
-            if (showCasual && parsedResponse.casual && (parsedResponse.casual.english || parsedResponse.casual.chinese)) {
-                const casualSection = document.createElement('div');
-                casualSection.className = 'ai-response-section';
-                
-                const casualTitle = document.createElement('div');
-                casualTitle.className = 'ai-response-title';
-                casualTitle.textContent = '💬 口語版 (Casual Version)';
-                
-                const casualContent = document.createElement('div');
-                casualContent.className = 'ai-response-content casual';
-                
-                // 添加英文（可點擊朗讀）
-                if (parsedResponse.casual.english) {
-                    // 如果有翻譯結果，逐句顯示
-                    if (translatedResponse && translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
-                        const casualSentences = [];
-                        translatedResponse.casual.sentences.forEach((sentence, index) => {
-                            // 英文句子
-                            const englishDiv = document.createElement('div');
-                            englishDiv.className = 'ai-response-english';
-                            englishDiv.id = `casual-sentence-${index}`;
-                            englishDiv.textContent = sentence.english;
-                            englishDiv.title = '點擊朗讀';
-                            englishDiv.addEventListener('click', () => {
-                                speakSentenceWithHighlight(sentence.english, englishDiv);
-                            });
-                            casualContent.appendChild(englishDiv);
-                            casualSentences.push({ element: englishDiv, text: sentence.english });
-                            
-                            // 中文翻譯（緊跟在英文下方）
-                            const chineseDiv = document.createElement('div');
-                            chineseDiv.className = 'ai-response-sentence-translation';
-                            chineseDiv.textContent = sentence.chinese;
-                            casualContent.appendChild(chineseDiv);
-                        });
-                        
-                        // 為整個口語版添加全部朗讀功能
-                        const playAllBtn = document.createElement('button');
-                        playAllBtn.className = 'btn-play-all';
-                        playAllBtn.textContent = '🔊 朗讀全部';
-                        playAllBtn.addEventListener('click', () => {
-                            speakAllSentences(casualSentences);
-                        });
-                        casualContent.appendChild(playAllBtn);
-                    } else {
-                        // 沒有翻譯結果時的原始顯示方式 - 拆分成句子
-                        const sentences = splitIntoSentences(parsedResponse.casual.english);
-                        const casualSentences = [];
-                        
-                        sentences.forEach((sentence, index) => {
-                            const englishDiv = document.createElement('div');
-                            englishDiv.className = 'ai-response-english';
-                            englishDiv.id = `casual-sentence-${index}`;
-                            englishDiv.textContent = sentence;
-                            englishDiv.title = '點擊朗讀';
-                            englishDiv.addEventListener('click', () => {
-                                speakSentenceWithHighlight(sentence, englishDiv);
-                            });
-                            casualContent.appendChild(englishDiv);
-                            casualSentences.push({ element: englishDiv, text: sentence });
-                        });
-                        
-                        // 添加全部朗讀按鈕
-                        if (casualSentences.length > 1) {
-                            const playAllBtn = document.createElement('button');
-                            playAllBtn.className = 'btn-play-all';
-                            playAllBtn.textContent = '🔊 朗讀全部';
-                            playAllBtn.addEventListener('click', () => {
-                                speakAllSentences(casualSentences);
-                            });
-                            casualContent.appendChild(playAllBtn);
-                        }
-                        
-                        // 保存句子引用供自動朗讀使用
-                        casualContent.dataset.sentences = JSON.stringify(casualSentences.map(s => s.text));
-                    }
-                }
-                
-                // 添加繁體中文
-                if (parsedResponse.casual.chinese) {
-                    // 添加分隔線
-                    const hrElement = document.createElement('hr');
-                    hrElement.style.margin = '15px 0';
-                    hrElement.style.border = 'none';
-                    hrElement.style.borderTop = '1px solid #e0e0e0';
-                    casualContent.appendChild(hrElement);
-                    
-                    const chineseDiv = document.createElement('div');
-                    chineseDiv.className = 'ai-response-chinese';
-                    chineseDiv.textContent = parsedResponse.casual.chinese;
-                    casualContent.appendChild(chineseDiv);
-                }
-                
-                // 添加解析區域（在繁體中文翻譯後面）
-                if (parsedResponse.casual.analyze && hasAnalyzeContent(parsedResponse.casual.analyze)) {
-                    const analyzeArea = createAnalyzeArea(parsedResponse.casual.analyze);
-                    casualContent.appendChild(analyzeArea);
-                }
-                
-                casualSection.appendChild(casualTitle);
-                casualSection.appendChild(casualContent);
-                container.appendChild(casualSection);
-            }
-
-            messageDiv.appendChild(container);
-            conversation.appendChild(messageDiv);
-            
-            // 滾動到底部
-            conversation.scrollTop = conversation.scrollHeight;
-        }
-
-        // 調用 qwen3-vl-flash API
-        async function callQwen2VL72B(imageData) {
-            const userMessage = {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": imageData
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": `請解析這張圖片，用英文完成以下描述：
-- 指出圖中的 2-3 個核心人/物（使用身份名詞）
-- 描述每個人/物的位置（使用方位介詞/副詞）
-- 說明人/物的特徵或正在進行的動作（使用形容詞/動詞）
-- 全部使用 A2 級別詞彙，句子簡單易懂
-
-請提供兩種版本：
-1. 正式版（Formal Version）：使用正式、標準的英文表達
-2. 口語版（Casual Version）：使用口語、輕鬆的英文表達
-
-每種版本的英文內容格式範例：
-"There is a woman in front of the window. She is sitting at a small table. The table has a red cup of coffee on it. The woman looks happy. She is not eating—she is just drinking her coffee."
-
-每種版本都需要包含：
-- 英文內容（按照上述格式要求）
-- 繁體中文翻譯
-
-同時請為每種版本提供詳細解析：
-- 重點說明：列出這段英文描述的關鍵重點
-- 語法結構：分析句子中使用的A2語法結構
-- A2級別詞彙表：從圖片描述中辨識並列出所有A2級別詞彙，格式為：詞彙 (詞性) 中文意思（例如：woman (n.) 女人）
-- A2級別例句：提供3個使用這些詞彙的A2級別例句
-
-請按照以下格式回覆：
-【正式版】
-[正式英文內容 - 按照範例格式：There is... She is... The table has... 等]
-
-
-【正式版解析】
-[重點說明]
-[語法結構（A2語法結構分析）]
-[詞彙表]（A2級別）
-- 詞彙1 (詞性) 中文意思
-- 詞彙2 (詞性) 中文意思
-...
-[例句]
-1. 例句1
-2. 例句2
-3. 例句3
-
-【口語版】
-[口語英文內容 - 按照範例格式：There is... She is... The table has... 等]
-
-
-【口語版解析】
-[重點說明]
-[語法結構（A2語法結構分析）]
-[詞彙表]（A2級別）
-- 詞彙1 (詞性) 中文意思
-- 詞彙2 (詞性) 中文意思
-...
-[例句]
-1. 例句1
-2. 例句2
-3. 例句3
-
-請分析這張照片並提供詳細的英文描述。`
-                    }
-                ]
-            };
-
+        function callQwen2VL72B(imageData) {
+            const userMessage = { role: "user", content: [{ type: "image_url", image_url: { url: imageData } }, { type: "text", text: `請解析這張圖片，用英文完成以下描述：\n- 指出圖中的 2-3 個核心人/物（使用身份名詞）\n- 描述每個人/物的位置（使用方位介詞/副詞）\n- 說明人/物的特徵或正在進行的動作（使用形容詞/動詞）\n- 全部使用 A2 級別詞彙，句子簡單易懂\n\n請提供兩種版本：\n1. 正式版（Formal Version）：使用正式、標準的英文表達\n2. 口語版（Casual Version）：使用口語、輕鬆的英文表達\n\n每種版本都需要包含：\n- 英文內容\n- 繁體中文翻譯\n\n同時請為每種版本提供詳細解析：\n- 重點說明\n- 語法結構（A2語法結構分析）\n- A2級別詞彙表\n- A2級別例句\n` } ] };
             const messages = [...conversationHistory, userMessage];
-
-            const requestBody = {
-                "model": "qwen3-vl-flash",
-                "messages": messages,
-                "max_tokens": 2000,
-                "temperature": 0.7
-            };
-
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'X-DashScope-SSE': 'disable'
-            };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
-
-            const data = await response.json();
-
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                const aiResponse = data.choices[0].message.content;
-
-                // 更新對話歷史
-                conversationHistory.push(userMessage);
-                conversationHistory.push({
-                    "role": "assistant",
-                    "content": aiResponse
-                });
-
-                return aiResponse;
-            } else {
-                throw new Error('API 返回格式異常: ' + JSON.stringify(data));
-            }
+            const requestBody = { model: "qwen3-vl-flash", messages, max_tokens: 2000, temperature: 0.7 };
+            const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'X-DashScope-SSE': 'disable' };
+            return fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) })
+                .then(async response => { if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`); return response.json(); })
+                .then(data => { if (data.choices && data.choices[0] && data.choices[0].message) { const aiResponse = data.choices[0].message.content; conversationHistory.push(userMessage); conversationHistory.push({ role: "assistant", content: aiResponse }); return aiResponse; } throw new Error('API 返回格式異常'); });
         }
 
-        // 翻譯英文句子的函數
         async function translateEnglishSentences(parsedResponse) {
-            const translations = {
-                formal: { sentences: [] },
-                casual: { sentences: [] }
-            };
-
-            // 翻譯正式版英文
-            if (parsedResponse.formal && parsedResponse.formal.english) {
-                const formalTranslation = await callTranslationAPI(parsedResponse.formal.english);
-                translations.formal.sentences = parseTranslationResponse(formalTranslation);
-            }
-
-            // 翻譯口語版英文
-            if (parsedResponse.casual && parsedResponse.casual.english) {
-                const casualTranslation = await callTranslationAPI(parsedResponse.casual.english);
-                translations.casual.sentences = parseTranslationResponse(casualTranslation);
-            }
-
+            const translations = { formal: { sentences: [] }, casual: { sentences: [] } };
+            if (parsedResponse.formal && parsedResponse.formal.english) { const formalTranslation = await callTranslationAPI(parsedResponse.formal.english); translations.formal.sentences = parseTranslationResponse(formalTranslation); }
+            if (parsedResponse.casual && parsedResponse.casual.english) { const casualTranslation = await callTranslationAPI(parsedResponse.casual.english); translations.casual.sentences = parseTranslationResponse(casualTranslation); }
             return translations;
         }
 
-        // 調用翻譯API
-        async function callTranslationAPI(englishText) {
-            const userMessage = {
-                "role": "user",
-                "content": `請將以下英文段落逐句翻譯成繁體中文，保持原有的句子結構和順序：
-
-${englishText}
-
-請按照以下格式回覆，每個英文句子後面緊跟其中文翻譯：
-英文句子1
-中文翻譯1
-英文句子2
-中文翻譯2
-...以此類推`
-            };
-
-            const requestBody = {
-                "model": "qwen3-vl-flash",
-                "messages": [userMessage],
-                "max_tokens": 1000,
-                "temperature": 0.3
-            };
-
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'X-DashScope-SSE': 'disable'
-            };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`翻譯API錯誤 ${response.status}: ${errorText}`);
-            }
-
-            const data = await response.json();
-
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                return data.choices[0].message.content;
-            } else {
-                throw new Error('翻譯API返回格式異常: ' + JSON.stringify(data));
-            }
+        function callTranslationAPI(englishText) {
+            const userMessage = { role: "user", content: `請將以下英文段落逐句翻譯成繁體中文，保持原有的句子結構和順序：\n\n${englishText}\n\n請按照以下格式回覆，每個英文句子後面緊跟其中文翻譯：\n英文句子1\n中文翻譯1\n英文句子2\n中文翻譯2\n...以此類推` };
+            const requestBody = { model: "qwen3-vl-flash", messages: [userMessage], max_tokens: 1000, temperature: 0.3 };
+            const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'X-DashScope-SSE': 'disable' };
+            return fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) }).then(async response => { if (!response.ok) throw new Error(`翻譯API錯誤 ${response.status}: ${await response.text()}`); const data = await response.json(); if (data.choices && data.choices[0] && data.choices[0].message) { return data.choices[0].message.content; } throw new Error('翻譯API返回格式異常'); });
         }
 
-        // 解析翻譯回應
         function parseTranslationResponse(translationText) {
             const lines = translationText.split('\n').filter(line => line.trim());
             const sentences = [];
-            
-            for (let i = 0; i < lines.length; i += 2) {
-                if (i + 1 < lines.length) {
-                    sentences.push({
-                        english: lines[i].trim(),
-                        chinese: lines[i + 1].trim()
-                    });
-                }
-            }
-            
+            for (let i = 0; i < lines.length; i += 2) { if (i + 1 < lines.length) { sentences.push({ english: lines[i].trim(), chinese: lines[i + 1].trim() }); } }
             return sentences;
         }
 
-        // 解析 AI 回應，提取正式版和口語版的英文、繁體中文和解析內容
         function parseAIResponse(response) {
-            const result = {
-                formal: { 
-                    english: '',
-                    chinese: '',
-                    analyze: {
-                        keyPoints: '',
-                        grammarAnalysis: '',
-                        vocabulary: [],
-                        examples: []
-                    }
-                },
-                casual: { 
-                    english: '',
-                    chinese: '',
-                    analyze: {
-                        keyPoints: '',
-                        grammarAnalysis: '',
-                        vocabulary: [],
-                        examples: []
-                    }
-                }
-            };
-
-            // 提取正式版和正式版解析
+            const result = { formal: { english: '', chinese: '', analyze: { keyPoints: '', grammarAnalysis: '', vocabulary: [], examples: [] } }, casual: { english: '', chinese: '', analyze: { keyPoints: '', grammarAnalysis: '', vocabulary: [], examples: [] } } };
             const formalSectionMatch = response.match(/【正式版】\s*([\s\S]*?)(?=【正式版解析】|【口語版】|$)/i);
             const formalAnalyzeMatch = response.match(/【正式版解析】\s*([\s\S]*?)(?=【口語版】|$)/i);
-            
             if (formalSectionMatch) {
-                const formalContent = formalSectionMatch[1].trim();
-                const lines = formalContent.split('\n').filter(line => line.trim());
-                let englishParts = [];
-                let chineseParts = [];
-                
-                for (let line of lines) {
-                    const trimmedLine = line.trim();
-                    // 過濾掉不需要的標記文字
-                    if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') {
-                        continue;
-                    }
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
-                        chineseParts.push(trimmedLine);
-                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        englishParts.push(trimmedLine);
-                    }
-                }
-                
-                result.formal.english = englishParts.join('\n').trim();
-                result.formal.chinese = chineseParts.join('\n').trim();
+                const formalContent = formalSectionMatch[1].trim(); const lines = formalContent.split('\n').filter(line => line.trim()); let englishParts = []; let chineseParts = [];
+                for (let line of lines) { const trimmedLine = line.trim(); if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') { continue; } if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) { chineseParts.push(trimmedLine); } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) { englishParts.push(trimmedLine); } }
+                result.formal.english = englishParts.join('\n').trim(); result.formal.chinese = chineseParts.join('\n').trim();
             }
-
-            if (formalAnalyzeMatch) {
-                const analyzeContent = formalAnalyzeMatch[1].trim();
-                parseAnalyzeContent(analyzeContent, result.formal.analyze);
-            }
-
-            // 提取口語版和口語版解析
+            if (formalAnalyzeMatch) { const analyzeContent = formalAnalyzeMatch[1].trim(); parseAnalyzeContent(analyzeContent, result.formal.analyze); }
             const casualSectionMatch = response.match(/【口語版】\s*([\s\S]*?)(?=【口語版解析】|$)/i);
             const casualAnalyzeMatch = response.match(/【口語版解析】\s*([\s\S]*?)$/i);
-            
             if (casualSectionMatch) {
-                const casualContent = casualSectionMatch[1].trim();
-                const lines = casualContent.split('\n').filter(line => line.trim());
-                let englishParts = [];
-                let chineseParts = [];
-                
-                for (let line of lines) {
-                    const trimmedLine = line.trim();
-                    // 過濾掉不需要的標記文字
-                    if (trimmedLine.includes('口語版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') {
-                        continue;
-                    }
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) {
-                        chineseParts.push(trimmedLine);
-                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        englishParts.push(trimmedLine);
-                    }
-                }
-                
-                result.casual.english = englishParts.join('\n').trim();
-                result.casual.chinese = chineseParts.join('\n').trim();
+                const casualContent = casualSectionMatch[1].trim(); const lines = casualContent.split('\n').filter(line => line.trim()); let englishParts = []; let chineseParts = [];
+                for (let line of lines) { const trimmedLine = line.trim(); if (trimmedLine.includes('口語版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') { continue; } if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) { chineseParts.push(trimmedLine); } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) { englishParts.push(trimmedLine); } }
+                result.casual.english = englishParts.join('\n').trim(); result.casual.chinese = chineseParts.join('\n').trim();
             }
-
-            if (casualAnalyzeMatch) {
-                const analyzeContent = casualAnalyzeMatch[1].trim();
-                parseAnalyzeContent(analyzeContent, result.casual.analyze);
-            }
-
-            // 如果沒有匹配到，嘗試簡單格式
+            if (casualAnalyzeMatch) { const analyzeContent = casualAnalyzeMatch[1].trim(); parseAnalyzeContent(analyzeContent, result.casual.analyze); }
             if (!result.formal.english && !result.casual.english) {
-                const allLines = response.split('\n').filter(line => line.trim());
-                let englishParts = [];
-                let chineseParts = [];
-                
-                for (let line of allLines) {
-                    const trimmedLine = line.trim();
-                    // 過濾掉不需要的標記文字
-                    if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('口語版翻譯') || 
-                        trimmedLine.includes('---') || trimmedLine === '---') {
-                        continue;
-                    }
-                    if (/[\u4e00-\u9fa5]/.test(trimmedLine)) {
-                        chineseParts.push(trimmedLine);
-                    } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) {
-                        englishParts.push(trimmedLine);
-                    }
-                }
-                
-                if (englishParts.length > 0) {
-                    result.formal.english = englishParts.join('\n').trim();
-                }
-                if (chineseParts.length > 0) {
-                    result.formal.chinese = chineseParts.join('\n').trim();
-                }
-                
-                if (!result.formal.english) {
-                    result.formal.english = response;
-                }
+                const allLines = response.split('\n').filter(line => line.trim()); let englishParts = []; let chineseParts = [];
+                for (let line of allLines) { const trimmedLine = line.trim(); if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('口語版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') { continue; } if (/[\u4e00-\u9fa5]/.test(trimmedLine)) { chineseParts.push(trimmedLine); } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) { englishParts.push(trimmedLine); } }
+                if (englishParts.length > 0) { result.formal.english = englishParts.join('\n').trim(); }
+                if (chineseParts.length > 0) { result.formal.chinese = chineseParts.join('\n').trim(); }
+                if (!result.formal.english) { result.formal.english = response; }
             }
-
             return result;
         }
 
-        // 解析解析內容
         function parseAnalyzeContent(content, analyzeObj) {
-            // 提取重點說明
             const keyPointsMatch = content.match(/\[重點說明\]\s*([\s\S]*?)(?=\[語法結構\]|\[詞彙表\]|\[例句\]|$)/i);
-            if (keyPointsMatch) {
-                analyzeObj.keyPoints = keyPointsMatch[1].trim();
-            }
-
-            // 提取語法結構分析
-            const grammarMatch = content.match(/\[語法結構[^]*?A2語法結構分析[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i) ||
-                                content.match(/\[語法結構[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i);
-            if (grammarMatch) {
-                analyzeObj.grammarAnalysis = grammarMatch[1].trim();
-            }
-
-            // 提取詞彙表
-            const vocabularyMatch = content.match(/\[詞彙表\][^]*?A2級別[^]*?\s*([\s\S]*?)(?=\[例句\]|$)/i) ||
-                                  content.match(/\[詞彙表\]\s*([\s\S]*?)(?=\[例句\]|$)/i);
+            if (keyPointsMatch) { analyzeObj.keyPoints = keyPointsMatch[1].trim(); }
+            const grammarMatch = content.match(/\[語法結構[^]*?A2語法結構分析[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i) || content.match(/\[語法結構[^]*?\]\s*([\s\S]*?)(?=\[詞彙表\]|\[例句\]|$)/i);
+            if (grammarMatch) { analyzeObj.grammarAnalysis = grammarMatch[1].trim(); }
+            const vocabularyMatch = content.match(/\[詞彙表\][^]*?A2級別[^]*?\s*([\s\S]*?)(?=\[例句\]|$)/i) || content.match(/\[詞彙表\]\s*([\s\S]*?)(?=\[例句\]|$)/i);
             if (vocabularyMatch) {
                 const vocabText = vocabularyMatch[1].trim();
-                // 提取所有以 - 開頭的行
-                const vocabLines = vocabText.split('\n')
-                    .filter(line => {
-                        const trimmed = line.trim();
-                        return trimmed.startsWith('-') && trimmed.length > 1;
-                    })
-                    .map(line => line.replace(/^-\s*/, '').trim())
-                    .filter(line => line.length > 0);
+                const vocabLines = vocabText.split('\n').filter(line => { const trimmed = line.trim(); return trimmed.startsWith('-') && trimmed.length > 1; }).map(line => line.replace(/^-+\s*/, '').trim()).filter(line => line.length > 0);
                 analyzeObj.vocabulary = vocabLines;
             }
-
-            // 提取例句
             const examplesMatch = content.match(/\[例句\]\s*([\s\S]*?)$/i);
             if (examplesMatch) {
                 const examplesText = examplesMatch[1].trim();
-                // 提取所有以數字開頭的行
-                const exampleLines = examplesText.split('\n')
-                    .filter(line => {
-                        const trimmed = line.trim();
-                        return /^\d+\./.test(trimmed) && trimmed.length > 2;
-                    })
-                    .map(line => line.replace(/^\d+\.\s*/, '').trim())
-                    .filter(line => line.length > 0);
+                const exampleLines = examplesText.split('\n').filter(line => { const trimmed = line.trim(); return /^\d+\./.test(trimmed) && trimmed.length > 2; }).map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(line => line.length > 0);
                 analyzeObj.examples = exampleLines;
             }
         }
 
-        // 標示關鍵英文單字和片語
-        function highlightKeywords(text) {
-            // 常見的 A2 級別關鍵詞和片語
-            const keywords = [
-                // 基本動詞
-                'is', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'must',
-                'go', 'come', 'get', 'make', 'take', 'give', 'put', 'see', 'look', 'watch', 'listen', 'hear', 'say', 'tell', 'speak', 'talk',
-                'eat', 'drink', 'sleep', 'work', 'play', 'study', 'learn', 'teach', 'read', 'write', 'buy', 'sell', 'help', 'need', 'want', 'like', 'love',
-                
-                // 常用名詞
-                'time', 'day', 'week', 'month', 'year', 'morning', 'afternoon', 'evening', 'night', 'today', 'tomorrow', 'yesterday',
-                'home', 'house', 'room', 'kitchen', 'bedroom', 'bathroom', 'school', 'office', 'shop', 'store', 'restaurant', 'hospital',
-                'family', 'friend', 'people', 'person', 'man', 'woman', 'child', 'children', 'boy', 'girl', 'baby',
-                'food', 'water', 'coffee', 'tea', 'bread', 'rice', 'meat', 'fish', 'fruit', 'vegetable',
-                'car', 'bus', 'train', 'plane', 'bike', 'phone', 'computer', 'book', 'table', 'chair', 'bed', 'door', 'window',
-                
-                // 形容詞
-                'good', 'bad', 'big', 'small', 'long', 'short', 'tall', 'high', 'low', 'fast', 'slow', 'hot', 'cold', 'warm', 'cool',
-                'new', 'old', 'young', 'easy', 'difficult', 'hard', 'soft', 'heavy', 'light', 'dark', 'bright', 'clean', 'dirty',
-                'happy', 'sad', 'angry', 'tired', 'hungry', 'thirsty', 'busy', 'free', 'ready', 'sure', 'right', 'wrong',
-                
-                // 介詞和副詞
-                'in', 'on', 'at', 'to', 'from', 'with', 'without', 'for', 'about', 'under', 'over', 'between', 'behind', 'next to',
-                'here', 'there', 'now', 'then', 'always', 'never', 'sometimes', 'often', 'usually', 'very', 'really', 'quite', 'too', 'also',
-                
-                // 常用片語
-                'how are you', 'nice to meet you', 'excuse me', 'thank you', 'you\'re welcome', 'i\'m sorry', 'no problem',
-                'what time', 'how much', 'how many', 'how long', 'how often', 'what about', 'would you like', 'i would like',
-                'there is', 'there are', 'used to', 'going to', 'have to', 'need to', 'want to', 'like to', 'love to',
-                'look at', 'listen to', 'wait for', 'look for', 'think about', 'talk about', 'worry about', 'care about',
-                'turn on', 'turn off', 'pick up', 'put down', 'get up', 'sit down', 'stand up', 'wake up', 'go out', 'come back',
-                'right now', 'just now', 'a little', 'a lot', 'too much', 'not enough', 'of course', 'by the way', 'at least', 'at most'
-            ];
+        function stopCamera() { if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; } video.style.display = 'none'; previewImage.style.display = 'none'; }
+        function restartCamera() { startCamera(); video.style.display = 'block'; previewImage.style.display = 'none'; }
 
-            let highlightedText = text;
-            
-            // 按長度排序，先處理長片語
-            keywords.sort((a, b) => b.length - a.length);
-            
-            keywords.forEach(keyword => {
-                // 創建正則表達式，匹配完整單詞或片語（不區分大小寫）
-                const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-                highlightedText = highlightedText.replace(regex, `<span class="keyword-highlight">$&</span>`);
-            });
-            
-            return highlightedText;
-        }
-
-        // 關閉相機和預覽
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            video.style.display = 'none';
-            previewImage.style.display = 'none';
-        }
-
-        // 重新啟動相機
-        function restartCamera() {
-            startCamera();
-            // 確保video元素顯示
-            video.style.display = 'block';
-            // 隱藏預覽圖片（如果有的話）
-            previewImage.style.display = 'none';
-        }
-
-        // 語音合成（讀取英文）
         function speakText(text, lang = 'en-US') {
-            if (!('speechSynthesis' in window)) {
-                console.log('瀏覽器不支援語音合成');
-                return;
-            }
-
-            // 停止當前播放
+            if (!('speechSynthesis' in window)) { return; }
             window.speechSynthesis.cancel();
-
-            // 先過濾掉特定的中文字串
-            let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
-            
-            // 過濾掉中文字符，只保留英文字符、數字、標點符號和空格
+            let filteredText = (text || '').replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
             const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
-            
-            if (!englishOnlyText) {
-                console.log('沒有英文內容可以朗讀');
-                return;
-            }
-
-            // 檢查是否啟用背景朗讀模式
+            if (!englishOnlyText) { return; }
             const isBackgroundMode = backgroundSpeechCheckbox.checked;
-            
-            // 朗讀時都關閉相機
             stopCamera();
-
             const utterance = new SpeechSynthesisUtterance(englishOnlyText);
-            utterance.lang = lang;
-            utterance.volume = 0.8;
-            utterance.rate = parseFloat(speechRateSlider.value); // 使用用戶設定的語速
-            utterance.pitch = 1;
-
-            // 選擇合適的語音（英文）
-            const getVoices = () => {
-                const voices = window.speechSynthesis.getVoices();
-                const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US'));
-                if (englishVoice) {
-                    utterance.voice = englishVoice;
-                } else {
-                    // 如果沒有美式英語，找任意英語語音
-                    const anyEnglish = voices.find(v => v.lang.startsWith('en'));
-                    if (anyEnglish) {
-                        utterance.voice = anyEnglish;
-                    }
-                }
-                window.speechSynthesis.speak(utterance);
-            };
-
-            // 確保語音列表已加載
-            if (window.speechSynthesis.getVoices().length === 0) {
-                window.speechSynthesis.onvoiceschanged = getVoices;
-            } else {
-                getVoices();
-            }
-
-            utterance.onstart = () => {
-                status.textContent = isBackgroundMode ? '正在背景朗讀英文...' : '正在朗讀英文...';
-            };
-
-            utterance.onend = () => {
-                status.textContent = '朗讀完成';
-                // 朗讀完成後重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000); // 延遲1秒後重新啟動相機
-            };
-
-            utterance.onerror = (event) => {
-                console.error('語音合成錯誤:', event.error);
-                status.textContent = '朗讀失敗';
-                // 朗讀失敗也重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000);
-            };
+            utterance.lang = lang; utterance.volume = 0.8; utterance.rate = parseFloat(speechRateSlider.value); utterance.pitch = 1;
+            const getVoices = () => { const voices = window.speechSynthesis.getVoices(); const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US')); if (englishVoice) { utterance.voice = englishVoice; } else { const anyEnglish = voices.find(v => v.lang.startsWith('en')); if (anyEnglish) { utterance.voice = anyEnglish; } } window.speechSynthesis.speak(utterance); };
+            if (window.speechSynthesis.getVoices().length === 0) { window.speechSynthesis.onvoiceschanged = getVoices; } else { getVoices(); }
+            utterance.onstart = () => { status.textContent = isBackgroundMode ? '正在背景朗讀英文...' : '正在朗讀英文...'; showOverlay(englishOnlyText, ''); };
+            utterance.onend = () => { status.textContent = '朗讀完成'; hideOverlay(); setTimeout(() => { restartCamera(); }, 1000); };
+            utterance.onerror = () => { status.textContent = '朗讀失敗'; hideOverlay(); setTimeout(() => { restartCamera(); }, 1000); };
         }
 
-        // 單句朗讀並高亮
         function speakSentenceWithHighlight(text, element) {
-            if (!('speechSynthesis' in window)) {
-                console.log('瀏覽器不支援語音合成');
-                return;
-            }
-
-            // 停止當前播放並清除所有高亮
-            window.speechSynthesis.cancel();
-            clearAllHighlights();
-
-            // 檢查是否啟用背景朗讀模式
+            if (!('speechSynthesis' in window)) { return; }
+            window.speechSynthesis.cancel(); clearAllHighlights();
             const isBackgroundMode = backgroundSpeechCheckbox.checked;
-            
-            // 朗讀時都關閉相機
             stopCamera();
-
-            // 過濾文本
-            let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
+            let filteredText = (text || '').replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
             const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
-            
-            if (!englishOnlyText) {
-                console.log('沒有英文內容可以朗讀');
-                // 如果沒有內容，重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 500);
-                return;
-            }
-
-            // 添加高亮效果
-            element.classList.add('speaking');
-
+            if (!englishOnlyText) { setTimeout(() => { restartCamera(); }, 500); return; }
+            element && element.classList.add('speaking');
+            const next = element ? element.nextElementSibling : null;
+            const chineseText = next && next.classList && next.classList.contains('ai-response-sentence-translation') ? next.textContent : '';
             const utterance = new SpeechSynthesisUtterance(englishOnlyText);
-            utterance.lang = 'en-US';
-            utterance.volume = 0.8;
-            utterance.rate = parseFloat(speechRateSlider.value);
-            utterance.pitch = 1;
-
-            utterance.onstart = () => {
-                status.textContent = (isBackgroundMode ? '正在背景朗讀: ' : '正在朗讀: ') + englishOnlyText.substring(0, 30) + '...';
-            };
-
-            utterance.onend = () => {
-                element.classList.remove('speaking');
-                status.textContent = '朗讀完成';
-                // 朗讀完成後重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000);
-            };
-
-            utterance.onerror = (event) => {
-                element.classList.remove('speaking');
-                console.error('語音合成錯誤:', event.error);
-                status.textContent = '朗讀失敗';
-                // 朗讀失敗也重新啟動相機
-                setTimeout(() => {
-                    restartCamera();
-                }, 1000);
-            };
-
-            // 選擇語音並播放
-            const voices = window.speechSynthesis.getVoices();
-            const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US'));
-            if (englishVoice) {
-                utterance.voice = englishVoice;
-            }
-
+            utterance.lang = 'en-US'; utterance.volume = 0.8; utterance.rate = parseFloat(speechRateSlider.value); utterance.pitch = 1;
+            utterance.onstart = () => { status.textContent = (isBackgroundMode ? '正在背景朗讀: ' : '正在朗讀: ') + englishOnlyText.substring(0, 30) + '...'; showOverlay(englishOnlyText, chineseText || ''); };
+            utterance.onend = () => { element && element.classList.remove('speaking'); status.textContent = '朗讀完成'; hideOverlay(); setTimeout(() => { restartCamera(); }, 1000); };
+            utterance.onerror = () => { element && element.classList.remove('speaking'); status.textContent = '朗讀失敗'; hideOverlay(); setTimeout(() => { restartCamera(); }, 1000); };
+            const voices = window.speechSynthesis.getVoices(); const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US')); if (englishVoice) { utterance.voice = englishVoice; }
             window.speechSynthesis.speak(utterance);
         }
 
-        // 全域變數來追蹤持續朗讀狀態
-        let continuousSpeechActive = false;
-        let currentSpeechSentences = null;
-
-        // 朗讀所有句子
+        let continuousSpeechActive = false; let currentSpeechSentences = null;
         function speakAllSentences(sentences) {
             if (!sentences || sentences.length === 0) return;
-
-            // 停止當前播放並清除所有高亮
-            window.speechSynthesis.cancel();
-            clearAllHighlights();
-            
-            // 檢查是否啟用背景朗讀模式和持續朗讀模式
-            const isBackgroundMode = backgroundSpeechCheckbox.checked;
-            const isContinuousMode = continuousSpeechCheckbox.checked;
-            
-            // 設定持續朗讀狀態
-            continuousSpeechActive = isContinuousMode;
-            currentSpeechSentences = sentences;
-            
-            // 朗讀時都關閉相機
-            stopCamera();
-
-            let currentIndex = 0;
-            let cycleCount = 1;
-
+            window.speechSynthesis.cancel(); clearAllHighlights();
+            const isBackgroundMode = backgroundSpeechCheckbox.checked; const isContinuousMode = continuousSpeechCheckbox.checked;
+            continuousSpeechActive = isContinuousMode; currentSpeechSentences = sentences; stopCamera();
+            let currentIndex = 0; let cycleCount = 1;
             function speakNext() {
-                // 檢查是否應該停止持續朗讀
-                if (!continuousSpeechActive) {
-                    status.textContent = '朗讀已停止';
-                    clearAllHighlights();
-                    // 釋放 wake lock
-                    if (isBackgroundMode) {
-                        releaseWakeLock();
-                    }
-                    // 朗讀停止後重新啟動相機
-                    setTimeout(() => {
-                        restartCamera();
-                    }, 1000);
-                    return;
-                }
-
+                if (!continuousSpeechActive) { status.textContent = '朗讀已停止'; clearAllHighlights(); hideOverlay(); if (isBackgroundMode) { try { releaseWakeLock(); } catch(_){} } setTimeout(() => { restartCamera(); }, 1000); return; }
                 if (currentIndex >= sentences.length) {
-                    // 一輪朗讀完成
-                    if (isContinuousMode && continuousSpeechActive) {
-                        // 持續朗讀模式：重新開始
-                        currentIndex = 0;
-                        cycleCount++;
-                        status.textContent = `持續朗讀第 ${cycleCount} 輪...`;
-                        // 延遲一下再開始下一輪
-                        setTimeout(speakNext, 1000);
-                        return;
-                    } else {
-                        // 全部朗讀完成
-                        status.textContent = '全部朗讀完成';
-                        continuousSpeechActive = false;
-                        // 釋放 wake lock
-                        if (isBackgroundMode) {
-                            releaseWakeLock();
-                        }
-                        // 朗讀完成後重新啟動相機
-                        setTimeout(() => {
-                            restartCamera();
-                        }, 1000);
-                        return;
-                    }
+                    if (isContinuousMode && continuousSpeechActive) { currentIndex = 0; cycleCount++; status.textContent = `持續朗讀第 ${cycleCount} 輪...`; setTimeout(speakNext, 1000); return; }
+                    status.textContent = '全部朗讀完成'; continuousSpeechActive = false; hideOverlay(); if (isBackgroundMode) { try { releaseWakeLock(); } catch(_){} } setTimeout(() => { restartCamera(); }, 1000); return;
                 }
-
-                const sentence = sentences[currentIndex];
-                const element = sentence.element;
-                const text = sentence.text;
-
-                // 過濾文本
-                let filteredText = text.replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
+                const sentence = sentences[currentIndex]; const element = sentence.element; const text = sentence.text;
+                let filteredText = (text || '').replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
                 const englishOnlyText = filteredText.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g, '').trim();
-
-                if (!englishOnlyText) {
-                    currentIndex++;
-                    speakNext();
-                    return;
-                }
-
-                // 清除之前的高亮，添加當前高亮
-                clearAllHighlights();
-                element.classList.add('speaking');
-                
-                // 滾動到當前句子
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
+                if (!englishOnlyText) { currentIndex++; speakNext(); return; }
+                clearAllHighlights(); element && element.classList.add('speaking'); element && element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const next = element ? element.nextElementSibling : null;
+                const chineseText = next && next.classList && next.classList.contains('ai-response-sentence-translation') ? next.textContent : '';
                 const utterance = new SpeechSynthesisUtterance(englishOnlyText);
-                utterance.lang = 'en-US';
-                utterance.volume = 0.8;
-                utterance.rate = parseFloat(speechRateSlider.value);
-                utterance.pitch = 1;
-
-                utterance.onstart = () => {
-                    const prefix = isBackgroundMode ? '正在背景朗讀' : '正在朗讀';
-                    const cycleInfo = isContinuousMode ? ` [第${cycleCount}輪]` : '';
-                    status.textContent = `${prefix}${cycleInfo} (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`;
-                };
-
-                utterance.onend = () => {
-                    element.classList.remove('speaking');
-                    currentIndex++;
-                    // 延遲一點再朗讀下一句
-                    setTimeout(speakNext, 500);
-                };
-
-                utterance.onerror = (event) => {
-                    element.classList.remove('speaking');
-                    console.error('語音合成錯誤:', event.error);
-                    currentIndex++;
-                    setTimeout(speakNext, 500);
-                };
-
-                // 選擇語音並播放
-                const voices = window.speechSynthesis.getVoices();
-                const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US'));
-                if (englishVoice) {
-                    utterance.voice = englishVoice;
-                }
-
+                utterance.lang = 'en-US'; utterance.volume = 0.8; utterance.rate = parseFloat(speechRateSlider.value); utterance.pitch = 1;
+                utterance.onstart = () => { const prefix = isBackgroundMode ? '正在背景朗讀' : '正在朗讀'; const cycleInfo = isContinuousMode ? ` [第${cycleCount}輪]` : ''; status.textContent = `${prefix}${cycleInfo} (${currentIndex + 1}/${sentences.length}): ${englishOnlyText.substring(0, 30)}...`; showOverlay(englishOnlyText, chineseText || ''); };
+                utterance.onend = () => { element && element.classList.remove('speaking'); currentIndex++; setTimeout(speakNext, 500); };
+                utterance.onerror = () => { element && element.classList.remove('speaking'); currentIndex++; setTimeout(speakNext, 500); };
+                const voices = window.speechSynthesis.getVoices(); const englishVoice = voices.find(v => v.lang.startsWith('en') && v.lang.includes('US')); if (englishVoice) { utterance.voice = englishVoice; }
                 window.speechSynthesis.speak(utterance);
             }
-
             speakNext();
         }
 
-        // 停止持續朗讀的函數
-        function stopContinuousSpeech() {
-            continuousSpeechActive = false;
-            window.speechSynthesis.cancel();
-            clearAllHighlights();
-            status.textContent = '持續朗讀已停止';
-            // 重新啟動相機
-            setTimeout(() => {
-                restartCamera();
-            }, 1000);
-        }
+        function stopContinuousSpeech() { continuousSpeechActive = false; window.speechSynthesis.cancel(); clearAllHighlights(); status.textContent = '持續朗讀已停止'; hideOverlay(); setTimeout(() => { restartCamera(); }, 1000); }
+        function clearAllHighlights() { document.querySelectorAll('.ai-response-english.speaking').forEach(el => el.classList.remove('speaking')); }
+        function splitIntoSentences(text) { if (!text) return []; return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 0); }
+        function clearConversationData() { continuousSpeechActive = false; window.speechSynthesis.cancel(); clearAllHighlights(); const conversation = document.getElementById('conversation'); conversation.innerHTML = '<div class="empty-state">還沒有任何對話，拍照並送出分析吧！</div>'; hideOverlay(); }
 
-        // 清除所有高亮效果
-        function clearAllHighlights() {
-            const speakingElements = document.querySelectorAll('.ai-response-english.speaking');
-            speakingElements.forEach(element => {
-                element.classList.remove('speaking');
-            });
-        }
+        speechRateSlider.addEventListener('input', (e) => { const rate = e.target.value; speechRateValue.textContent = rate + 'x'; localStorage.setItem('speechRate', rate); });
+        backgroundSpeechCheckbox.addEventListener('change', (e) => { localStorage.setItem('backgroundSpeech', e.target.checked.toString()); status.textContent = e.target.checked ? '已啟用背景朗讀模式' : '已關閉背景朗讀模式'; });
+        continuousSpeechCheckbox.addEventListener('change', (e) => { localStorage.setItem('continuousSpeech', e.target.checked.toString()); if (!e.target.checked && continuousSpeechActive) { stopContinuousSpeech(); } });
+        apiKeyInput.addEventListener('input', (e) => { apiKey = e.target.value.trim(); if (saveApiKeyCheckbox.checked && apiKey) { localStorage.setItem('qwen_api_key', apiKey); } else if (!saveApiKeyCheckbox.checked) { localStorage.removeItem('qwen_api_key'); } });
+        saveApiKeyCheckbox.addEventListener('change', (e) => { if (e.target.checked && apiKey) { localStorage.setItem('qwen_api_key', apiKey); } else { localStorage.removeItem('qwen_api_key'); } });
+        showFormalCheckbox.addEventListener('change', (e) => { localStorage.setItem('showFormal', e.target.checked.toString()); });
+        showCasualCheckbox.addEventListener('change', (e) => { localStorage.setItem('showCasual', e.target.checked.toString()); });
+        configToggle.addEventListener('click', () => { const isExpanded = apiConfig.classList.contains('expanded'); if (isExpanded) { apiConfig.classList.remove('expanded'); toggleBtn.textContent = '+'; localStorage.setItem('configExpanded', 'false'); } else { apiConfig.classList.add('expanded'); toggleBtn.textContent = '-'; localStorage.setItem('configExpanded', 'true'); } });
+        reloadBtn.addEventListener('click', () => { location.reload(); });
 
-        // 將文本拆分成句子
-        function splitIntoSentences(text) {
-            if (!text) return [];
-            
-            // 使用正則表達式拆分句子，保留句號、問號、驚嘆號
-            const sentences = text.split(/(?<=[.!?])\s+/)
-                .map(sentence => sentence.trim())
-                .filter(sentence => sentence.length > 0);
-            
-            return sentences;
-        }
-
-        // 清除對話區域的資料
-        function clearConversationData() {
-            // 停止任何正在進行的朗讀
-            continuousSpeechActive = false;
-            window.speechSynthesis.cancel();
-            clearAllHighlights();
-            
-            // 清除對話區域內容，但保留空狀態提示
-            const conversation = document.getElementById('conversation');
-            conversation.innerHTML = '<div class="empty-state">還沒有任何對話，拍照並送出分析吧！</div>';
-        }
-
-
-
-        // 按鈕事件
-        captureBtn.addEventListener('click', capturePhoto);
-        
-        // 重新載入按鈕事件
-        reloadBtn.addEventListener('click', () => {
-            location.reload();
-        });
-
-        // 送出照片按鈕事件
-        submitBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            if (!currentImageData) {
-                status.textContent = '請先拍照';
-                return;
-            }
-
-            // 直接處理照片提交
-            handlePhotoSubmit();
-        });
-
-        // API 配置事件
-        apiKeyInput.addEventListener('input', (e) => {
-            apiKey = e.target.value.trim();
-            // 如果勾選了保存，就保存到 localStorage
-            if (saveApiKeyCheckbox.checked && apiKey) {
-                localStorage.setItem('qwen_api_key', apiKey);
-            } else if (!saveApiKeyCheckbox.checked) {
-                localStorage.removeItem('qwen_api_key');
-            }
-        });
-
-        saveApiKeyCheckbox.addEventListener('change', (e) => {
-            if (e.target.checked && apiKey) {
-                // 保存到 localStorage
-                localStorage.setItem('qwen_api_key', apiKey);
-            } else {
-                // 從 localStorage 移除
-                localStorage.removeItem('qwen_api_key');
-            }
-        });
-
-        // 版本選擇變更時保存到 localStorage
-        showFormalCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('showFormal', e.target.checked.toString());
-        });
-
-        showCasualCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('showCasual', e.target.checked.toString());
-        });
-
-        // 語音速度滑桿事件
-        speechRateSlider.addEventListener('input', (e) => {
-            const rate = e.target.value;
-            speechRateValue.textContent = rate + 'x';
-            localStorage.setItem('speechRate', rate);
-        });
-
-        // 背景朗讀選項變更事件
-        backgroundSpeechCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('backgroundSpeech', e.target.checked.toString());
-            if (e.target.checked) {
-                status.textContent = '已啟用背景朗讀模式';
-            } else {
-                status.textContent = '已關閉背景朗讀模式';
-            }
-        });
-
-        // 持續朗讀選項變更事件
-        continuousSpeechCheckbox.addEventListener('change', (e) => {
-            localStorage.setItem('continuousSpeech', e.target.checked.toString());
-            if (e.target.checked) {
-                status.textContent = '已啟用持續朗讀模式';
-            } else {
-                status.textContent = '已關閉持續朗讀模式';
-                // 如果正在持續朗讀，立即停止
-                if (continuousSpeechActive) {
-                    stopContinuousSpeech();
-                }
-            }
-        });
-
-        // 展開/收縮配置區域
-        configToggle.addEventListener('click', () => {
-            const isExpanded = apiConfig.classList.contains('expanded');
-            if (isExpanded) {
-                apiConfig.classList.remove('expanded');
-                toggleBtn.textContent = '+';
-                localStorage.setItem('configExpanded', 'false');
-            } else {
-                apiConfig.classList.add('expanded');
-                toggleBtn.textContent = '-';
-                localStorage.setItem('configExpanded', 'true');
-            }
-        });
-
-        // 頁面載入時啟動相機
-        if (hasGetUserMedia) {
-            startCamera();
-        } else {
-            status.textContent = '您的瀏覽器不支援相機功能';
-        }
-
-        // 頁面卸載時停止相機
-        window.addEventListener('beforeunload', function() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-        });
-
-        // 頁面可見性改變時保持相機開啟（避免切換標籤頁時關閉）
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && stream && stream.active) {
-                // 頁面重新可見時，確保 video 元素顯示 stream
-                if (video.srcObject !== stream) {
-                    video.srcObject = stream;
-                }
-            }
-            
-            // 如果啟用背景朗讀模式，在頁面隱藏時保持語音合成活躍
-            if (document.hidden && backgroundSpeechCheckbox.checked) {
-                // 防止頁面被暫停，保持語音合成運行
-                keepSpeechActive();
-            }
-        });
-
-        // 保持語音合成在背景運行的函數
-        function keepSpeechActive() {
-            // 創建一個靜音的語音來保持 speechSynthesis 活躍
-            if (window.speechSynthesis && backgroundSpeechCheckbox.checked) {
-                const keepAlive = new SpeechSynthesisUtterance(' ');
-                keepAlive.volume = 0; // 靜音
-                keepAlive.rate = 10; // 快速播放
-                keepAlive.onend = () => {
-                    // 如果仍在背景模式且有語音在播放，繼續保持活躍
-                    if (document.hidden && backgroundSpeechCheckbox.checked && window.speechSynthesis.speaking) {
-                        setTimeout(keepSpeechActive, 5000); // 每5秒重複一次
-                    }
-                };
-                window.speechSynthesis.speak(keepAlive);
-            }
-        }
-
-        // 防止頁面在背景朗讀時進入睡眠模式
-        let wakeLock = null;
-        
-        async function requestWakeLock() {
-            if ('wakeLock' in navigator && backgroundSpeechCheckbox.checked) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake lock 已啟用，防止螢幕關閉');
-                } catch (err) {
-                    console.log('Wake lock 請求失敗:', err);
-                }
-            }
-        }
-
-        function releaseWakeLock() {
-            if (wakeLock) {
-                wakeLock.release();
-                wakeLock = null;
-                console.log('Wake lock 已釋放');
-            }
-        }
-
-        // 在開始朗讀時請求 wake lock
-        const originalSpeakAllSentences = speakAllSentences;
-        speakAllSentences = function(sentences) {
-            if (backgroundSpeechCheckbox.checked) {
-                requestWakeLock();
-            }
-            return originalSpeakAllSentences.call(this, sentences);
-        };
+        if (hasGetUserMedia) { startCamera(); } else { status.textContent = '您的瀏覽器不支援相機功能'; }
+        window.addEventListener('beforeunload', () => { if (stream) { stream.getTracks().forEach(track => track.stop()); } });
     </script>
 </body>
 </html>
-
-
