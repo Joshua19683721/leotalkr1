@@ -49,10 +49,12 @@
         .reader-container { max-width: 900px; width: 100%; }
         .reader-english { font-size: clamp(28px, 6vw, 56px); line-height: 1.4; margin-bottom: 12px; color: #fff; }
         .reader-chinese { font-size: clamp(28px, 6vw, 56px); line-height: 1.4; color: #ffd; }
+        .overlay-close-btn { margin-top: 16px; background: #444; color: #fff; border: none; padding: 10px 18px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+        .overlay-close-btn:hover { background: #555; transform: scale(1.03); }
         .ai-response-sentence-translation { font-size: 13px; line-height: 1.5; color: #888; margin-bottom: 8px; padding-left: 10px; border-left: 3px solid #e0e0e0; font-style: italic; }
         .ai-response-english.speaking { background: linear-gradient(90deg, #667eea, #764ba2); color: white; animation: speakingGlow 1s ease-in-out infinite alternate; transform: scale(1.02); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
         @keyframes speakingGlow { 0% { box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); } 100% { box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); } }
-        .btn-play-all { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; margin: 10px 0; transition: all 0.3s ease; }
+        .btn-play-all { background: #8ae8a0; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; margin: 10px 0; transition: all 0.3s ease; }
         .btn-play-all:hover { background: #218838; transform: scale(1.05); }
         .btn-play-all:active { transform: scale(0.95); }
         .loading-indicator { text-align: center; padding: 10px; color: #666; font-size: 14px; }
@@ -143,6 +145,7 @@
         <div class="reader-container">
             <div id="readerEnglish" class="reader-english"></div>
             <div id="readerChinese" class="reader-chinese"></div>
+            <button id="overlayCloseBtn" class="overlay-close-btn">關閉</button>
         </div>
     </div>
 
@@ -157,6 +160,7 @@
         const readerOverlay = document.getElementById('readerOverlay');
         const readerEnglish = document.getElementById('readerEnglish');
         const readerChinese = document.getElementById('readerChinese');
+        const overlayCloseBtn = document.getElementById('overlayCloseBtn');
 
         let stream = null;
         let currentImageData = null;
@@ -244,38 +248,44 @@
                 setTimeout(() => {
                     const showCasual = showCasualCheckbox.checked;
                     const showFormal = showFormalCheckbox.checked;
-                    if (showCasual && translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
-                        const casualSentences = [];
+                    const casualSentences = [];
+                    const formalSentences = [];
+                    if (translatedResponse.casual && translatedResponse.casual.sentences.length > 0) {
                         translatedResponse.casual.sentences.forEach((sentence, index) => {
                             const element = document.getElementById(`casual-sentence-${index}`);
                             if (element) { casualSentences.push({ element, text: sentence.english }); }
                         });
-                        if (casualSentences.length > 0) { speakAllSentences(casualSentences); }
-                    } else if (showFormal && translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
-                        const formalSentences = [];
+                    } else if (parsedResponse.casual && parsedResponse.casual.english) {
+                        const sentences = splitIntoSentences(parsedResponse.casual.english);
+                        sentences.forEach((sentence, index) => {
+                            const element = document.getElementById(`casual-sentence-${index}`);
+                            if (element) { casualSentences.push({ element, text: sentence }); }
+                        });
+                    }
+                    if (translatedResponse.formal && translatedResponse.formal.sentences.length > 0) {
                         translatedResponse.formal.sentences.forEach((sentence, index) => {
                             const element = document.getElementById(`formal-sentence-${index}`);
                             if (element) { formalSentences.push({ element, text: sentence.english }); }
                         });
-                        if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
-                    } else {
-                        if (showCasual && parsedResponse.casual && parsedResponse.casual.english) {
-                            const casualSentences = [];
-                            const sentences = splitIntoSentences(parsedResponse.casual.english);
-                            sentences.forEach((sentence, index) => {
-                                const element = document.getElementById(`casual-sentence-${index}`);
-                                if (element) { casualSentences.push({ element, text: sentence }); }
+                    } else if (parsedResponse.formal && parsedResponse.formal.english) {
+                        const sentences = splitIntoSentences(parsedResponse.formal.english);
+                        sentences.forEach((sentence, index) => {
+                            const element = document.getElementById(`formal-sentence-${index}`);
+                            if (element) { formalSentences.push({ element, text: sentence }); }
+                        });
+                    }
+                    if (showCasual && showFormal) {
+                        if (casualSentences.length > 0) {
+                            speakAllSentences(casualSentences, () => {
+                                if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
                             });
-                            if (casualSentences.length > 0) { speakAllSentences(casualSentences); }
-                        } else if (showFormal && parsedResponse.formal && parsedResponse.formal.english) {
-                            const formalSentences = [];
-                            const sentences = splitIntoSentences(parsedResponse.formal.english);
-                            sentences.forEach((sentence, index) => {
-                                const element = document.getElementById(`formal-sentence-${index}`);
-                                if (element) { formalSentences.push({ element, text: sentence }); }
-                            });
-                            if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
+                        } else if (formalSentences.length > 0) {
+                            speakAllSentences(formalSentences);
                         }
+                    } else if (showCasual) {
+                        if (casualSentences.length > 0) { speakAllSentences(casualSentences); }
+                    } else if (showFormal) {
+                        if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
                     }
                 }, 500);
             } catch (error) {
@@ -463,7 +473,7 @@
         }
 
         let continuousSpeechActive = false; let currentSpeechSentences = null;
-        function speakAllSentences(sentences) {
+        function speakAllSentences(sentences, onComplete) {
             if (!sentences || sentences.length === 0) return;
             window.speechSynthesis.cancel(); clearAllHighlights();
             const isBackgroundMode = backgroundSpeechCheckbox.checked; const isContinuousMode = continuousSpeechCheckbox.checked;
@@ -473,7 +483,7 @@
                 if (!continuousSpeechActive) { status.textContent = '朗讀已停止'; clearAllHighlights(); hideOverlay(); if (isBackgroundMode) { try { releaseWakeLock(); } catch(_){} } setTimeout(() => { restartCamera(); }, 1000); return; }
                 if (currentIndex >= sentences.length) {
                     if (isContinuousMode && continuousSpeechActive) { currentIndex = 0; cycleCount++; status.textContent = `持續朗讀第 ${cycleCount} 輪...`; setTimeout(speakNext, 1000); return; }
-                    status.textContent = '全部朗讀完成'; continuousSpeechActive = false; hideOverlay(); if (isBackgroundMode) { try { releaseWakeLock(); } catch(_){} } setTimeout(() => { restartCamera(); }, 1000); return;
+                    status.textContent = '全部朗讀完成'; continuousSpeechActive = false; hideOverlay(); if (isBackgroundMode) { try { releaseWakeLock(); } catch(_){} } setTimeout(() => { restartCamera(); }, 1000); if (typeof onComplete === 'function') { onComplete(); } return;
                 }
                 const sentence = sentences[currentIndex]; const element = sentence.element; const text = sentence.text;
                 let filteredText = (text || '').replace(/口語繁體中文翻譯/g, '').replace(/正式繁體中文翻譯/g, '');
@@ -494,6 +504,7 @@
         }
 
         function stopContinuousSpeech() { continuousSpeechActive = false; window.speechSynthesis.cancel(); clearAllHighlights(); status.textContent = '持續朗讀已停止'; hideOverlay(); setTimeout(() => { restartCamera(); }, 1000); }
+        overlayCloseBtn.addEventListener('click', () => { stopContinuousSpeech(); });
         function clearAllHighlights() { document.querySelectorAll('.ai-response-english.speaking').forEach(el => el.classList.remove('speaking')); }
         function splitIntoSentences(text) { if (!text) return []; return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 0); }
         function clearConversationData() { continuousSpeechActive = false; window.speechSynthesis.cancel(); clearAllHighlights(); const conversation = document.getElementById('conversation'); conversation.innerHTML = '<div class="empty-state">還沒有任何對話，拍照並送出分析吧！</div>'; hideOverlay(); }
