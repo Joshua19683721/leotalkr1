@@ -331,8 +331,8 @@
         }
 
         function callTranslationAPI(englishText) {
-            const userMessage = { role: "user", content: `請將以下英文段落逐句翻譯成繁體中文，保持原有的句子結構和順序：\n\n${englishText}\n\n請按照以下格式回覆，每個英文句子後面緊跟其中文翻譯：\n英文句子1\n中文翻譯1\n英文句子2\n中文翻譯2\n...以此類推` };
-            const requestBody = { model: "qwen3-vl-flash", messages: [userMessage], max_tokens: 1000, temperature: 0.3 };
+            const userMessage = { role: "user", content: `請將以下英文段落逐句翻譯成繁體中文，保持原有的句子結構和順序。\n\n${englishText}\n\n重要：請嚴格按照以下格式回覆，絕對不要包含任何開場白、結尾或其他無關文字。直接輸出翻譯內容：\n英文句子1\n中文翻譯1\n英文句子2\n中文翻譯2\n...` };
+            const requestBody = { model: "qwen3-vl-flash", messages: [userMessage], max_tokens: 1000, temperature: 0.1 };
             const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'X-DashScope-SSE': 'disable' };
             return fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(requestBody) }).then(async response => { if (!response.ok) throw new Error(`翻譯API錯誤 ${response.status}: ${await response.text()}`); const data = await response.json(); if (data.choices && data.choices[0] && data.choices[0].message) { return data.choices[0].message.content; } throw new Error('翻譯API返回格式異常'); });
         }
