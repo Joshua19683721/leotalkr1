@@ -1758,7 +1758,7 @@
                     // 延遲一點時間確保頁面渲染完成
                     setTimeout(() => {
                         const firstWord = selectedTopic.words[0].word;
-                        speakWordMultipleTimes(firstWord, 3, 0.8);
+                        speakWordMultipleTimes(firstWord, 3, 0.6);
                     }, 500);
                 }
             }, [selectedTopic, voices]);
@@ -1778,9 +1778,9 @@
                 
                 // 如果是單字發音（index包含"word-"），使用較慢語速
                 if (typeof index === 'string' && index.includes('word-')) {
-                    utterance.rate = 0.8;
+                    utterance.rate = 0.6;
                 } else {
-                    utterance.rate = 0.8;
+                    utterance.rate = 0.6;
                 }
                 
                 utterance.onend = () => setSpeaking(null);
@@ -1836,7 +1836,7 @@
                 }
             };
 
-            const speakWordMultipleTimes = (word, times, rate = 0.8, callback) => {
+            const speakWordMultipleTimes = (word, times, rate = 0.6, callback) => {
                 let count = 0;
                 
                 const speakOnce = () => {
@@ -2112,3 +2112,4 @@
     </script>
 </body>
 </html>
+
