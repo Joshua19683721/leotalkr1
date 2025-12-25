@@ -380,6 +380,48 @@
             }
         }
 
+        function addAIMessage(aiResponse, translatedResponse) {
+            const parsed = parseAIResponse(aiResponse);
+            const conv = document.getElementById('conversation');
+            const emptyState = conv.querySelector('.empty-state'); if (emptyState) { emptyState.remove(); }
+            const messageDiv = document.createElement('div'); messageDiv.className = 'message';
+            const title = document.createElement('div'); title.className = 'message-text ai'; title.textContent = 'AI 回覆';
+            messageDiv.appendChild(title);
+            function renderSection(label, type) {
+                const section = document.createElement('div'); section.className = 'ai-response-section';
+                const h = document.createElement('div'); h.className = 'ai-response-title'; h.textContent = label;
+                const content = document.createElement('div'); content.className = 'ai-response-content ' + type;
+                const sentences = [];
+                const translated = translatedResponse[type] && translatedResponse[type].sentences ? translatedResponse[type].sentences : [];
+                if (translated.length > 0) {
+                    translated.forEach((s, index) => {
+                        const englishDiv = document.createElement('div'); englishDiv.className = 'ai-response-english'; englishDiv.id = `${type}-sentence-${index}`; englishDiv.textContent = s.english;
+                        englishDiv.addEventListener('click', () => { speakSentenceWithHighlight(s.english, englishDiv); });
+                        const chineseDiv = document.createElement('div'); chineseDiv.className = 'ai-response-sentence-translation'; chineseDiv.textContent = s.chinese || '';
+                        content.appendChild(englishDiv); content.appendChild(chineseDiv);
+                        sentences.push({ element: englishDiv, text: s.english });
+                    });
+                } else {
+                    const englishText = parsed[type] && parsed[type].english ? parsed[type].english : '';
+                    const split = splitIntoSentences(englishText);
+                    split.forEach((s, index) => {
+                        const englishDiv = document.createElement('div'); englishDiv.className = 'ai-response-english'; englishDiv.id = `${type}-sentence-${index}`; englishDiv.textContent = s;
+                        englishDiv.addEventListener('click', () => { speakSentenceWithHighlight(s, englishDiv); });
+                        content.appendChild(englishDiv);
+                        sentences.push({ element: englishDiv, text: s });
+                    });
+                }
+                const playAllBtn = document.createElement('button'); playAllBtn.className = 'btn-play-all'; playAllBtn.textContent = '🔊 朗讀全部';
+                playAllBtn.addEventListener('click', () => { speakAllSentences(sentences); });
+                section.appendChild(h); section.appendChild(content); section.appendChild(playAllBtn);
+                messageDiv.appendChild(section);
+            }
+            renderSection('【正式版】', 'formal');
+            renderSection('【口語版】', 'casual');
+            conv.appendChild(messageDiv);
+            conv.scrollTop = conv.scrollHeight;
+        }
+
         function stopCamera() { if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; } video.style.display = 'none'; previewImage.style.display = 'none'; }
         function restartCamera() { startCamera(); video.style.display = 'block'; previewImage.style.display = 'none'; }
 
