@@ -284,6 +284,7 @@
                         }
                     } else if (showCasual) {
                         if (casualSentences.length > 0) { speakAllSentences(casualSentences); }
+                        else if (formalSentences.length > 0) { status.textContent = '未取得口語版內容，改朗讀正式版'; speakAllSentences(formalSentences); }
                     } else if (showFormal) {
                         if (formalSentences.length > 0) { speakAllSentences(formalSentences); }
                     }
@@ -345,16 +346,16 @@
 
         function parseAIResponse(response) {
             const result = { formal: { english: '', chinese: '', analyze: { keyPoints: '', grammarAnalysis: '', vocabulary: [], examples: [] } }, casual: { english: '', chinese: '', analyze: { keyPoints: '', grammarAnalysis: '', vocabulary: [], examples: [] } } };
-            const formalSectionMatch = response.match(/【正式版】\s*([\s\S]*?)(?=【正式版解析】|【口語版】|$)/i);
-            const formalAnalyzeMatch = response.match(/【正式版解析】\s*([\s\S]*?)(?=【口語版】|$)/i);
+            const formalSectionMatch = response.match(/(?:【正式版】|【正式】|Formal Version|【Formal】)\s*([\s\S]*?)(?=【正式版解析】|【正式解析】|Formal Analysis|【口語版】|【口語】|Casual Version|【Casual】|$)/i);
+            const formalAnalyzeMatch = response.match(/(?:【正式版解析】|【正式解析】|Formal Analysis)\s*([\s\S]*?)(?=【口語版】|【口語】|Casual Version|【Casual】|$)/i);
             if (formalSectionMatch) {
                 const formalContent = formalSectionMatch[1].trim(); const lines = formalContent.split('\n').filter(line => line.trim()); let englishParts = []; let chineseParts = [];
                 for (let line of lines) { const trimmedLine = line.trim(); if (trimmedLine.includes('正式版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') { continue; } if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) { chineseParts.push(trimmedLine); } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) { englishParts.push(trimmedLine); } }
                 result.formal.english = englishParts.join('\n').trim(); result.formal.chinese = chineseParts.join('\n').trim();
             }
             if (formalAnalyzeMatch) { const analyzeContent = formalAnalyzeMatch[1].trim(); parseAnalyzeContent(analyzeContent, result.formal.analyze); }
-            const casualSectionMatch = response.match(/【口語版】\s*([\s\S]*?)(?=【口語版解析】|$)/i);
-            const casualAnalyzeMatch = response.match(/【口語版解析】\s*([\s\S]*?)$/i);
+            const casualSectionMatch = response.match(/(?:【口語版】|【口語】|Casual Version|【Casual】)\s*([\s\S]*?)(?=【口語版解析】|【口語解析】|Casual Analysis|【正式版】|【正式】|Formal Version|【Formal】|$)/i);
+            const casualAnalyzeMatch = response.match(/(?:【口語版解析】|【口語解析】|Casual Analysis)\s*([\s\S]*?)$/i);
             if (casualSectionMatch) {
                 const casualContent = casualSectionMatch[1].trim(); const lines = casualContent.split('\n').filter(line => line.trim()); let englishParts = []; let chineseParts = [];
                 for (let line of lines) { const trimmedLine = line.trim(); if (trimmedLine.includes('口語版翻譯') || trimmedLine.includes('---') || trimmedLine === '---') { continue; } if (/[\u4e00-\u9fa5]/.test(trimmedLine) && !trimmedLine.match(/^【.*】$/)) { chineseParts.push(trimmedLine); } else if (trimmedLine && !trimmedLine.match(/^[【】\(\)\d\.\s]*$/)) { englishParts.push(trimmedLine); } }
@@ -397,6 +398,8 @@
             const messageDiv = document.createElement('div'); messageDiv.className = 'message';
             const title = document.createElement('div'); title.className = 'message-text ai'; title.textContent = 'AI 回覆';
             messageDiv.appendChild(title);
+            const showFormal = showFormalCheckbox.checked;
+            const showCasual = showCasualCheckbox.checked;
             function renderSection(label, type) {
                 const section = document.createElement('div'); section.className = 'ai-response-section';
                 const h = document.createElement('div'); h.className = 'ai-response-title'; h.textContent = label;
@@ -421,13 +424,21 @@
                         sentences.push({ element: englishDiv, text: s });
                     });
                 }
+                if (sentences.length === 0) {
+                    const noContent = document.createElement('div');
+                    noContent.style.color = '#888';
+                    noContent.style.fontSize = '13px';
+                    noContent.textContent = type === 'casual' ? '未取得口語版內容' : '未取得正式版內容';
+                    content.appendChild(noContent);
+                }
                 const playAllBtn = document.createElement('button'); playAllBtn.className = 'btn-play-all'; playAllBtn.textContent = '🔊 朗讀全部';
                 playAllBtn.addEventListener('click', () => { speakAllSentences(sentences); });
                 section.appendChild(h); section.appendChild(content); section.appendChild(playAllBtn);
                 messageDiv.appendChild(section);
             }
-            renderSection('【正式版】', 'formal');
-            renderSection('【口語版】', 'casual');
+            if (showFormal) { renderSection('【正式版】', 'formal'); }
+            if (showCasual) { renderSection('【口語版】', 'casual'); }
+            if (!showFormal && !showCasual) { renderSection('【正式版】', 'formal'); renderSection('【口語版】', 'casual'); }
             conv.appendChild(messageDiv);
             conv.scrollTop = conv.scrollHeight;
         }
