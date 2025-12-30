@@ -222,31 +222,36 @@
         }
 
         // --- API Key Management ---
-        const deepseekKeyInput = document.getElementById('deepseekKey');
-        const saveKeyCheckbox = document.getElementById('saveKey');
+        document.addEventListener('DOMContentLoaded', () => {
+            const deepseekKeyInput = document.getElementById('deepseekKey');
+            const saveKeyCheckbox = document.getElementById('saveKey');
 
-        function loadApiKey() {
-            const savedKey = localStorage.getItem('openrouter_key');
-            if (savedKey && deepseekKeyInput) {
-                deepseekKeyInput.value = savedKey;
-                saveKeyCheckbox.checked = true;
+            if (!deepseekKeyInput || !saveKeyCheckbox) return;
+
+            function loadApiKey() {
+                const savedKey = localStorage.getItem('openrouter_key');
+                if (savedKey) {
+                    deepseekKeyInput.value = savedKey;
+                    saveKeyCheckbox.checked = true;
+                }
             }
-        }
 
-        function saveApiKey() {
-            if (saveKeyCheckbox.checked) {
-                localStorage.setItem('openrouter_key', deepseekKeyInput.value);
-            } else {
-                localStorage.removeItem('openrouter_key');
+            function saveApiKey() {
+                if (saveKeyCheckbox.checked) {
+                    localStorage.setItem('openrouter_key', deepseekKeyInput.value);
+                } else {
+                    localStorage.removeItem('openrouter_key');
+                }
             }
-        }
 
-        if (deepseekKeyInput) {
-            deepseekKeyInput.addEventListener('change', saveApiKey);
-            saveKeyCheckbox.addEventListener('change', saveApiKey);
-            // Initialize key on load
+            // Events
+            deepseekKeyInput.addEventListener('input', saveApiKey); // Save as you type
+            deepseekKeyInput.addEventListener('change', saveApiKey); // Save on blur
+            saveKeyCheckbox.addEventListener('change', saveApiKey); // Save on toggle
+
+            // Initialize
             loadApiKey();
-        }
+        });
 
         // --- Social Post Feature ---
         let currentSocialIdioms = [];
