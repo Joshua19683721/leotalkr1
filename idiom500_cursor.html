@@ -226,7 +226,7 @@
         const saveKeyCheckbox = document.getElementById('saveKey');
 
         function loadApiKey() {
-            const savedKey = localStorage.getItem('deepseek_api_key');
+            const savedKey = localStorage.getItem('openrouter_key');
             if (savedKey && deepseekKeyInput) {
                 deepseekKeyInput.value = savedKey;
                 saveKeyCheckbox.checked = true;
@@ -235,9 +235,9 @@
 
         function saveApiKey() {
             if (saveKeyCheckbox.checked) {
-                localStorage.setItem('deepseek_api_key', deepseekKeyInput.value);
+                localStorage.setItem('openrouter_key', deepseekKeyInput.value);
             } else {
-                localStorage.removeItem('deepseek_api_key');
+                localStorage.removeItem('openrouter_key');
             }
         }
 
@@ -369,18 +369,21 @@
 
                 // Use a CORS proxy to bypass browser restrictions when running locally
                 // Note: In a production environment, this should be handled by a backend server.
-                const PROXY_URL = 'https://corsproxy.io/?';
-                const TARGET_URL = 'https://api.deepseek.com/v1/chat/completions';
-                const finalUrl = PROXY_URL + encodeURIComponent(TARGET_URL);
+                // const PROXY_URL = 'https://corsproxy.io/?';
+                const TARGET_URL = 'https://openrouter.ai/api/v1/chat/completions';
+                // const finalUrl = PROXY_URL + encodeURIComponent(TARGET_URL);
+                const finalUrl = TARGET_URL;
 
                 const response = await fetch(finalUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': window.location.href, // Required by OpenRouter
+                        'X-Title': 'Idiom Learning Platform'  // Optional for OpenRouter
                     },
                     body: JSON.stringify({
-                        model: "deepseek-chat",
+                        model: "xiaomi/mimo-v2-flash:free",
                         messages: [
                             {"role": "system", "content": "You are a helpful assistant for Chinese idiom learning."},
                             {"role": "user", "content": prompt}
@@ -536,7 +539,7 @@
                 <div class="flex items-center">
                     <!-- Real Stats (Local) -->
                     <div class="hidden md:flex items-center mr-4 text-xs sm:text-sm text-blue-100 space-x-3 bg-blue-800 bg-opacity-30 px-3 py-1 rounded-full">
-                        <div class="flex items-center" title="DeepSeek API 實際呼叫次數">
+                        <div class="flex items-center" title="OpenRouter API 實際呼叫次數">
                             <i class="fa fa-server mr-1.5 text-green-300"></i>
                             <span>API呼叫: <span id="apiCallCount" class="font-mono font-bold">0</span></span>
                         </div>
@@ -549,7 +552,7 @@
                     
                     <div class="flex items-center bg-primary-dark rounded px-2 py-1 mr-2">
                         <i class="fa fa-key text-gray-300 mr-2 text-sm"></i>
-                        <input type="password" id="deepseekKey" placeholder="DeepSeek API Key" class="bg-transparent border-none text-white text-sm focus:outline-none w-32 placeholder-gray-300">
+                        <input type="password" id="deepseekKey" placeholder="OpenRouter Key" class="bg-transparent border-none text-white text-sm focus:outline-none w-32 placeholder-gray-300">
                     </div>
                     <label class="flex items-center text-sm mr-2 cursor-pointer text-white">
                         <input type="checkbox" id="saveKey" class="mr-1"> 記住
