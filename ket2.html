@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KET A2 寫作教練 (獨立練習)</title>
+  <style>
+    *{box-sizing:border-box}body{font-family:system-ui,-apple-system,"Segoe UI","PingFang TC",sans-serif;margin:0;background:#0f172a;color:#111}header{background:#1e293b;color:#fff;padding:12px}h1{font-size:18px;margin:0}main{max-width:1100px;margin:0 auto;padding:12px}nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}nav button{padding:8px 12px;border:none;border-radius:8px;background:#334155;color:#fff;cursor:pointer}nav button.active{background:#10b981}section{background:#fff;border-radius:12px;margin-top:12px;padding:12px;display:none}section.active{display:block}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.col-6{grid-column:span 6}.col-12{grid-column:span 12}
+    .card{border:1px solid #e5e7eb;border-radius:10px;padding:10px}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    input,textarea,select{width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px}label{font-size:12px;color:#374151}
+    .btn{padding:8px 12px;border:none;border-radius:8px;cursor:pointer}.btn-primary{background:#10b981;color:#fff}.btn-gray{background:#e5e7eb}.pill{display:inline-block;background:#f1f5f9;color:#0f172a;padding:4px 8px;border-radius:99px;margin-right:6px;font-size:12px}
+    .timer{font-weight:700;color:#ef4444}
+    .audio{display:flex;align-items:center;gap:8px}
+    .list{list-style:none;padding-left:0;margin:0}
+    .list li{padding:6px 0;border-bottom:1px solid #eee}
+    canvas{width:100%;height:280px;background:#f9fafb;border-radius:8px}
+    .config{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;background:#0b1220;color:#cbd5e1;border-radius:12px;padding:12px;margin-top:12px}
+    .config input,.config select{background:#0f172a;color:#cbd5e1;border:1px solid #334155}
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <h1>KET A2 寫作教練 (獨立練習版)</h1>
+      <button onclick="forceReload()" style="font-size:12px; padding:4px 8px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer; color:#64748b; font-weight:bold;">🔄 強制更新 (清除快取)</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <span class="pill">寫作輔助</span>
+      <span class="pill">AI 批改</span>
+      <span class="pill">範文分析</span>
+    </div>
+    <nav id="tabs">
+      <button data-tab="writing" class="active">寫作教練</button>
+    </nav>
+  </header>
+  <main>
+    <div class="config">
+      <div style="grid-column:span 4">
+        <label>OpenRouter API Key</label>
+        <input id="apiKey" type="password" placeholder="輸入 OpenRouter API Key">
+      </div>
+      <div style="display:none">
+        <label>Base URL</label>
+        <input id="apiBaseUrl" type="text" value="https://openrouter.ai/api" placeholder="例如 https://openrouter.ai">
+      </div>
+      <div style="display:none">
+        <label>Model</label>
+        <input id="apiModel" type="text" value="xiaomi/mimo-v2-flash:free">
+      </div>
+      <div style="grid-column:span 2">
+        <label>語速 (0.5~1.0)</label>
+        <div style="display:flex; align-items:center; gap:4px">
+          <input id="ttsRate" type="range" min="0.5" max="1.0" step="0.1" value="0.6" oninput="document.getElementById('rateVal').textContent=this.value">
+          <span id="rateVal" style="font-size:12px; width:24px">0.6</span>
+        </div>
+      </div>
+      <div style="grid-column:span 12; display:flex; justify-content:flex-end;">
+        <button id="saveConfig" class="btn btn-primary">保存設定</button>
+      </div>
+    </div>
+    
+    <div id="newsPreview" style="display:none; background:#fff; border-radius:12px; margin-top:12px; padding:12px; border:1px solid #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="margin:0 0 8px 0; font-size:16px; color:#334155;">📰 新聞素材來源</h3>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div id="newsImgContainer" style="flex-shrink:0; width:120px; display:none;">
+                <img id="newsImg" src="" style="width:100%; border-radius:6px; object-fit:cover;">
+            </div>
+            <div>
+                <div id="newsTitle" style="font-weight:bold; color:#0f172a; margin-bottom:4px;"></div>
+                <div id="newsDesc" style="font-size:13px; color:#64748b; line-height:1.4;"></div>
+            </div>
+        </div>
+    </div>
+
+    <section id="writing" class="active">
+      <div class="grid">
+        <div class="col-6">
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <strong>寫作題目</strong>
+              <button id="reloadAndGenBtn" style="border:none; background:#e0f2fe; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#0284c7; font-weight:bold;">🔄 強制更新 (清除快取)</button>
+            </div>
+            <div class="row" style="margin-top:8px; gap:8px">
+              <button id="genWritingTask" class="btn btn-primary" style="flex:1">🤖 AI 生成題目</button>
+              <button id="genWritingGuide" class="btn btn-primary" style="flex:1; background-color:#f59e0b">🗣️ 新聞口說</button>
+            </div>
+            <div id="writingPrompt" style="margin-top:8px; white-space: pre-wrap; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1;"></div>
+            <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:flex-end;">
+                <div style="font-size:14px; font-weight:bold; color:#475569; margin-bottom:2px;">請完成 A2 寫作題 (25–40 字)</div>
+                <button id="genWritingGuide2" class="btn btn-primary" style="background-color:#8b5cf6; font-size:13px; padding:4px 12px; display:inline-flex; align-items:center; gap:4px;">
+                    🤖 AI 寫作指引
+                </button>
+            </div>
+            <div id="writingGuide" style="display:none; margin-top:8px; background:#f5f3ff; padding:10px; border-radius:6px; border:1px solid #ddd6fe; font-size:14px;"></div>
+            <div style="position:relative; margin-top:8px;">
+                <textarea id="writingText" rows="8" style="width:100%; padding:10px; padding-bottom:40px; border:1px solid #cbd5e1; border-radius:8px; resize:vertical; font-size:16px; line-height:1.5;" placeholder="請在此輸入您的文章... (支援語音輸入)"></textarea>
+                <button id="micBtn" title="點擊開始語音輸入 (English)" style="position:absolute; bottom:12px; right:12px; width:40px; height:40px; border-radius:50%; border:none; background:#f1f5f9; color:#64748b; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
+                    <span style="font-size:20px;">🎤</span>
+                </button>
+                <div id="micStatus" style="position:absolute; bottom:12px; right:60px; font-size:12px; color:#ef4444; font-weight:bold; display:none; align-items:center; gap:4px; background:rgba(255,255,255,0.9); padding:2px 6px; border-radius:4px;">
+                    <span style="display:inline-block; width:8px; height:8px; background:#ef4444; border-radius:50%; animation: pulse 1s infinite;"></span> 聆聽中...
+                </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <button id="scoreWritingBtn" class="btn btn-primary">AI 評分</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card">
+            <strong>評分結果</strong>
+            <div id="writingResult" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="text-align:center; padding:20px; color:#64748b; font-size:12px;">
+      KET Writing Coach v1.0 (Standalone) | 
+      <a href="javascript:void(0)" onclick="forceReload()" style="color:#0ea5e9; text-decoration:none;">🔄 強制更新 (清除快取)</a>
+    </footer>
+  </main>
+
+  <script>
+    // Tab logic (simplified)
+    const tabs=document.querySelectorAll('#tabs button');
+    const sections=document.querySelectorAll('section');
+    tabs.forEach(b=>b.onclick=()=>{
+        tabs.forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        sections.forEach(s=>s.classList.remove('active'));
+        document.getElementById(b.dataset.tab).classList.add('active');
+    });
+
+    // Config Logic
+    const apiKeyEl=document.getElementById('apiKey');
+    const apiBaseUrlEl=document.getElementById('apiBaseUrl');
+    const apiModelEl=document.getElementById('apiModel');
+    const saveConfigBtn=document.getElementById('saveConfig');
+    const cfg=JSON.parse(localStorage.getItem('ket_cfg')||'{}');
+    if(cfg.key)apiKeyEl.value=cfg.key;
+    if(cfg.base)apiBaseUrlEl.value=cfg.base;
+    if(cfg.model)apiModelEl.value=cfg.model;
+    if(cfg.rate){
+       const r=document.getElementById('ttsRate');
+       r.value=cfg.rate;
+       document.getElementById('rateVal').textContent=cfg.rate;
+    }
+    saveConfigBtn.onclick=()=>{
+        const newKey = apiKeyEl.value.trim();
+        const newBase = apiBaseUrlEl.value.trim();
+        const newModel = apiModelEl.value.trim();
+        
+        // Guard: Don't save empty key if we already have one
+        if (!newKey && cfg.key) {
+             // Confirm logic removed as per user request
+        }
+
+        localStorage.setItem('ket_cfg',JSON.stringify({
+            key: newKey,
+            base: newBase,
+            model: newModel,
+            rate: document.getElementById('ttsRate').value
+        }));
+        
+        // Update memory cfg to prevent double prompt
+        cfg.key = newKey; 
+        cfg.base = newBase;
+        cfg.model = newModel;
+        
+        const originalText = saveConfigBtn.textContent;
+        saveConfigBtn.textContent = '✅ 已保存';
+        setTimeout(() => saveConfigBtn.textContent = originalText, 1500);
+    };
+    
+    // API Call Logic
+    async function callLLM(messages, temperature=0.7, max_tokens=3000) {
+      const key=apiKeyEl.value.trim();
+      const base=apiBaseUrlEl.value.trim();
+      const model=apiModelEl.value.trim();
+      if(!key) throw new Error('請先設定 API Key');
+      function ep(u){const b=u.replace(/\/+$/,'');if(/deepseek\.com/i.test(b))return `${b}/chat/completions`;if(/openrouter\.ai/i.test(b))return /\/api$/i.test(b)?`${b}/v1/chat/completions`:`${b}/api/v1/chat/completions`;return `${b}/v1/chat/completions`}
+      const res=await fetch(ep(base),{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+        body:JSON.stringify({model, temperature, max_tokens, messages})
+      });
+      if(!res.ok){const t=await res.text();throw new Error(`API Error ${res.status}: ${t}`)}
+      const json=await res.json();
+      const c=json.choices?.[0]?.message?.content?.trim()||'';
+      return c.replace(/```json/g,'').replace(/```/g,'').trim();
+    }
+
+    // Writing Logic
+    const writingPromptEl=document.getElementById('writingPrompt');
+    const writingTextEl=document.getElementById('writingText');
+    const writingResultEl=document.getElementById('writingResult');
+    // Default task as structured data
+    const defaultTask = {
+        lines: [
+            {en: "Write an email to your friend about your weekend plans. Include:", zh: "寫一封電子郵件給你的朋友，說明你的週末計畫。包含："},
+            {en: "- where you will go", zh: "- 你要去哪裡"},
+            {en: "- who with", zh: "- 跟誰去"},
+            {en: "- what you will do", zh: "- 你要做什麼"},
+            {en: "(25–35 words)", zh: "(25–35 字)"}
+        ]
+    };
+    
+    function renderPromptWithTTS(data, imgUrl = null) {
+        let html = '';
+        if (imgUrl) {
+            html += `<div style="margin-bottom:10px; text-align:center;"><img src="${imgUrl}" style="max-width:100%; max-height:200px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);"></div>`;
+        }
+
+        // Handle string input (legacy support) or array input
+        let lines = [];
+        if (typeof data === 'string') {
+            const split = data.split('\n');
+            lines = split.map(l => ({en: l, zh: ''})); 
+            // Try to guess if it's mixed (not perfect, but fallback)
+        } else if (data.lines) {
+            lines = data.lines;
+        } else if (Array.isArray(data)) {
+            lines = data;
+        }
+
+        if (data.topic && data.topic.en) {
+             html += `<div style="margin-bottom:8px; font-weight:bold; color:#0f172a;">${data.topic.en}</div>`;
+             if(data.topic.zh) html += `<div style="margin-bottom:12px; color:#64748b; font-size:14px;">${data.topic.zh}</div>`;
+        }
+
+        lines.forEach(item => {
+            if (!item.en) return;
+            const safeLine = item.en.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            
+            html += `<div style="margin-bottom:4px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                           <span style="color:#0f172a; line-height:1.2;">${item.en}</span>
+                           <button onclick="speak('${safeLine}')" style="border:none; background:none; cursor:pointer; font-size:16px; opacity:0.7; padding:0;" title="朗讀">🔊</button>
+                         </div>`;
+            
+            if (item.zh) {
+                html += `<div style="color:#64748b; font-size:13px; margin-top:0px; padding-left:0px;">${item.zh}</div>`;
+            }
+            html += `</div>`;
+        });
+        writingPromptEl.innerHTML = html;
+        // Store raw text for Guide generation (just English parts)
+        writingPromptEl.dataset.rawText = lines.map(l => l.en).join('\n');
+    }
+    renderPromptWithTTS(defaultTask);
+    
+    async function fetchTaiwanNews() {
+      const urls = [
+        'https://feeds.feedburner.com/ettoday/citizen',
+        'https://feeds.feedburner.com/ettoday/lifestyle',
+        'https://feeds.feedburner.com/ettoday/global',
+        'https://feeds.feedburner.com/ettoday/news',
+        'https://feeds.feedburner.com/ettoday/finance',
+        'https://feeds.feedburner.com/ettoday/travel',
+        'https://news.ltn.com.tw/rss/all.xml',
+        'https://news.pts.org.tw/xml/newsfeed.xml'
+      ];
+
+      const fetchWithTimeout = (url, ms = 5000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), ms);
+          return fetch(url, { signal: controller.signal })
+              .then(res => {
+                  clearTimeout(id);
+                  return res.ok ? res.json() : null;
+              })
+              .catch(() => null);
+      };
+
+      let allItems = [];
+
+      // Strategy 1: AllOrigins (XML Proxy)
+      try {
+        const requests = urls.map(url => 
+            fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(url + '?_t=' + Date.now()), 5000)
+        );
+        
+        const results = await Promise.all(requests);
+        const validResults = results.filter(r => r && r.contents);
+        
+        if (validResults.length > 0) {
+            const parser = new DOMParser();
+            validResults.forEach(data => {
+                try {
+                    const xml = parser.parseFromString(data.contents, "text/xml");
+                    const items = Array.from(xml.querySelectorAll("item"));
+                    items.forEach(item => {
+                        const title = item.querySelector('title')?.textContent.trim();
+                        const pubDate = item.querySelector('pubDate')?.textContent;
+                        const link = item.querySelector('link')?.textContent?.trim() || item.querySelector('guid')?.textContent?.trim() || '';
+                        
+                        let img = item.querySelector('image')?.textContent.trim();
+                        const enclosure = item.querySelector('enclosure');
+                        if (!img && enclosure && enclosure.getAttribute('type')?.startsWith('image')) {
+                            img = enclosure.getAttribute('url');
+                        }
+
+                        let descHtml = item.querySelector('description')?.textContent || '';
+                        let descText = '';
+
+                        if (!img && descHtml) {
+                            const div = document.createElement('div');
+                            div.innerHTML = descHtml;
+                            const imgEl = div.querySelector('img');
+                            if (imgEl) img = imgEl.src;
+                        }
+                        
+                        const div = document.createElement('div');
+                        div.innerHTML = descHtml;
+                        div.querySelectorAll('img, a').forEach(el => el.remove());
+                        descText = div.textContent.trim();
+                        if (descText.length > 150) descText = descText.substring(0, 150) + '...';
+
+                        if (title && title.length > 5) {
+                            allItems.push({
+                                title,
+                                img,
+                                desc: descText,
+                                date: pubDate ? new Date(pubDate) : new Date(0),
+                                link
+                            });
+                        }
+                    });
+                } catch (e) { console.warn('Parse error', e); }
+            });
+        }
+      } catch (e) { console.warn('Strategy 1 failed', e); }
+
+      // Strategy 2: RSS2JSON (Fallback if Strategy 1 yields few items)
+      if (allItems.length < 5) {
+          try {
+             console.log('Using RSS2JSON fallback...');
+             const requests = urls.map(url => 
+                fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url), 5000)
+             );
+             const results = await Promise.all(requests);
+             const validResults = results.filter(r => r && r.status === 'ok' && r.items);
+             
+             validResults.forEach(data => {
+                 data.items.forEach(item => {
+                     const title = item.title;
+                     const pubDate = item.pubDate;
+                     const link = item.link;
+                     let img = item.thumbnail;
+                     let desc = item.description; // RSS2JSON usually returns clean description or HTML
+                     
+                     const div = document.createElement('div');
+                     div.innerHTML = desc;
+                     if (!img) {
+                         const imgEl = div.querySelector('img');
+                         if (imgEl) img = imgEl.src;
+                     }
+                     div.querySelectorAll('img, a').forEach(el => el.remove());
+                     let descText = div.textContent.trim();
+                     if (descText.length > 150) descText = descText.substring(0, 150) + '...';
+
+                     if (title && title.length > 5) {
+                        allItems.push({
+                            title,
+                            img,
+                            desc: descText,
+                            date: new Date(pubDate),
+                            link
+                        });
+                     }
+                 });
+             });
+          } catch(e) { console.warn('Strategy 2 failed', e); }
+      }
+
+      // Sort by date descending
+      allItems.sort((a, b) => b.date - a.date);
+      
+      if (allItems.length === 0) return null;
+      
+      // Take top 30 latest items to ensure variety
+      const top30 = allItems.slice(0, 30);
+      
+      // Filter items with images
+      const withImg = top30.filter(n => n.img);
+      
+      if (withImg.length > 0) {
+          const poolSize = Math.min(withImg.length, 10);
+          const randomIndex = Math.floor(Math.random() * poolSize);
+          return withImg[randomIndex];
+      }
+      
+      const poolSize = Math.min(top30.length, 10);
+      return top30[Math.floor(Math.random() * poolSize)];
+    }
+
+    async function fetchFullArticle(url) {
+      if (!url) return null;
+      try {
+        const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url + '?_t=' + Date.now()));
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data || !data.contents) return null;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+        
+        ['script','style','noscript','svg','footer','nav','aside'].forEach(tag => {
+          doc.querySelectorAll(tag).forEach(el => el.remove());
+        });
+        
+        const candidates = Array.from(doc.querySelectorAll('article, main, [id*="content"], [class*="content"], [id*="article"], [class*="article"], [id*="story"], [class*="story"], [id*="news"], [class*="news"]'));
+        let bestNode = null;
+        let bestLen = 0;
+        const scoreNode = (node) => {
+          const ps = Array.from(node.querySelectorAll('p'));
+          const text = ps.map(p => p.textContent.trim()).join('\n');
+          return text.length;
+        };
+        candidates.forEach(node => {
+          const len = scoreNode(node);
+          if (len > bestLen) { bestLen = len; bestNode = node; }
+        });
+        
+        let text = '';
+        if (bestNode) {
+          text = Array.from(bestNode.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => t).join('\n');
+        } else {
+          text = Array.from(doc.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => t).join('\n');
+        }
+        if (!text) return null;
+        if (text.length > 6000) text = text.slice(0, 6000) + '\n...';
+        return text;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function generateWritingTask() {
+      const btn=document.getElementById('genWritingTask');
+      const originalText=btn.textContent;
+      btn.disabled=true;
+      
+      // Reset News Preview
+      const newsPreview = document.getElementById('newsPreview');
+      const newsImgContainer = document.getElementById('newsImgContainer');
+      const newsImg = document.getElementById('newsImg');
+      const newsTitle = document.getElementById('newsTitle');
+      const newsDesc = document.getElementById('newsDesc');
+      newsPreview.style.display = 'none';
+
+      let newsTopic = null;
+      try {
+        btn.textContent='🔍 搜尋台灣焦點新聞...';
+        
+        // Retry logic for news fetching
+        for (let i = 0; i < 2; i++) {
+             newsTopic = await fetchTaiwanNews();
+             if (newsTopic) break;
+             // Wait 500ms before retry
+             await new Promise(r => setTimeout(r, 500));
+        }
+        
+        if (!newsTopic) {
+            alert('⚠️ 無法抓取到最新新聞，請檢查網路連線或稍後再試。\n(為確保品質，系統不會使用 AI 隨機生成的主題)');
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return; // Stop execution if no news
+        }
+        
+        if (newsTopic) {
+             newsPreview.style.display = 'block';
+             newsTitle.textContent = newsTopic.title;
+             newsDesc.textContent = newsTopic.desc || '（無摘要內容）';
+             
+             const infoContainer = newsDesc.parentElement;
+             const controls = document.createElement('div');
+             controls.style.cssText = 'margin-top:6px; display:flex; gap:8px; align-items:center; font-size:12px;';
+             const openLink = document.createElement('a');
+             openLink.textContent = '前往原文';
+             openLink.href = newsTopic.link || '#';
+             openLink.target = '_blank';
+             openLink.style.cssText = 'color:#0ea5e9; text-decoration:underline;';
+             const toggleBtn = document.createElement('button');
+             toggleBtn.textContent = '顯示全文';
+             toggleBtn.style.cssText = 'border:1px solid #cbd5e1; background:#f8fafc; color:#334155; border-radius:10px; padding:2px 8px; cursor:pointer;';
+             const fullDiv = document.createElement('div');
+             fullDiv.id = 'newsFull';
+             fullDiv.style.cssText = 'display:none; font-size:13px; color:#334155; line-height:1.6; margin-top:6px; white-space:pre-wrap;';
+             controls.appendChild(openLink);
+             controls.appendChild(toggleBtn);
+             infoContainer.appendChild(controls);
+             infoContainer.appendChild(fullDiv);
+             
+             let loadedFull = false;
+             toggleBtn.onclick = async () => {
+               if (!loadedFull) {
+                 toggleBtn.disabled = true;
+                 toggleBtn.textContent = '讀取中...';
+                 const fullText = await fetchFullArticle(newsTopic.link);
+                 fullDiv.textContent = fullText || '（無法取得全文或來源不支援）';
+                 toggleBtn.disabled = false;
+                 toggleBtn.textContent = '隱藏全文';
+                 fullDiv.style.display = 'block';
+                 loadedFull = true;
+                 const np = document.getElementById('newsPreview');
+                 if (np) np.dataset.fullText = fullText || '';
+               } else {
+                 const visible = fullDiv.style.display !== 'none';
+                 fullDiv.style.display = visible ? 'none' : 'block';
+                 toggleBtn.textContent = visible ? '顯示全文' : '隱藏全文';
+               }
+             };
+             
+             (async () => {
+               toggleBtn.disabled = true;
+               toggleBtn.textContent = '讀取中...';
+               const fullTextAuto = await fetchFullArticle(newsTopic.link);
+               fullDiv.textContent = fullTextAuto || '（無法取得全文或來源不支援）';
+               fullDiv.style.display = 'none';
+               toggleBtn.disabled = false;
+               toggleBtn.textContent = '顯示全文';
+               loadedFull = true;
+               const np = document.getElementById('newsPreview');
+               if (np) np.dataset.fullText = fullTextAuto || '';
+             })();
+             
+             // 如果有圖片才顯示圖片區塊
+             if (newsTopic.img) {
+                 newsImgContainer.style.display = 'block';
+                 newsImg.src = newsTopic.img;
+                 // 有圖片時使用 flex 排版
+                 newsPreview.children[1].style.flexDirection = 'row';
+             } else {
+                 newsImgContainer.style.display = 'none';
+                 // 無圖片時，讓文字區塊自然流動
+                 newsPreview.children[1].style.flexDirection = 'column';
+             }
+        }
+
+      } catch(e) {}
+
+      btn.textContent=newsTopic ? '📰 改寫新聞為考題...' : '🤖 AI 生成熱門話題...';
+      
+      try{
+        let systemPrompt = '';
+        let userContent = '';
+        if (newsTopic) {
+           systemPrompt = 'You are a KET A2 content generator. I will provide a REAL NEWS HEADLINE from Taiwan. Your task is to adapt this news topic into a simple, engaging A2-level English writing task (Part 6 Email or Part 7 Story).\n\nRules:\n1. Simplify the context for A2 students.\n2. Create a relevant prompt (e.g., "Write an email to a friend about this news...").\n3. Return strictly JSON: { "topic": {"en": "Engaging English Title", "zh": "Traditional Chinese Title"}, "lines": [ {"en": "Instruction sentence 1", "zh": "Traditional Chinese translation 1"}, {"en": "Instruction sentence 2", "zh": "Traditional Chinese translation 2"} ] }';
+           userContent = `News Headline: ${newsTopic.title}\nContext: ${newsTopic.desc}`;
+        } else {
+           systemPrompt = 'Generate a KET A2 writing task based on a RECENT MAJOR NEWS EVENT or CURRENT TREND (2024-2025). Topics should be engaging and real-world.\n\nReturn strictly JSON: { "topic": {"en": "News Topic Title", "zh": "Chinese Title"}, "lines": [ {"en": "Instruction 1", "zh": "Chinese 1"}, {"en": "Instruction 2", "zh": "Chinese 2"} ] }';
+           userContent = 'Generate task.';
+        }
+
+        const jsonStr=await callLLM([
+            {role:'system',content:systemPrompt},
+            {role:'user',content:userContent}
+        ]);
+        const data=parseJSON(jsonStr);
+        if(data.lines){
+           renderPromptWithTTS(data, newsTopic ? newsTopic.img : null);
+           writingTextEl.value = '';
+           writingResultEl.innerHTML = '';
+        }
+      }catch(e){
+          console.error(e);
+          writingResultEl.innerHTML = `<div style="color:red; padding:10px;">生成失敗: ${e.message}</div>`;
+      }
+       btn.textContent=originalText; btn.disabled=false;
+    }
+
+    document.getElementById('genWritingTask').onclick = generateWritingTask;
+
+      function parseJSON(str){
+        try{
+          return JSON.parse(str);
+        }catch(e){
+          let clean=str.replace(/```json/gi,'').replace(/```/g,'').trim();
+          try{ return JSON.parse(clean); }catch(e2){}
+          const firstOpen=clean.indexOf('[');
+          const lastClose=clean.lastIndexOf(']');
+          if(firstOpen!==-1&&lastClose>firstOpen){
+             try{ return JSON.parse(clean.substring(firstOpen, lastClose+1)); }catch(e3){}
+          }
+          const firstOpenObj=clean.indexOf('{');
+          const lastCloseObj=clean.lastIndexOf('}');
+          if(firstOpenObj!==-1&&lastCloseObj>firstOpenObj){
+             try{ return JSON.parse(clean.substring(firstOpenObj, lastCloseObj+1)); }catch(e4){}
+          }
+          throw new Error('無法解析 AI 回傳的資料格式');
+        }
+      }
+
+      async function speak(text){
+        window.speechSynthesis.cancel(); // Stop previous
+        const u=new SpeechSynthesisUtterance(text);
+        const rateEl = document.getElementById('ttsRate');
+        u.rate= rateEl ? (parseFloat(rateEl.value) || 0.6) : 0.6;
+        u.lang='en-US';
+        u.onerror = (e) => console.error('TTS Error:', e);
+        speechSynthesis.speak(u);
+      }
+
+      function readAllNewsSpeaking() {
+        window.speechSynthesis.cancel();
+        const spans = document.querySelectorAll('#speakingGuideBox .news-sentence-text');
+        const rateEl = document.getElementById('ttsRate');
+        const rate = rateEl ? (parseFloat(rateEl.value) || 0.6) : 0.6;
+
+        spans.forEach(span => {
+            span.style.backgroundColor = 'transparent';
+            const u = new SpeechSynthesisUtterance(span.textContent);
+            u.rate = rate;
+            u.lang = 'en-US';
+            u.onstart = () => { span.style.backgroundColor = '#fef08a'; };
+            u.onend = () => { span.style.backgroundColor = 'transparent'; };
+            u.onerror = () => { span.style.backgroundColor = 'transparent'; };
+            window.speechSynthesis.speak(u);
+        });
+      }
+
+      // 1. News Speaking Logic (Updated)
+    async function generateSpeakingGuide() {
+      const btn = document.getElementById('genWritingGuide');
+      const promptEl = document.getElementById('writingPrompt');
+      const imgWrapper = promptEl.querySelector('div[style*="text-align:center"]');
+      const imgEl = promptEl.querySelector('img');
+      
+      // Try to get News Content
+      const newsTitle = document.getElementById('newsTitle')?.textContent || '';
+      const newsDesc = document.getElementById('newsDesc')?.textContent || '';
+      
+      // Remove existing box
+      const existingBox = document.getElementById('speakingGuideBox');
+      if(existingBox) existingBox.remove();
+      
+      // Create new box
+      const speakingBox = document.createElement('div');
+      speakingBox.id = 'speakingGuideBox';
+      speakingBox.style.cssText = 'margin-bottom:6px; padding:6px; background:#fff7ed; border:1px solid #ffedd5; border-radius:6px;';
+      
+      // Insert after image if possible
+      if(imgWrapper) {
+          imgWrapper.after(speakingBox);
+      } else if(imgEl && imgEl.parentElement) {
+          imgEl.parentElement.after(speakingBox);
+      } else {
+          promptEl.insertBefore(speakingBox, promptEl.firstChild);
+      }
+      
+      const originalText = btn.textContent;
+      btn.textContent = '生成中...'; btn.disabled = true;
+      
+      try {
+        const promptText = promptEl.dataset.rawText || promptEl.textContent;
+        
+        // Determine Source Content
+        let sourceContent = '';
+        let contextType = '';
+        const newsPreviewEl = document.getElementById('newsPreview');
+        const fullText = (newsPreviewEl && newsPreviewEl.dataset && newsPreviewEl.dataset.fullText) ? newsPreviewEl.dataset.fullText : (document.getElementById('newsFull')?.textContent || '');
+        const clip = (s, n) => (s || '').length > n ? (s || '').slice(0, n) : (s || '');
+        
+        if (newsTitle && (newsDesc || fullText) && document.getElementById('newsPreview').style.display !== 'none') {
+            sourceContent = fullText && fullText.trim().length > 100 
+              ? `News Title: ${newsTitle}\nFull Article:\n${clip(fullText.trim(), 3000)}`
+              : `News Title: ${newsTitle}\nNews Summary: ${newsDesc}`;
+            contextType = 'News Event';
+            speakingBox.innerHTML = '🤖 AI 正在閱讀新聞內容並生成口語練習...';
+        } else {
+            sourceContent = `Topic: ${promptText}`;
+            contextType = 'General Topic';
+            speakingBox.innerHTML = '🤖 AI 正在分析題目並生成口語練習...';
+        }
+
+        const systemPrompt = `You are a KET A2 English Speaking Coach. 
+The student wants to practice talking about a ${contextType}.
+
+Content Source:
+${sourceContent}
+
+Your task:
+1. Understand the core message of the news/topic.
+2. Generate 5 simple, natural English sentences (A2 level) that a student could use to tell a friend about this news.
+3. The sentences should focus on "expressing what happened" or "sharing the news".
+4. Provide Traditional Chinese translation for each.
+
+Return strictly JSON array:
+[
+  {"en": "Did you hear about the typhoon?", "zh": "你聽說那個颱風的消息了嗎？"},
+  {"en": "It will rain heavily tomorrow.", "zh": "明天會下大雨。"},
+  ...
+]`;
+
+        const jsonStr = await callLLM([
+            {role: 'system', content: systemPrompt},
+            {role: 'user', content: 'Teach me how to say this in English.'}
+        ], 0.3, 1000);
+        
+        const sentences = parseJSON(jsonStr);
+        
+        if (Array.isArray(sentences)) {
+            let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0px; line-height:1.0;">
+                <div style="font-weight:bold; color:#c2410c;">🗣️ 新聞口說練習 (News Speaking Practice)</div>
+                <button onclick="readAllNewsSpeaking()" style="border:1px solid #f59e0b; background:#fff7ed; color:#d97706; border-radius:12px; padding:2px 8px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; line-height:1.0;">
+                    <span>▶️</span> <span>朗讀全部</span>
+                </button>
+            </div>`;
+            
+            html += `<span style="display:flex; flex-direction:column; gap:0px; margin:0; padding:0; line-height:1.0;">`;
+            sentences.forEach((s, index) => {
+                const containerId = 'news-speaking-' + index;
+                // Simplified structure: Just the container, speaker button moved inside setupTyping
+                html += `<span style="margin:0; padding:0; line-height:1.0;">
+                     <span id="${containerId}" style="margin:0; padding:0; line-height:1.0;"></span>
+                </span>`;
+            });
+            html += `</span>`;
+            speakingBox.innerHTML = html;
+
+            // Initialize typing for each sentence
+            sentences.forEach((s, index) => {
+                const containerId = 'news-speaking-' + index;
+                if(typeof setupTyping === 'function') {
+                    setupTyping(s.en, containerId, s.zh, true);
+                }
+            });
+        }
+      } catch (e) {
+          console.error(e);
+          speakingBox.innerHTML = `<span style="color:red">生成失敗: ${e.message}</span>`;
+      }
+      btn.textContent = originalText; btn.disabled = false;
+    }
+
+    // 2. Step-by-Step Writing Guide Logic (For Bottom Button)
+    async function generateStepByStepGuide() {
+      // Target the bottom button
+      const btn = document.getElementById('genWritingGuide2');
+      if(!btn) return;
+      
+      const promptText = document.getElementById('writingPrompt').dataset.rawText || document.getElementById('writingPrompt').textContent;
+      const guideDiv = document.getElementById('writingGuide');
+      
+      if(!promptText || promptText.includes('請完成')){
+          guideDiv.style.display='block';
+          guideDiv.innerHTML='<div style="color:red; padding:10px;">請先生成或設定一個具體的寫作題目</div>';
+          return;
+      }
+
+      const originalText = btn.innerHTML; // Use innerHTML to preserve potential formatting
+      btn.textContent = '分析中...'; 
+      btn.disabled = true;
+      
+      guideDiv.style.display='block';
+      guideDiv.textContent='AI 正在拆解寫作步驟...';
+
+      try{
+         const jsonStr=await callLLM([
+           {role:'system',content:`You are a strict KET A2 Writing Coach. Your goal is to guide the student step-by-step to answer the specific writing task provided.
+Analyze the Task deeply. Break it down into 3-5 distinct steps covering all requirements.
+For each step provide:
+. "step": A clear instruction (e.g., "Greet your friend...").
+. "step_zh": Traditional Chinese translation of the step.
+. "options": An array of objects. You MUST provide:
+   - 2-3 "Casual" options (for friends/family).
+   - 2-3 "Formal" options (for teachers/officials).
+   Use placeholders in brackets [] if needed.
+   For each option, provide "text" (English) and "text_zh" (Traditional Chinese).
+
+Example output format:
+[
+  {
+    "step": "Greet your friend and state the topic",
+    "step_zh": "問候你的朋友並說明主題",
+    "options": [
+      {"label": "Casual", "text": "Hi [Name], guess what?", "text_zh": "嗨 [名字]，你猜怎麼了？"},
+      {"label": "Formal", "text": "Dear [Name], I am writing to...", "text_zh": "親愛的 [名字]，我寫信是為了..."}
+    ]
+  }
+]
+Return strictly a valid JSON array. Do not include any conversational text.`},
+           {role:'user',content:`Task: ${promptText}`}
+         ]);
+         const steps=parseJSON(jsonStr);
+        if(Array.isArray(steps)){
+            guideDiv.innerHTML='<strong>📝 逐步寫作指引（點擊句型可插入）：</strong><ul style="padding-left:20px; margin:10px 0 0 0">'+
+                steps.map(s=>`<li style="margin-bottom:12px">
+                    <div style="font-size:13px; color:#333; font-weight:bold; margin-bottom:2px">${s.step}</div>
+                    <div style="font-size:12px; color:#64748b; margin-bottom:6px">${s.step_zh || ''}</div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                      ${(s.options || (s.starter ? [{label:'Start', text:s.starter}] : [])).map(opt => {
+                        const label = opt.label || 'Option';
+                        const text = opt.text || opt; 
+                        const text_zh = opt.text_zh || '';
+                        const color = label.includes('Formal') ? '#0ea5e9' : (label.includes('Casual') ? '#f59e0b' : '#7c3aed');
+                        const bg = label.includes('Formal') ? '#e0f2fe' : (label.includes('Casual') ? '#fef3c7' : '#ede9fe');
+                        const border = label.includes('Formal') ? '#bae6fd' : (label.includes('Casual') ? '#fde68a' : '#ddd6fe');
+                        const uniqueId = 'analysis-' + Math.random().toString(36).substr(2, 9);
+                        
+                        return `<div style="display:flex; flex-direction:column; margin-bottom:4px;">
+                             <div style="display:flex; align-items:center; gap:6px;">
+                                 <div style="display:flex; align-items:center; gap:2px; background:${bg}; border:1px solid ${border}; border-radius:12px; padding:4px 8px; width:fit-content; cursor:pointer;"
+                                      onclick="document.getElementById('writingText').value+='${text} '">
+                                      <span style="font-size:10px; font-weight:bold; color:#fff; background:${color}; padding:1px 5px; border-radius:4px">${label}</span>
+                                      <span style="font-size:13px; color:#334155;">${text}</span>
+                                 </div>
+                                 <div style="display:flex; gap:2px;">
+                                    <button onclick="speak('${text.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" 
+                                            style="border:none; background:none; cursor:pointer; font-size:14px; opacity:0.6; padding:0 4px;" 
+                                            title="🔊 朗讀">🔊</button>
+                                    <button onclick="analyzeSentence('${text.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${uniqueId}')" 
+                                            style="border:none; background:none; cursor:pointer; font-size:14px; opacity:0.6; padding:0 4px;" 
+                                            title="🔍 深度解析此句">🔍</button>
+                                 </div>
+                             </div>
+                             ${text_zh ? `<div style="font-size:12px; color:#94a3b8; margin-left:8px; margin-top:2px;">${text_zh}</div>` : ''}
+                             <div id="${uniqueId}" style="display:none; margin:8px 0 8px 12px; padding:8px; background:#f8fafc; border-left:3px solid #6366f1; border-radius:0 4px 4px 0; font-size:13px; color:#334155;"></div>
+                        </div>`;
+                      }).join('')}
+                    </div>
+                </li>`).join('') + '</ul>';
+        }
+      }catch(e){console.error(e);guideDiv.textContent='無法生成引導: '+e.message}
+      btn.innerHTML=originalText; btn.disabled=false;
+    };
+
+    document.getElementById('genWritingGuide').onclick = generateSpeakingGuide;
+ 
+      async function analyzeSentence(text, containerId) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        
+        if (container.innerHTML.trim() !== '') {
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        container.innerHTML = '⏳ 正在解析句子結構與文法...';
+
+        try {
+            const prompt = `請緊湊拆解這句英文："${text}"
+請以僅使用 <span>, <b> 與 <br> 的片段輸出，且每一項為一個 <span>，避免使用 <ul>/<li>/<p>/<div>。
+包含五項：
+<span><b>骨架</b>: 主詞/動詞/受詞 (⚠️ 骨架中的每個英文單字或片語的 IPA 音標必須寫在下一行，例如：I<br>[aɪ] / eat<br>[iːt] / an apple<br>[ən ˈæpl])</span>
+<span><b>時態用法</b>: 為何使用此時態或結構</span>
+<span><b>語塊</b>: 常見搭配或固定片語</span>
+<span><b>造句</b>: 同構句，內容不同，A2 等級</span>
+<span><b>視覺</b>: 畫面描述，幫助記憶</span>
+僅回傳上述結構的 HTML 片段。`;
+
+            const htmlContent = await callLLM([
+                {role: 'system', content: 'You are a helpful English grammar teacher.'},
+                {role: 'user', content: prompt}
+            ], 0.7, 3000);
+            
+            container.style.display = 'block';
+            container.style.lineHeight = '1.0';
+            container.style.padding = '6px';
+            container.style.whiteSpace = 'normal';
+            container.innerHTML = htmlContent;
+            const spans = container.querySelectorAll('span');
+            spans.forEach(s => { s.style.display = 'inline'; s.style.marginRight = '8px'; });
+
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<span style="color:red">解析失敗，請稍後再試。</span>';
+        }
+      }
+
+      async function scoreWriting(text){
+        const promptText=document.getElementById('writingPrompt').dataset.rawText || document.getElementById('writingPrompt').textContent;
+        if(!text||text.length<10)return {score:0,band:'A0',comment:'請輸入完整答案',missing_check:'字數不足',examples:null,improvements:[]};
+        
+        const wc=text.split(/\s+/).filter(Boolean).length;
+        let heuristic=40;
+        if(wc>=25)heuristic+=30;
+        if(/[.!?]/.test(text))heuristic+=10;
+        
+        writingResultEl.innerHTML = '<span style="color:blue">AI 老師正在仔細批改並準備範文...請稍候</span>';
+        
+        try{
+          const jsonStr=await callLLM([
+            {role:'system',content:`Role: You are a warm, professional, and guiding English writing coach for beginners (A1-A2).
+
+Task: Analyze the student's text based on the Task provided. Output the following strictly in JSON format:
+
+. "score": (0-100)
+. "band": ("A1", "A2", or "B1")
+. "comment": Use the "Sandwich Method": Praise the strengths -> Point out 1 specific weakness -> Give encouragement. (In Traditional Chinese).
+. "missing_check": Check if all 3 bullet points in the Task are covered. If any are missing, explicitly state which one. If all present, say "Content complete". (In Traditional Chinese).
+. "interactive_feedback": Don't just correct grammar. Ask a guiding question to help the student find the error. E.g., "Your second sentence seems to miss a verb..." (In Traditional Chinese).
+. "improvements": Pick 1-2 basic sentences (using words like good, bad, like). Show how to upgrade them with better verbs/adjectives. Format: [{"original": "...", "better": "...", "explanation": "Provide the Chinese translation of the better sentence, and explain WHY it is better (grammar/vocab nuance) in Traditional Chinese (Taiwan)."}]
+. "common_mistakes": Identify 2-3 common pitfalls relevant to this specific topic (e.g., if topic is Apps, remind about "an app"). Format: [{"mistake": "Wrong English usage", "correction": "Correct English usage", "explanation": "Explain the error and rule in Traditional Chinese (Taiwan)."}]
+. "example_A": Basic version (approx 40 words).
+. "example_A_zh": Traditional Chinese (Taiwan) translation of example_A.
+. "example_B": Advanced version (50-60 words, with linking words like because, so, also).
+. "example_B_zh": Traditional Chinese (Taiwan) translation of example_B.
+. "structure_analysis": Break down Example B into functional parts: Greeting, Topic, Reason, Ask, Sign-off. Format: [{"label": "Greeting", "text": "..."}, {"label": "Topic", "text": "..."}...]
+
+Return strictly valid JSON. Do not include any conversational text.`},
+            {role:'user',content:`Task: ${promptText}\nStudent Text: "${text}"`}
+          ], 0.7, 3000);
+          
+          const ai=parseJSON(jsonStr);
+          return ai;
+        }catch(e){
+          console.error(e);
+          return {score:heuristic, band:heuristic>=60?'A2':'A1', comment:'AI 連線失敗，僅顯示基礎評分', missing_check:'無法檢查內容', interactive_feedback:'請檢查網路連線', improvements:[]};
+        }
+      }
+
+      document.getElementById('scoreWritingBtn').onclick=async()=>{
+        const maxRetries = 1;
+        let r;
+        
+        // Initial attempt
+        r = await scoreWriting(writingTextEl.value);
+
+        // Retry Logic if response seems incomplete
+        if (maxRetries > 0) {
+            const isIncomplete = !r.score || !r.comment || !r.improvements || r.improvements.length === 0;
+            if (isIncomplete) {
+                writingResultEl.innerHTML = '<span style="color:orange">⚠️ 第一次評分結果不完整，正在自動嘗試第二次評分...</span>';
+                console.log('Incomplete grading detected, retrying...');
+                // Wait a bit before retry
+                await new Promise(res => setTimeout(res, 1000));
+                r = await scoreWriting(writingTextEl.value);
+            }
+        }
+
+        let html=`<div style="background:#f0f9ff; padding:15px; border-radius:8px; border:1px solid #bae6fd">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <span style="font-size:1.2em; font-weight:bold; color:#0369a1">評分：${r.score} / 100 (${r.band})</span>
+            <span style="font-size:0.9em; color:#64748b">AI 寫作教練</span>
+          </div>
+          <div style="margin-bottom:10px; color:#334155; border-left: 4px solid #0ea5e9; padding-left: 10px;">
+            <strong>👩‍🏫 老師評語：</strong><br>${r.comment}
+          </div>`;
+        
+        if(r.missing_check && !r.missing_check.includes('Content complete') && !r.missing_check.includes('完整')){
+           html+=`<div style="margin-bottom:10px; color:#d97706; background:#fffbeb; padding:8px; border-radius:4px"><strong>⚠️ 任務檢查：</strong>${r.missing_check}</div>`;
+        }
+
+        if(r.interactive_feedback){
+           html+=`<div style="margin-bottom:10px; color:#4338ca; background:#e0e7ff; padding:8px; border-radius:4px"><strong>🤔 思考一下：</strong>${r.interactive_feedback}</div>`;
+        }
+        
+        if(r.common_mistakes){
+           html+=`<div style="margin-bottom:10px; color:#be185d; background:#fce7f3; padding:8px; border-radius:4px"><strong>🚫 常見陷阱提醒：</strong>`;
+           if (Array.isArray(r.common_mistakes)) {
+               html += `<ul style="padding-left:20px; margin:5px 0">`;
+               r.common_mistakes.forEach(m => {
+                   html += `<li style="margin-bottom:6px">
+                       <span style="color:#ef4444; text-decoration:line-through">${m.mistake}</span> 
+                       <span style="color:#22c55e">➜ ${m.correction}</span>
+                       <div style="font-size:0.85em; color:#881337; margin-top:2px">${m.explanation}</div>
+                   </li>`;
+               });
+               html += `</ul>`;
+           } else {
+               html += `<div>${r.common_mistakes}</div>`;
+           }
+           html+=`</div>`;
+        }
+
+        if(r.improvements && r.improvements.length>0){
+           html+=`<div style="margin-bottom:10px"><strong>💡 句子升級建議：</strong><ul style="padding-left:20px; margin:5px 0">`;
+           r.improvements.forEach(i=>{
+             html+=`<li style="margin-bottom:6px"><span style="color:#ef4444; text-decoration:line-through">${i.original}</span> <span style="color:#22c55e">➜ ${i.better}</span> <div style="font-size:0.85em; color:#64748b; margin-top:2px">${i.explanation}</div></li>`;
+           });
+           html+=`</ul></div>`;
+        }
+
+        if(r.example_A){
+           html+=`<div style="margin-top:15px; border-top:1px solid #e2e8f0; padding-top:10px">
+             <div style="font-weight:bold; color:#475569; margin-bottom:10px">📚 分級範文參考：</div>
+             
+             <!-- Example A -->
+             <div style="margin-bottom:20px;">
+               <div style="font-weight:bold; color:#64748b; margin-bottom:5px; border-bottom:2px solid #64748b; display:inline-block;">範文 A (基礎)</div>
+               <div id="exA" style="background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:4px; font-size:0.95em; color:#334155">
+                 <div style="margin-bottom:10px">${r.example_A}</div>
+                 <div id="typingAreaA"></div>
+               </div>
+             </div>
+             
+             <!-- Example B -->
+             <div>
+               <div style="font-weight:bold; color:#7c3aed; margin-bottom:5px; border-bottom:2px solid #7c3aed; display:inline-block;">範文 B (進階解析)</div>
+               <div id="exB">
+                 <div style="background:#fff; padding:10px; border:1px solid #e2e8f0; border-radius:4px; font-size:0.95em; color:#334155; margin-bottom:10px">
+                   <div style="margin-bottom:10px">${r.example_B}</div>
+                   <div id="typingAreaB"></div>
+                 </div>
+                 ${r.structure_analysis ? `<div style="background:#f8fafc; padding:10px; border-radius:4px;">
+                   <div style="font-size:0.85em; font-weight:bold; color:#475569; margin-bottom:5px">🔍 結構拆解：</div>
+                   ${r.structure_analysis.map(s => `
+                     <div style="display:flex; margin-bottom:4px; font-size:0.9em;">
+                       <span style="width:70px; flex-shrink:0; font-weight:bold; color:#7c3aed; background:#ede9fe; padding:2px 4px; border-radius:3px; text-align:center; font-size:0.8em; height:fit-content">${s.label}</span>
+                       <span style="margin-left:8px; color:#334155">${s.text}</span>
+                     </div>
+                   `).join('')}
+                 </div>` : ''}
+               </div>
+             </div>
+           </div>`;
+        }
+
+        html+=`</div>`;
+        writingResultEl.innerHTML=html;
+        
+        if(r.example_A && typeof setupTyping !== 'undefined') {
+            setupTyping(r.example_A, 'typingAreaA', r.example_A_zh);
+        }
+        
+        if(r.example_B && typeof setupTyping !== 'undefined') {
+            setupTyping(r.example_B, 'typingAreaB', r.example_B_zh);
+        }
+
+        if(r.score){
+          progress.writingScores.push(r.score);
+          saveProgress();
+        }
+      };
+
+      // Fuzzy Match Helper for Speech Correction
+      function getFuzzyMatch(transcript, targetText) {
+          if (!targetText || !transcript) return null;
+          const tWords = transcript.trim().split(/\s+/);
+          const targetWords = targetText.trim().split(/\s+/);
+          if (targetWords.length === 0) return null;
+          
+          // Check if transcript matches the BEGINNING of targetText
+          const checkLen = Math.min(tWords.length, targetWords.length);
+          let matchScore = 0;
+          let matchedWords = [];
+          
+          for (let i = 0; i < checkLen; i++) {
+              const tW = tWords[i].toLowerCase().replace(/[^\w]/g, '');
+              const trW = targetWords[i].toLowerCase().replace(/[^\w]/g, '');
+              
+              if (!tW || !trW) { matchedWords.push(targetWords[i]); continue; }
+              
+              if (tW === trW) {
+                  matchScore += 1;
+              } else {
+                  let dist = 0;
+                  const minL = Math.min(tW.length, trW.length);
+                  for(let k=0; k<minL; k++) if(tW[k] !== trW[k]) dist++;
+                  dist += Math.abs(tW.length - trW.length);
+                  
+                  if (dist <= 2 && minL >= 3) matchScore += 0.8;
+                  else if (dist <= 1) matchScore += 0.8;
+                  else matchScore -= 0.5;
+              }
+              matchedWords.push(targetWords[i]);
+          }
+          
+          if (matchScore / checkLen > 0.5) {
+               return matchedWords.join(' ');
+          }
+          return null;
+      }
+
+      function findFuzzyInContext(transcript, context) {
+          if (!context || !transcript) return transcript;
+          const tWords = transcript.trim().split(/\s+/);
+          const cWords = context.trim().split(/\s+/);
+          if (cWords.length < tWords.length) return transcript;
+          
+          let bestScore = -Infinity;
+          let bestPhrase = transcript;
+          
+          for (let i = 0; i <= cWords.length - tWords.length; i++) {
+              let currentScore = 0;
+              let currentPhrase = [];
+              for (let j = 0; j < tWords.length; j++) {
+                  const tW = tWords[j].toLowerCase().replace(/[^\w]/g, '');
+                  const cW = cWords[i+j].toLowerCase().replace(/[^\w]/g, '');
+                  if (tW === cW) currentScore += 1;
+                  else {
+                      let dist = 0;
+                      const minL = Math.min(tW.length, cW.length);
+                      for(let k=0; k<minL; k++) if(tW[k] !== cW[k]) dist++;
+                      dist += Math.abs(tW.length - cW.length);
+                      if (dist <= 2 && minL >= 4) currentScore += 0.7;
+                      else if (dist <= 1) currentScore += 0.7;
+                      else currentScore -= 1;
+                  }
+                  currentPhrase.push(cWords[i+j]);
+              }
+              
+              const avgScore = currentScore / tWords.length;
+              if (avgScore > 0.6 && avgScore > bestScore) {
+                  bestScore = avgScore;
+                  bestPhrase = currentPhrase.join(' ');
+              }
+          }
+          return bestScore > 0.6 ? bestPhrase : transcript;
+      }
+
+      function setupTyping(text, containerId, translation, compact = false) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        const target = text.trim();
+        let loopTimer = null;
+        let isFocused = false;
+
+        const speakLoop = () => {
+            if (!isFocused) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(target);
+            const rateEl = document.getElementById('ttsRate');
+            u.rate = rateEl ? (parseFloat(rateEl.value) || 0.6) : 0.6;
+            u.lang = 'en-US';
+            u.onend = () => {
+                if (isFocused) {
+                    loopTimer = setTimeout(speakLoop, 1500); // Wait 1.5s before next loop
+                }
+            };
+            u.onerror = () => {
+                 if (isFocused) {
+                    loopTimer = setTimeout(speakLoop, 2000); // Retry on error
+                }
+            };
+            window.speechSynthesis.speak(u);
+        };
+        
+        if (compact) {
+             // Compact Mode V7: Ultra-flat structure
+             const safeEn = target.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+             container.style.position = 'relative';
+             container.innerHTML = `
+              <div style="position:relative; font-family:Consolas, Monaco, 'Courier New', monospace; font-size:24px; line-height:1.0; margin:0; padding:0;">
+                <div id="${containerId}-display" style="pointer-events:none; white-space:pre-wrap; word-break:break-word; color:#000; padding:0; border:none; margin:0;"></div>
+                <textarea id="${containerId}-input" spellcheck="false" lang="en" autocomplete="off" autocorrect="off" autocapitalize="off" inputmode="latin"
+                  style="position:absolute; top:25%; left:0; width:100%; height:50%; opacity:0.8; background:transparent; border:none; border-bottom:1px dashed #cbd5e1; padding:0; margin:0; font-family:inherit; font-size:inherit; line-height:inherit; color:transparent; caret-color:#000; resize:none; overflow:hidden; ime-mode: disabled;"
+                  placeholder=""
+                ></textarea>
+                <button id="${containerId}-mic" style="display:none;"></button>
+              </div>
+              ${translation ? `<div id="${containerId}-trans" style="display:flex; align-items:center; gap:8px; margin:0; margin-top:-48px; padding:0; color:#64748b; font-size:24px; line-height:1.0;">
+                  <span>${translation}</span>
+                  <button onclick="speak('${safeEn}')" style="border:none; background:none; cursor:pointer; font-size:20px; opacity:0.7; padding:0; margin:0; line-height:1;" title="朗讀">🔊</button>
+              </div>` : ''}
+              <div id="${containerId}-msg" style="display:none"></div>
+            `;
+        } else {
+            // Normal Mode
+            const headerHtml = `<div style="font-weight:bold; color:#475569; margin-bottom:5px;">⌨️ 逐字打字練習 (Typing Practice)</div>`;
+            const borderStyle = 'margin-top:15px; padding-top:10px; border-top:1px dashed #cbd5e1;';
+            const minHeight = '60px'; 
+            const padding = '10px';
+            const paddingBottom = '40px'; 
+            const lineHeight = '1.6';
+            const micSize = '28px';
+            const micFontSize = '14px';
+            const micBottom = '4px';
+            const micRight = '4px';
+
+            container.innerHTML = `
+              <div style="${borderStyle}">
+                ${headerHtml}
+                <div style="position:relative; font-family:Consolas, Monaco, 'Courier New', monospace; font-size:16px; line-height:${lineHeight};">
+                  <div id="${containerId}-display" style="pointer-events:none; white-space:pre-wrap; word-break:break-word; color:#94a3b8; min-height:${minHeight}; padding:${padding}; border:1px solid transparent;"></div>
+                  <textarea id="${containerId}-input" spellcheck="false" lang="en" autocomplete="off" autocorrect="off" autocapitalize="off" inputmode="latin"
+                    style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.8; background:transparent; border:1px solid #cbd5e1; border-radius:4px; padding:${padding}; padding-bottom:${paddingBottom}; padding-right:${padding}; font-family:inherit; font-size:inherit; line-height:inherit; color:transparent; caret-color:#000; resize:none; overflow:hidden; ime-mode: disabled;"
+                    placeholder="點擊這裡開始打字... (支援語音輸入)"
+                  ></textarea>
+                  <button id="${containerId}-mic" title="點擊開始語音輸入 (English)" style="position:absolute; bottom:${micBottom}; right:${micRight}; width:${micSize}; height:${micSize}; border-radius:50%; border:none; background:#f1f5f9; color:#64748b; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.1); display:flex; align-items:center; justify-content:center; transition:all 0.2s; z-index:10;">
+                    <span style="font-size:${micFontSize};">🎤</span>
+                  </button>
+                </div>
+                <div id="${containerId}-msg" style="height:20px; min-height:20px; font-size:13px; font-weight:bold; margin-top:4px; color:#ef4444; line-height:1.2;"></div>
+                ${translation ? `<div id="${containerId}-trans" style="display:none; margin-top:10px; padding:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; color:#15803d; font-size:14px;"><strong>🌏 中文翻譯：</strong>${translation}</div>` : ''}
+              </div>
+            `;
+        }
+
+        const displayEl = document.getElementById(containerId + '-display');
+        const inputEl = document.getElementById(containerId + '-input');
+        
+        // Initial display text setup
+        displayEl.textContent = target;
+        const msgEl = document.getElementById(containerId + '-msg');
+        const transEl = document.getElementById(containerId + '-trans');
+        const micBtn = document.getElementById(containerId + '-mic');
+
+        inputEl.addEventListener('focus', () => {
+            inputEl.setAttribute('lang', 'en');
+            inputEl.setAttribute('inputmode', 'latin');
+            inputEl.setAttribute('autocomplete', 'off');
+            inputEl.setAttribute('autocorrect', 'off');
+            inputEl.setAttribute('autocapitalize', 'off');
+        });
+
+        // Event Listeners for Continuous Reading and Enter Navigation
+        if (compact) {
+            inputEl.addEventListener('focus', () => {
+                isFocused = true;
+                speakLoop();
+            });
+
+            inputEl.addEventListener('blur', () => {
+                isFocused = false;
+                if (loopTimer) clearTimeout(loopTimer);
+                window.speechSynthesis.cancel();
+            });
+
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    // Try to find next input
+                    // containerId format: 'news-speaking-{index}'
+                    const parts = containerId.split('-');
+                    const currentIndex = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(currentIndex)) {
+                        const nextId = `news-speaking-${currentIndex + 1}-input`;
+                        const nextInput = document.getElementById(nextId);
+                        if (nextInput) {
+                            nextInput.focus();
+                        } else {
+                            // Maybe last one? blur to stop reading
+                            inputEl.blur();
+                        }
+                    }
+                }
+            });
+            
+            const startAllAnalysis = async () => {
+                if (window.__newsAllAnalysisStarted) return;
+                window.__newsAllAnalysisStarted = true;
+                const displays = Array.from(document.querySelectorAll('[id^="news-speaking-"][id$="-display"]'));
+                for (const el of displays) {
+                    const cid = el.id.replace('-display', '');
+                    const msg = document.getElementById(cid + '-msg');
+                    if (msg) {
+                        msg.style.display = 'block';
+                        msg.style.cssText = 'display:block; margin-top:4px; padding:0; background:#f8fafc; border-left:3px solid #6366f1; border-radius:0 4px 4px 0; font-size:13px; color:#334155;';
+                        msg.innerHTML = `
+                          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #e5e7eb;">
+                            <span style="font-weight:bold; color:#4f46e5;">🔍 句子解析</span>
+                            <button id="${cid}-toggle" style="border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:10px; padding:2px 8px; cursor:pointer; font-size:12px;">收合</button>
+                          </div>
+                          <div id="${cid}-body" style="padding:6px 8px; max-height:none; overflow:hidden; display:flex; flex-wrap:wrap; gap:6px; line-height:1.0; white-space:normal;">⏳ 正在解析句子結構與文法...</div>
+                        `;
+                        const toggleBtn = document.getElementById(`${cid}-toggle`);
+                        const bodyEl = document.getElementById(`${cid}-body`);
+                        msg.dataset.collapsed = 'false';
+                        toggleBtn.onclick = () => {
+                          const collapsed = msg.dataset.collapsed === 'true';
+                          if (collapsed) {
+                            bodyEl.style.maxHeight = 'none';
+                            toggleBtn.textContent = '收合';
+                            msg.dataset.collapsed = 'false';
+                          } else {
+                            bodyEl.style.maxHeight = '40px';
+                            bodyEl.style.overflow = 'hidden';
+                            toggleBtn.textContent = '展開';
+                            msg.dataset.collapsed = 'true';
+                          }
+                        };
+                    }
+                }
+                await Promise.all(displays.map(async el => {
+                    const cid = el.id.replace('-display', '');
+                    const msg = document.getElementById(cid + '-msg');
+                    const sentence = el.textContent.trim();
+                    try {
+                        const prompt = `請緊湊拆解這句英文："${sentence}"
+請以僅使用 <span>, <b> 與 <br> 的片段輸出，且每一項為一個 <span>，避免使用 <ul>/<li>/<p>/<div>。
+包含五項：
+<span><b>骨架</b>: 主詞/動詞/受詞 (⚠️ 骨架中的每個英文單字或片語的 IPA 音標必須寫在下一行，例如：I<br>[aɪ] / eat<br>[iːt] / an apple<br>[ən ˈæpl])</span>
+<span><b>時態用法</b>: 為何使用此時態或結構</span>
+<span><b>語塊</b>: 常見搭配或固定片語</span>
+<span><b>造句</b>: 同構句，內容不同，A2 等級</span>
+<span><b>視覺</b>: 畫面描述，幫助記憶</span>
+僅回傳上述結構的 HTML 片段。`;
+                        const htmlContent = await callLLM([
+                            { role: 'system', content: 'You are a helpful English grammar teacher.' },
+                            { role: 'user', content: prompt }
+                        ], 0.6, 900);
+                        if (msg) {
+                          const bodyEl = document.getElementById(`${cid}-body`);
+                          if (bodyEl) {
+                            bodyEl.innerHTML = htmlContent;
+                            const spans = bodyEl.querySelectorAll('span');
+                            spans.forEach(s => { s.style.display = 'inline'; s.style.marginRight = '8px'; });
+                          }
+                        }
+                    } catch (e) {
+                        if (msg) {
+                          const bodyEl = document.getElementById(`${cid}-body`);
+                          if (bodyEl) bodyEl.textContent = '解析失敗，請稍後再試。';
+                        }
+                    }
+                }));
+            };
+            inputEl.addEventListener('focus', startAllAnalysis, { once: true });
+            
+            inputEl.addEventListener('input', () => {
+              // Auto-collapse logic removed as per user request (Default expanded)
+            });
+        }
+
+        // Speech Recognition Setup
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            let isListening = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.style.background = '#fee2e2';
+                micBtn.style.color = '#ef4444';
+                micBtn.classList.add('pulse-ring');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.style.background = '#f1f5f9';
+                micBtn.style.color = '#64748b';
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    const startPos = inputEl.selectionStart;
+                    const endPos = inputEl.selectionEnd;
+                    const text = inputEl.value;
+                    
+                    // Fuzzy Correction logic
+                    let textToInsert = finalTranscript;
+                    // If cursor is at end (or we assume sequential typing), check vs target
+                    if (startPos >= text.length - 1) { 
+                         // Use current text length as index into target
+                         const remaining = target.substring(text.length);
+                         const corrected = getFuzzyMatch(finalTranscript, remaining);
+                         if (corrected) textToInsert = corrected;
+                    }
+
+                    let prefix = '';
+                    if (startPos > 0 && text[startPos-1] !== ' ' && text[startPos-1] !== '\n') {
+                        prefix = ' ';
+                    }
+                    const newText = text.substring(0, startPos) + prefix + textToInsert + text.substring(endPos);
+                    inputEl.value = newText;
+                    const newCursorPos = startPos + prefix.length + textToInsert.length;
+                    inputEl.selectionStart = inputEl.selectionEnd = newCursorPos;
+                    inputEl.dispatchEvent(new Event('input'));
+                }
+            };
+            
+            micBtn.onclick = () => {
+                if (isListening) recognition.stop();
+                else recognition.start();
+            };
+        } else {
+            micBtn.style.display = 'none';
+        }
+        
+        function normalizeEnglish(s) {
+            let t = s.replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
+            t = t.replace(/，/g, ',').replace(/。/g, '.').replace(/！/g, '!').replace(/？/g, '?').replace(/；/g, ';').replace(/：/g, ':').replace(/（/g, '(').replace(/）/g, ')').replace(/「|」|『|』/g, '"');
+            t = t.replace(/[^\x00-\x7F]/g, '');
+            return t;
+        }
+
+        function renderDisplay(currentInput) {
+            let html = '';
+            for (let i = 0; i < target.length; i++) {
+                const char = target[i];
+                const inputChar = currentInput[i];
+                if (inputChar === undefined) {
+                    html += `<span style="color:#cbd5e1">${char}</span>`;
+                } else if (inputChar === char) {
+                    html += `<span style="color:#0f172a">${char}</span>`;
+                } else {
+                    html += `<span style="color:#fff; background:#ef4444; border-radius:2px;">${char}</span>`;
+                }
+            }
+            displayEl.innerHTML = html;
+        }
+
+        renderDisplay('');
+
+        inputEl.oninput = (e) => {
+            const startPos = inputEl.selectionStart;
+            const endPos = inputEl.selectionEnd;
+            const rawVal = inputEl.value;
+            const valNorm = normalizeEnglish(rawVal);
+            if (valNorm !== rawVal) {
+                inputEl.value = valNorm;
+                const newPos = Math.min(valNorm.length, startPos);
+                inputEl.selectionStart = inputEl.selectionEnd = newPos;
+            }
+            const val = inputEl.value;
+            let errorMsg = '';
+            for(let i=0; i<val.length; i++) {
+                if (i < target.length && val[i] !== target[i]) {
+                    errorMsg = `❌ 第 ${i+1} 個字錯誤：應為 "${target[i]}"，你打了 "${val[i]}"`;
+                    break; 
+                }
+            }
+            if (!compact) {
+                msgEl.style.color = '#ef4444';
+                msgEl.textContent = errorMsg;
+            }
+            
+            // Manage visibility for compact mode
+            if (!compact) {
+                msgEl.style.display = (errorMsg || val === target) ? 'block' : 'none';
+            }
+
+            renderDisplay(val);
+            if (val === target) {
+                 if(transEl) transEl.style.display = 'block';
+            }
+        };
+      }
+
+      // Force Reload with Cache Busting & Auto Gen
+      function forceReload() {
+        // Show loading animation
+        const overlay = document.createElement('div');
+        overlay.id = 'loadingOverlay';
+        overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;';
+        overlay.innerHTML = '<div style="font-size:40px; margin-bottom:20px;">🔄</div><div style="font-size:18px; color:#333; font-weight:bold;">正在強制更新並重新生成考題...</div><div style="font-size:14px; color:#666; margin-top:5px;">請稍候，這可能需要幾秒鐘</div>';
+        document.body.appendChild(overlay);
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('v', Date.now());
+        url.searchParams.set('autogen', '1');
+        
+        // Short delay to show the animation before reload
+        setTimeout(() => {
+             window.location.href = url.toString();
+        }, 500);
+      }
+
+    // Reload & Auto-Gen Logic
+    document.getElementById('reloadAndGenBtn').onclick = forceReload;
+    
+    // Bind the second guide button
+    const btn2 = document.getElementById('genWritingGuide2');
+    if(btn2) {
+        btn2.onclick = generateStepByStepGuide;
+    }
+
+    // Speech to Text Logic
+    const micBtn = document.getElementById('micBtn');
+    const micStatus = document.getElementById('micStatus');
+    const textArea = document.getElementById('writingText');
+    let recognition;
+    let isListening = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.style.background = '#fee2e2';
+            micBtn.style.color = '#ef4444';
+            micStatus.style.display = 'flex';
+            micBtn.classList.add('pulse-ring'); // Optional: add class for ring effect
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            micBtn.style.background = '#f1f5f9';
+            micBtn.style.color = '#64748b';
+            micStatus.style.display = 'none';
+        };
+
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            if (finalTranscript) {
+                // Smart Context Correction
+                let textToInsert = finalTranscript;
+                try {
+                    // Gather Context
+                    const promptEl = document.getElementById('writingPrompt');
+                    const nTitle = document.getElementById('newsTitle');
+                    const nDesc = document.getElementById('newsDesc');
+                    let context = (promptEl ? promptEl.innerText : '') + ' ' + 
+                                  (nTitle ? nTitle.innerText : '') + ' ' + 
+                                  (nDesc ? nDesc.innerText : '');
+                    
+                    if (typeof findFuzzyInContext === 'function') {
+                        const corrected = findFuzzyInContext(finalTranscript, context);
+                        if (corrected !== finalTranscript) {
+                            textToInsert = corrected;
+                        }
+                    }
+                } catch(e) {}
+
+                // Insert at cursor position or append
+                const startPos = textArea.selectionStart;
+                const endPos = textArea.selectionEnd;
+                const text = textArea.value;
+                
+                // Add space if needed
+                let prefix = '';
+                if (startPos > 0 && text[startPos-1] !== ' ' && text[startPos-1] !== '\n') {
+                    prefix = ' ';
+                }
+                
+                const newText = text.substring(0, startPos) + prefix + textToInsert + text.substring(endPos);
+                textArea.value = newText;
+                
+                // Update cursor
+                const newCursorPos = startPos + prefix.length + textToInsert.length;
+                textArea.selectionStart = textArea.selectionEnd = newCursorPos;
+                
+                // Trigger input event for auto-save/validation logic if any
+                textArea.dispatchEvent(new Event('input'));
+            }
+        };
+        
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error', event.error);
+            if(event.error === 'not-allowed') {
+                alert('請允許麥克風權限以使用語音輸入功能');
+            }
+            micBtn.style.background = '#f1f5f9';
+            micBtn.style.color = '#64748b';
+            micStatus.style.display = 'none';
+            isListening = false;
+        };
+
+        micBtn.onclick = () => {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        };
+    } else {
+        micBtn.style.display = 'none';
+        console.warn('Speech Recognition API not supported in this browser.');
+    }
+
+    window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('autogen') === '1') {
+            // Show loading overlay immediately on load
+            const overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;';
+            overlay.innerHTML = '<div style="font-size:40px; margin-bottom:20px;">🤖</div><div style="font-size:18px; color:#333; font-weight:bold;">AI 正在生成新考題...</div>';
+            document.body.appendChild(overlay);
+
+            setTimeout(async () => {
+                const genBtn = document.getElementById('genWritingTask');
+                if(genBtn) {
+                    await generateWritingTask();
+                    
+                    // Remove overlay
+                    const ol = document.getElementById('loadingOverlay');
+                    if(ol) ol.remove();
+
+                    // Show notification
+                    const notif = document.createElement('div');
+                    notif.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#fff; border-left:4px solid #7c3aed; padding:15px; box-shadow:0 4px 6px rgba(0,0,0,0.1); border-radius:4px; z-index:10000; animation: slideIn 0.3s ease-out;';
+                    notif.innerHTML = '<strong>✨ 考題生成完畢！</strong><br>您可以點擊「AI 逐步引導」來輔助寫作。';
+                    document.body.appendChild(notif);
+                    
+                    // Auto-hide notification after 5 seconds
+                    setTimeout(() => notif.remove(), 5000);
+
+                    // Clean up URL to prevent auto-gen on next simple refresh
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.delete('autogen');
+                    window.history.replaceState({}, '', newUrl.toString());
+                }
+            }, 800);
+        }
+    });
+  </script>
+</body>
+</html>
