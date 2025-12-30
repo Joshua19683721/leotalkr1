@@ -85,6 +85,9 @@
                         <button id="startCamBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition">
                             開啟鏡頭
                         </button>
+                        <button id="switchCamBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition hidden">
+                            切換鏡頭
+                        </button>
                         <button id="startLoopBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                             開始自動循環分析 (每30秒)
                         </button>
@@ -189,6 +192,7 @@
         const hiddenCanvas = document.getElementById('hiddenCanvas');
         const webcamVideo = document.getElementById('webcamVideo');
         const startCamBtn = document.getElementById('startCamBtn');
+        const switchCamBtn = document.getElementById('switchCamBtn');
         const startLoopBtn = document.getElementById('startLoopBtn');
         const stopLoopBtn = document.getElementById('stopLoopBtn');
         const cameraStatus = document.getElementById('cameraStatus');
@@ -262,16 +266,56 @@
         analyzeBtn.addEventListener('click', startAnalysis);
 
         // Webcam Logic
-        startCamBtn.addEventListener('click', async () => {
+        let currentStream = null;
+        let videoDevices = [];
+        let currentDeviceIndex = 0;
+
+        async function startCamera(deviceId = null) {
+            // Stop current stream if any
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                video: deviceId 
+                    ? { deviceId: { exact: deviceId } } 
+                    : { facingMode: { ideal: "environment" } }
+            };
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentStream = stream;
                 webcamVideo.srcObject = stream;
+                
                 startCamBtn.classList.add('hidden');
                 startLoopBtn.disabled = false;
+
+                // Enumerate devices to enable switching
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length > 1) {
+                    switchCamBtn.classList.remove('hidden');
+                    // Update index based on current active device
+                    const currentTrack = stream.getVideoTracks()[0];
+                    const currentDeviceId = currentTrack.getSettings().deviceId;
+                    currentDeviceIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+                    if (currentDeviceIndex === -1) currentDeviceIndex = 0;
+                }
             } catch (err) {
                 console.error("Error accessing webcam:", err);
                 alert("無法存取攝影機，請檢查權限設定。");
             }
+        }
+
+        startCamBtn.addEventListener('click', async () => {
+            await startCamera();
+        });
+
+        switchCamBtn.addEventListener('click', async () => {
+            if (videoDevices.length < 2) return;
+            currentDeviceIndex = (currentDeviceIndex + 1) % videoDevices.length;
+            await startCamera(videoDevices[currentDeviceIndex].deviceId);
         });
 
         startLoopBtn.addEventListener('click', () => {
