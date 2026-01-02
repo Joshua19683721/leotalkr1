@@ -274,44 +274,83 @@
         let currentDeviceIndex = 0;
 
         async function startCamera(deviceId = null) {
-            // Stop current stream if any
+            // Check support
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("您的瀏覽器不支援攝影機存取，或因連線不安全 (非 HTTPS) 而被封鎖。\n\n如果您是透過 IP (如 192.168.x.x) 測試，請改用 localhost 或部署至 GitHub Pages (HTTPS)。");
+                return;
+            }
+
+            // Stop current stream
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
             }
 
-            const constraints = {
-                video: deviceId 
-                    ? { deviceId: { exact: deviceId } } 
-                    : { facingMode: { ideal: "environment" } }
+            // Helper to try getting stream
+            const getStream = async (constraints) => {
+                try {
+                    return await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (e) {
+                    console.warn("Constraint failed:", constraints, e);
+                    return null;
+                }
             };
 
+            let stream = null;
+
+            // 1. Try specific device if requested
+            if (deviceId) {
+                stream = await getStream({ video: { deviceId: { exact: deviceId } } });
+            }
+            
+            // 2. If no specific device or it failed, try "environment" (rear camera)
+            if (!stream && !deviceId) {
+                stream = await getStream({ video: { facingMode: { ideal: "environment" } } });
+            }
+
+            // 3. If "environment" failed (or not requested), try ANY video camera (fallback)
+            if (!stream) {
+                stream = await getStream({ video: true });
+            }
+
+            if (!stream) {
+                console.error("All camera attempts failed.");
+                alert("無法啟動攝影機。請確認：\n1. 已允許攝影機權限\n2. 網址為 localhost 或 HTTPS (安全連線)\n3. 設備上有可用的攝影機");
+                return;
+            }
+
+            // Success
             try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 currentStream = stream;
                 webcamVideo.srcObject = stream;
-                // Ensure video plays (important for some mobile browsers or if previously paused)
+                
+                // Important: play() must be called
                 webcamVideo.onloadedmetadata = () => {
                     webcamVideo.play().catch(e => console.error("Auto-play failed:", e));
                 };
-                
+
                 startCamBtn.classList.add('hidden');
                 startLoopBtn.disabled = false;
 
-                // Enumerate devices to enable switching
+                // Enumerate devices
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 videoDevices = devices.filter(device => device.kind === 'videoinput');
                 
                 if (videoDevices.length > 1) {
                     switchCamBtn.classList.remove('hidden');
-                    // Update index based on current active device
+                    // Update index
                     const currentTrack = stream.getVideoTracks()[0];
-                    const currentDeviceId = currentTrack.getSettings().deviceId;
-                    currentDeviceIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
-                    if (currentDeviceIndex === -1) currentDeviceIndex = 0;
+                    const settings = currentTrack.getSettings();
+                    const currentDeviceId = settings.deviceId;
+                    
+                    // Update current index
+                    if (currentDeviceId) {
+                        currentDeviceIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+                        if (currentDeviceIndex === -1) currentDeviceIndex = 0;
+                    }
                 }
             } catch (err) {
-                console.error("Error accessing webcam:", err);
-                alert("無法存取攝影機，請檢查權限設定。");
+                console.error("Stream setup error:", err);
+                alert("攝影機串流設定失敗: " + err.message);
             }
         }
 
