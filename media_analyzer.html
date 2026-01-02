@@ -205,6 +205,8 @@
         let extractedFrames = []; // Array of base64 strings for analysis
         let autoLoopInterval = null;
         let countdownInterval = null;
+        let ttsQueue = [];
+        let ttsActive = false;
 
         // Load API Key from local storage
         const savedKey = localStorage.getItem('openrouter_api_key');
@@ -583,9 +585,6 @@
             analyzeBtn.disabled = true;
 
             try {
-                // If analyzing while previous speech is active, cancel it
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-
                 const model = document.getElementById('modelName').value;
                 
                 // Construct payload
@@ -720,14 +719,33 @@ Ensure the content is strictly KET A2 level and all Chinese text is in Tradition
         }
 
         function speakText(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Stop any previous speech
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US'; // Set to English
-                utterance.rate = 0.9; // Slightly slower for clarity
-                window.speechSynthesis.speak(utterance);
-            } else {
+            if (!('speechSynthesis' in window)) {
                 alert("您的瀏覽器不支援語音合成功能。");
+                return;
+            }
+            ttsQueue.push(text);
+            if (!ttsActive) {
+                const next = () => {
+                    if (ttsQueue.length === 0) {
+                        ttsActive = false;
+                        return;
+                    }
+                    ttsActive = true;
+                    const t = ttsQueue.shift();
+                    const utterance = new SpeechSynthesisUtterance(t);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;
+                    utterance.onend = () => {
+                        ttsActive = false;
+                        next();
+                    };
+                    utterance.onerror = () => {
+                        ttsActive = false;
+                        next();
+                    };
+                    window.speechSynthesis.speak(utterance);
+                };
+                next();
             }
         }
     </script>
