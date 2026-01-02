@@ -89,7 +89,7 @@
                             切換鏡頭
                         </button>
                         <button id="startLoopBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            開始自動循環分析 (每30秒)
+                            開始自動循環分析 (每15秒)
                         </button>
                         <button id="stopLoopBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition hidden">
                             停止循環
@@ -326,25 +326,28 @@
             stopLoopBtn.classList.remove('hidden');
             cameraStatus.classList.remove('hidden');
             countdownTimer.classList.remove('hidden');
-            
-            // Immediate capture first
+
+            // Apply power saving state immediately
+            if (powerSavingCheckbox.checked) {
+                webcamVideo.pause();
+            }
+
             captureAndAnalyze();
             
-            // Start interval
-            let timeLeft = 30;
+            let timeLeft = 15;
             timeLeftSpan.innerText = timeLeft;
             
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 timeLeftSpan.innerText = timeLeft;
-                if (timeLeft <= 0) timeLeft = 30;
+                if (timeLeft <= 0) timeLeft = 15;
             }, 1000);
 
             autoLoopInterval = setInterval(() => {
                 captureAndAnalyze();
-                timeLeft = 30;
+                timeLeft = 15;
                 timeLeftSpan.innerText = timeLeft;
-            }, 30000);
+            }, 15000);
         });
 
         stopLoopBtn.addEventListener('click', () => {
