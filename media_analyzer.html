@@ -289,6 +289,10 @@
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 currentStream = stream;
                 webcamVideo.srcObject = stream;
+                // Ensure video plays (important for some mobile browsers or if previously paused)
+                webcamVideo.onloadedmetadata = () => {
+                    webcamVideo.play().catch(e => console.error("Auto-play failed:", e));
+                };
                 
                 startCamBtn.classList.add('hidden');
                 startLoopBtn.disabled = false;
@@ -360,6 +364,11 @@
             clearInterval(countdownInterval);
             autoLoopInterval = null;
             countdownInterval = null;
+
+            // Resume video if it was paused by power saving
+            if (webcamVideo.paused) {
+                webcamVideo.play().catch(e => console.error("Resume failed:", e));
+            }
         });
 
         async function captureAndAnalyze() {
