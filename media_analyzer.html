@@ -207,6 +207,7 @@
         let countdownInterval = null;
         let ttsQueue = [];
         let ttsActive = false;
+        let currentUtterance = null; // Prevent GC issues
 
         // Load API Key from local storage
         const savedKey = localStorage.getItem('openrouter_api_key');
@@ -733,32 +734,40 @@ Ensure the content is strictly KET A2 level and all Chinese text is in Tradition
                 alert("您的瀏覽器不支援語音合成功能。");
                 return;
             }
+            if (!text) return;
 
             // Remove Chinese characters and Chinese punctuation to ensure only English is spoken
-            // \u4e00-\u9fa5: CJK Unified Ideographs (Common Chinese characters)
-            // \u3000-\u303f: CJK Symbols and Punctuation (e.g., 。, ，, 、)
-            // \uff00-\uffef: Halfwidth and Fullwidth Forms (e.g., fullwidth punctuation ！)
             const cleanText = text.replace(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/g, '').trim();
 
             if (!cleanText) return;
 
             ttsQueue.push(cleanText);
+
+            // Recovery check: if active but not speaking, force reset
+            if (ttsActive && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+                 ttsActive = false;
+            }
+
             if (!ttsActive) {
                 const next = () => {
                     if (ttsQueue.length === 0) {
                         ttsActive = false;
+                        currentUtterance = null;
                         return;
                     }
                     ttsActive = true;
                     const t = ttsQueue.shift();
                     const utterance = new SpeechSynthesisUtterance(t);
+                    currentUtterance = utterance; // Keep reference to prevent GC
+                    
                     utterance.lang = 'en-US';
                     utterance.rate = 0.9;
                     utterance.onend = () => {
                         ttsActive = false;
                         next();
                     };
-                    utterance.onerror = () => {
+                    utterance.onerror = (e) => {
+                        console.error("TTS Error:", e);
                         ttsActive = false;
                         next();
                     };
