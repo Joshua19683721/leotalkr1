@@ -650,8 +650,18 @@ Ensure the content is strictly KET A2 level and all Chinese text is in Tradition
                 const responseData = data.choices[0].message.content;
                 let parsedData;
                 try {
-                    // Try to parse JSON (sometimes models wrap in ```json ... ```)
-                    const jsonStr = responseData.replace(/```json/g, '').replace(/```/g, '').trim();
+                    // Improved JSON extraction: find the first '{' and last '}'
+                    const firstBrace = responseData.indexOf('{');
+                    const lastBrace = responseData.lastIndexOf('}');
+                    
+                    let jsonStr;
+                    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                         jsonStr = responseData.substring(firstBrace, lastBrace + 1);
+                    } else {
+                         // Fallback to basic cleaning if braces not found
+                         jsonStr = responseData.replace(/```json/g, '').replace(/```/g, '').trim();
+                    }
+                    
                     parsedData = JSON.parse(jsonStr);
                 } catch (e) {
                     console.error("JSON Parse Error", e);
@@ -723,7 +733,16 @@ Ensure the content is strictly KET A2 level and all Chinese text is in Tradition
                 alert("您的瀏覽器不支援語音合成功能。");
                 return;
             }
-            ttsQueue.push(text);
+
+            // Remove Chinese characters and Chinese punctuation to ensure only English is spoken
+            // \u4e00-\u9fa5: CJK Unified Ideographs (Common Chinese characters)
+            // \u3000-\u303f: CJK Symbols and Punctuation (e.g., 。, ，, 、)
+            // \uff00-\uffef: Halfwidth and Fullwidth Forms (e.g., fullwidth punctuation ！)
+            const cleanText = text.replace(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/g, '').trim();
+
+            if (!cleanText) return;
+
+            ttsQueue.push(cleanText);
             if (!ttsActive) {
                 const next = () => {
                     if (ttsQueue.length === 0) {
