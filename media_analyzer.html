@@ -597,10 +597,10 @@
   "english_sentence": "A simple KET A2 level English sentence (10-20 words) describing the image.",
   "chinese_translation": "The Traditional Chinese (繁體中文) translation of the above sentence.",
   "analysis": {
-    "vocabulary": "List key A2 vocabulary used (e.g. 'Park: a public garden'). Use Traditional Chinese for explanations.",
-    "grammar": "Explain the grammar point. Use Traditional Chinese for explanations.",
-    "scenario": "Describe the scenario/context suitable for KET speaking. Use Traditional Chinese.",
-    "tips": "One tip for KET exam preparation related to this image. Use Traditional Chinese."
+    "vocabulary": "List key A2 vocabulary used as a single string (e.g. 'Park: a public garden. Tree: a tall plant.'). Do NOT use nested objects.",
+    "grammar": "Explain the grammar point as a single string. Use Traditional Chinese for explanations.",
+    "scenario": "Describe the scenario as a single string. Use Traditional Chinese.",
+    "tips": "One tip as a single string. Use Traditional Chinese."
   }
 }
 Ensure the content is strictly KET A2 level and all Chinese text is in Traditional Chinese (繁體中文).`
@@ -664,14 +664,43 @@ Ensure the content is strictly KET A2 level and all Chinese text is in Tradition
                     }
                     
                     parsedData = JSON.parse(jsonStr);
+
+                    // Normalize analysis fields: ensure they are strings, not objects
+                    if (parsedData.analysis) {
+                        for (const key in parsedData.analysis) {
+                            const val = parsedData.analysis[key];
+                            if (typeof val === 'object' && val !== null) {
+                                // Convert object to string (e.g. join values or stringify)
+                                // If it's an array, join with newlines. If object, map to "Key: Value"
+                                if (Array.isArray(val)) {
+                                    parsedData.analysis[key] = val.join('\n');
+                                } else {
+                                    parsedData.analysis[key] = Object.entries(val).map(([k, v]) => `${k}: ${v}`).join('\n');
+                                }
+                            }
+                        }
+                    }
+
                 } catch (e) {
                     console.error("JSON Parse Error", e);
                     // Fallback if not JSON
+                    // Try to extract english sentence via Regex if JSON parse failed
+                    const engMatch = responseData.match(/"english_sentence":\s*"([^"]+)"/);
+                    const engSentence = engMatch ? engMatch[1] : (responseData.length > 200 ? "Analysis failed to parse." : responseData);
+
                     parsedData = {
-                        english_sentence: responseData,
-                        chinese_translation: "解析失敗，請重試。",
-                        analysis: { vocabulary: "", grammar: "", scenario: "", tips: "" }
+                        english_sentence: engSentence,
+                        chinese_translation: "解析格式錯誤，請查看下方原始資料。",
+                        analysis: { 
+                            vocabulary: "無法解析", 
+                            grammar: "無法解析", 
+                            scenario: "無法解析", 
+                            tips: "無法解析" 
+                        }
                     };
+                    
+                    // Show raw response for debugging in a collapsed details
+                    parsedData.chinese_translation += `<br><details><summary class="cursor-pointer text-blue-500">原始回覆 (Raw Response)</summary><pre class="text-xs whitespace-pre-wrap mt-2 text-gray-500">${responseData.replace(/</g, '&lt;')}</pre></details>`;
                 }
 
                 // Render UI
