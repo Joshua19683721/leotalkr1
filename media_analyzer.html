@@ -414,6 +414,7 @@
         }
 
         function resetState() {
+            clearTTS(); // Stop any ongoing speech immediately
             mediaItems = [];
             extractedFrames = [];
             mediaContainer.innerHTML = '';
