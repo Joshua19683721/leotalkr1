@@ -89,7 +89,7 @@
                             切換鏡頭
                         </button>
                         <button id="startLoopBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            開始自動循環分析 (每15秒)
+                            開始自動循環分析 (每30秒)
                         </button>
                         <button id="stopLoopBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition hidden">
                             停止循環
@@ -377,20 +377,20 @@
 
             captureAndAnalyze();
             
-            let timeLeft = 15;
+            let timeLeft = 30;
             timeLeftSpan.innerText = timeLeft;
             
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 timeLeftSpan.innerText = timeLeft;
-                if (timeLeft <= 0) timeLeft = 15;
+                if (timeLeft <= 0) timeLeft = 30;
             }, 1000);
 
             autoLoopInterval = setInterval(() => {
                 captureAndAnalyze();
-                timeLeft = 15;
+                timeLeft = 30;
                 timeLeftSpan.innerText = timeLeft;
-            }, 15000);
+            }, 30000);
         });
 
         stopLoopBtn.addEventListener('click', () => {
