@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手机Chrome调用USB Webcam</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #video-container {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+        select, button {
+            padding: 10px 15px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        #status {
+            margin-top: 15px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>USB Webcam 预览</h1>
+    <div>
+        <label for="camera-select">选择摄像头：</label>
+        <select id="camera-select"></select>
+        <button id="start-btn">开启摄像头</button>
+        <button id="stop-btn">关闭摄像头</button>
+    </div>
+    <div id="status">未连接摄像头</div>
+    <div id="video-container">
+        <video id="video-preview" autoplay playsinline></video>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const cameraSelect = document.getElementById('camera-select');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const videoPreview = document.getElementById('video-preview');
+        const statusText = document.getElementById('status');
+        
+        let mediaStream = null; // 存储摄像头流
+
+        // 第一步：检测并列出所有可用摄像头
+        async function getCameras() {
+            try {
+                // 获取所有媒体设备
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length === 0) {
+                    statusText.textContent = '未检测到任何摄像头';
+                    return;
+                }
+
+                // 清空下拉框，添加摄像头选项
+                cameraSelect.innerHTML = '';
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    // 显示设备名称（外接摄像头通常会显示设备型号）
+                    option.textContent = device.label || `摄像头 ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+                statusText.textContent = `检测到 ${videoDevices.length} 个摄像头`;
+            } catch (error) {
+                statusText.textContent = `获取摄像头失败：${error.message}`;
+                console.error(error);
+            }
+        }
+
+        // 第二步：开启选中的摄像头
+        async function startCamera() {
+            if (mediaStream) {
+                stopCamera(); // 先关闭已有流
+            }
+
+            const deviceId = cameraSelect.value;
+            const constraints = {
+                video: {
+                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false // 关闭麦克风，仅预览视频
+            };
+
+            try {
+                // 核心API：获取媒体流（需用户授权）
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoPreview.srcObject = mediaStream;
+                statusText.textContent = '摄像头已开启';
+            } catch (error) {
+                statusText.textContent = `开启摄像头失败：${error.message}`;
+                console.error(error);
+            }
+        }
+
+        // 第三步：关闭摄像头
+        function stopCamera() {
+            if (mediaStream) {
+                // 停止所有轨道
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+                videoPreview.srcObject = null;
+                statusText.textContent = '摄像头已关闭';
+            }
+        }
+
+        // 页面加载后自动检测摄像头
+        window.addEventListener('DOMContentLoaded', () => {
+            // 先请求权限（必须用户交互触发，这里绑定按钮点击）
+            startBtn.addEventListener('click', startCamera);
+            stopBtn.addEventListener('click', stopCamera);
+            
+            // 检测摄像头（首次需用户授权后才能看到设备列表）
+            getCameras();
+        });
+    </script>
+</body>
+</html>
