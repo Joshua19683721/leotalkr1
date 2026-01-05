@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>手机Chrome调用Type-C Webcam</title>
+    <title>realme GT Neo3 调用Type-C摄像头</title>
     <style>
-        body {
-            margin: 20px;
-            font-family: Arial, sans-serif;
-        }
+        body { margin: 20px; font-family: Arial, sans-serif; }
         #video-container {
             margin-top: 20px;
             width: 100%;
@@ -17,39 +14,43 @@
             border-radius: 8px;
             overflow: hidden;
         }
-        video {
-            width: 100%;
-            height: auto;
-        }
+        video { width: 100%; height: auto; }
         select, button {
             padding: 10px 15px;
             font-size: 16px;
             margin-right: 10px;
             margin-bottom: 10px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
+        button:hover { background: #0052a3; }
         #status {
             margin-top: 15px;
             color: #666;
-            white-space: pre-wrap; /* 显示换行的设备信息 */
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <h1>Type-C Webcam 预览</h1>
+    <h1>u-ta M9 摄像头预览（realme GT Neo3专用）</h1>
     <div>
         <label for="camera-select">选择摄像头：</label>
         <select id="camera-select"></select>
-        <button id="rescan-btn">重新扫描设备</button>
+        <button id="rescan-btn">重新扫描UVC设备</button>
         <button id="start-btn">开启摄像头</button>
         <button id="stop-btn">关闭摄像头</button>
     </div>
-    <div id="status">未连接摄像头</div>
+    <div id="status">未连接设备，请先完成系统设置</div>
     <div id="video-container">
-        <video id="video-preview" autoplay playsinline></video>
+        <video id="video-preview" autoplay playsinline muted></video>
     </div>
 
     <script>
-        // 获取DOM元素
         const cameraSelect = document.getElementById('camera-select');
         const rescanBtn = document.getElementById('rescan-btn');
         const startBtn = document.getElementById('start-btn');
@@ -57,80 +58,84 @@
         const videoPreview = document.getElementById('video-preview');
         const statusText = document.getElementById('status');
         
-        let mediaStream = null; // 存储摄像头流
+        let mediaStream = null;
 
-        // 核心函数：扫描并列出所有视频设备（含USB摄像头）
-        async function scanDevices() {
+        // 针对realme机型优化：强制扫描UVC协议设备
+        async function scanUVCDevices() {
+            statusText.textContent = "正在扫描UVC设备...\n请稍候";
             try {
-                // 关键：先请求临时的媒体流权限（强制系统刷新设备列表）
+                // 1. 强制重置媒体设备权限（解决realme缓存问题）
+                navigator.mediaDevices.ondevicechange = () => scanUVCDevices();
+                
+                // 2. 临时请求流（触发realme系统扫描UVC设备）
                 let tempStream = null;
                 try {
-                    // 先请求任意摄像头权限，触发系统扫描所有设备
-                    tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    // 放宽约束：适配realme对UVC设备的识别
+                    tempStream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            mandatory: { minWidth: 1, minHeight: 1 }, // 最低分辨率
+                            optional: [{ sourceId: '' }] // 不限制设备ID
+                        },
+                        audio: false
+                    });
                 } catch (err) {
-                    statusText.textContent = `权限请求失败：${err.message}\n请确保已授予摄像头权限`;
+                    statusText.textContent = `权限请求失败：${err.message}\n请检查Chrome权限（设置→应用→Chrome→权限）`;
                     return;
                 } finally {
-                    // 关闭临时流（仅用于触发设备扫描）
-                    if (tempStream) {
-                        tempStream.getTracks().forEach(track => track.stop());
-                    }
+                    if (tempStream) tempStream.getTracks().forEach(track => track.stop());
                 }
 
-                // 枚举所有媒体设备
+                // 3. 枚举所有设备（重点打印UVC相关信息）
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
                 
-                // 打印详细设备信息（方便排查）
-                let deviceLog = `检测到 ${videoDevices.length} 个视频设备：\n`;
-                videoDevices.forEach((device, index) => {
-                    deviceLog += `[${index+1}] ID: ${device.deviceId}\n   名称: ${device.label || '未知设备'}\n`;
+                let log = `✅ realme GT Neo3 扫描结果：\n检测到 ${videoDevices.length} 个视频设备：\n`;
+                videoDevices.forEach((d, i) => {
+                    // 标记UVC设备（u-ta M9会显示UVC Camera/USB Video）
+                    const isUVC = d.label.includes('UVC') || d.label.includes('USB') || d.label.includes('M9');
+                    log += `[${i+1}] ${isUVC ? '🔌 外接UVC设备' : '📱 手机自带'} \n   ID: ${d.deviceId}\n   名称: ${d.label || 'u-ta M9（未知名称）'}\n`;
                 });
-                statusText.textContent = deviceLog;
+                statusText.textContent = log;
 
-                // 清空并添加下拉选项
+                // 4. 填充下拉框（优先标注UVC设备）
                 cameraSelect.innerHTML = '';
                 if (videoDevices.length === 0) {
-                    const option = document.createElement('option');
-                    option.textContent = '无可用摄像头';
-                    cameraSelect.appendChild(option);
+                    cameraSelect.innerHTML = '<option>无可用设备</option>';
                     return;
                 }
-
-                videoDevices.forEach((device, index) => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    // 优先显示设备标签，无则显示序号
-                    option.textContent = device.label || `视频设备 ${index + 1}`;
-                    cameraSelect.appendChild(option);
+                videoDevices.forEach((d, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = d.deviceId;
+                    const isUVC = d.label.includes('UVC') || d.label.includes('USB');
+                    opt.textContent = isUVC ? `🔌 外接摄像头 (${d.label || 'u-ta M9'})` : `📱 手机摄像头 ${i+1}`;
+                    cameraSelect.appendChild(opt);
                 });
 
             } catch (error) {
-                statusText.textContent = `扫描设备失败：${error.message}`;
-                console.error('设备扫描错误：', error);
+                statusText.textContent = `扫描失败：${error.message}\n请检查OTG和开发者选项`;
+                console.error(error);
             }
         }
 
-        // 开启选中的摄像头
-        async function startCamera() {
-            if (mediaStream) {
-                stopCamera(); // 先关闭已有流
-            }
+        // 开启u-ta M9摄像头（适配realme的约束）
+        async function startUVCamera() {
+            if (mediaStream) stopCamera();
 
             const deviceId = cameraSelect.value;
-            if (!deviceId || deviceId === '') {
-                statusText.textContent = statusText.textContent + '\n错误：未选择有效设备';
+            if (!deviceId) {
+                statusText.textContent += '\n❌ 未选择设备';
                 return;
             }
 
-            // 配置媒体约束（适配USB摄像头）
+            // 针对u-ta M9和realme的优化约束
             const constraints = {
                 video: {
-                    deviceId: { exact: deviceId }, // 强制指定外接设备ID
-                    width: { ideal: 640, max: 1280 }, // 降低分辨率提升兼容性
-                    height: { ideal: 480, max: 720 },
-                    frameRate: { ideal: 15, max: 30 }, // 降低帧率减少卡顿
-                    facingMode: 'user' // 取消朝向限制（USB摄像头无前后置概念）
+                    deviceId: { exact: deviceId },
+                    width: { ideal: 640, max: 640 }, // M9默认分辨率640x480
+                    height: { ideal: 480, max: 480 },
+                    frameRate: { ideal: 15, max: 15 }, // 降低帧率适配realme
+                    facingMode: undefined, // 彻底移除朝向限制（关键）
+                    aspectRatio: 4/3 // M9的默认比例
                 },
                 audio: false
             };
@@ -138,32 +143,30 @@
             try {
                 mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoPreview.srcObject = mediaStream;
-                statusText.textContent = statusText.textContent + '\n✅ 已成功开启选中的摄像头';
+                statusText.textContent += '\n✅ u-ta M9摄像头已开启！';
             } catch (error) {
-                statusText.textContent = statusText.textContent + `\n❌ 开启失败：${error.message}`;
-                console.error('开启摄像头错误：', error);
+                statusText.textContent += `\n❌ 开启失败：${error.message}\n提示：realme系统需开启开发者选项`;
+                console.error(error);
             }
         }
 
-        // 关闭摄像头
         function stopCamera() {
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
                 videoPreview.srcObject = null;
-                statusText.textContent = statusText.textContent + '\n🔴 已关闭摄像头';
+                statusText.textContent += '\n🔴 摄像头已关闭';
             }
         }
 
-        // 页面加载后初始化
+        // 初始化（适配realme首次加载）
         window.addEventListener('DOMContentLoaded', () => {
-            // 绑定按钮事件
-            rescanBtn.addEventListener('click', scanDevices); // 手动重新扫描
-            startBtn.addEventListener('click', startCamera);
+            rescanBtn.addEventListener('click', scanUVCDevices);
+            startBtn.addEventListener('click', startUVCamera);
             stopBtn.addEventListener('click', stopCamera);
             
-            // 首次自动扫描（但首次需用户交互后才能获取完整列表）
-            scanDevices();
+            // 延迟扫描（等realme系统加载USB驱动）
+            setTimeout(scanUVCDevices, 1000);
         });
     </script>
 </body>
