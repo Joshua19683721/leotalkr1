@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>手机Chrome调用USB Webcam</title>
+    <title>手机Chrome调用Type-C Webcam</title>
     <style>
         body {
             margin: 20px;
@@ -25,18 +25,21 @@
             padding: 10px 15px;
             font-size: 16px;
             margin-right: 10px;
+            margin-bottom: 10px;
         }
         #status {
             margin-top: 15px;
             color: #666;
+            white-space: pre-wrap; /* 显示换行的设备信息 */
         }
     </style>
 </head>
 <body>
-    <h1>USB Webcam 预览</h1>
+    <h1>Type-C Webcam 预览</h1>
     <div>
         <label for="camera-select">选择摄像头：</label>
         <select id="camera-select"></select>
+        <button id="rescan-btn">重新扫描设备</button>
         <button id="start-btn">开启摄像头</button>
         <button id="stop-btn">关闭摄像头</button>
     </div>
@@ -48,6 +51,7 @@
     <script>
         // 获取DOM元素
         const cameraSelect = document.getElementById('camera-select');
+        const rescanBtn = document.getElementById('rescan-btn');
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const videoPreview = document.getElementById('video-preview');
@@ -55,80 +59,111 @@
         
         let mediaStream = null; // 存储摄像头流
 
-        // 第一步：检测并列出所有可用摄像头
-        async function getCameras() {
+        // 核心函数：扫描并列出所有视频设备（含USB摄像头）
+        async function scanDevices() {
             try {
-                // 获取所有媒体设备
+                // 关键：先请求临时的媒体流权限（强制系统刷新设备列表）
+                let tempStream = null;
+                try {
+                    // 先请求任意摄像头权限，触发系统扫描所有设备
+                    tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                } catch (err) {
+                    statusText.textContent = `权限请求失败：${err.message}\n请确保已授予摄像头权限`;
+                    return;
+                } finally {
+                    // 关闭临时流（仅用于触发设备扫描）
+                    if (tempStream) {
+                        tempStream.getTracks().forEach(track => track.stop());
+                    }
+                }
+
+                // 枚举所有媒体设备
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(device => device.kind === 'videoinput');
                 
+                // 打印详细设备信息（方便排查）
+                let deviceLog = `检测到 ${videoDevices.length} 个视频设备：\n`;
+                videoDevices.forEach((device, index) => {
+                    deviceLog += `[${index+1}] ID: ${device.deviceId}\n   名称: ${device.label || '未知设备'}\n`;
+                });
+                statusText.textContent = deviceLog;
+
+                // 清空并添加下拉选项
+                cameraSelect.innerHTML = '';
                 if (videoDevices.length === 0) {
-                    statusText.textContent = '未检测到任何摄像头';
+                    const option = document.createElement('option');
+                    option.textContent = '无可用摄像头';
+                    cameraSelect.appendChild(option);
                     return;
                 }
 
-                // 清空下拉框，添加摄像头选项
-                cameraSelect.innerHTML = '';
                 videoDevices.forEach((device, index) => {
                     const option = document.createElement('option');
                     option.value = device.deviceId;
-                    // 显示设备名称（外接摄像头通常会显示设备型号）
-                    option.textContent = device.label || `摄像头 ${index + 1}`;
+                    // 优先显示设备标签，无则显示序号
+                    option.textContent = device.label || `视频设备 ${index + 1}`;
                     cameraSelect.appendChild(option);
                 });
-                statusText.textContent = `检测到 ${videoDevices.length} 个摄像头`;
+
             } catch (error) {
-                statusText.textContent = `获取摄像头失败：${error.message}`;
-                console.error(error);
+                statusText.textContent = `扫描设备失败：${error.message}`;
+                console.error('设备扫描错误：', error);
             }
         }
 
-        // 第二步：开启选中的摄像头
+        // 开启选中的摄像头
         async function startCamera() {
             if (mediaStream) {
                 stopCamera(); // 先关闭已有流
             }
 
             const deviceId = cameraSelect.value;
+            if (!deviceId || deviceId === '') {
+                statusText.textContent = statusText.textContent + '\n错误：未选择有效设备';
+                return;
+            }
+
+            // 配置媒体约束（适配USB摄像头）
             const constraints = {
                 video: {
-                    deviceId: deviceId ? { exact: deviceId } : undefined,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    deviceId: { exact: deviceId }, // 强制指定外接设备ID
+                    width: { ideal: 640, max: 1280 }, // 降低分辨率提升兼容性
+                    height: { ideal: 480, max: 720 },
+                    frameRate: { ideal: 15, max: 30 }, // 降低帧率减少卡顿
+                    facingMode: 'user' // 取消朝向限制（USB摄像头无前后置概念）
                 },
-                audio: false // 关闭麦克风，仅预览视频
+                audio: false
             };
 
             try {
-                // 核心API：获取媒体流（需用户授权）
                 mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoPreview.srcObject = mediaStream;
-                statusText.textContent = '摄像头已开启';
+                statusText.textContent = statusText.textContent + '\n✅ 已成功开启选中的摄像头';
             } catch (error) {
-                statusText.textContent = `开启摄像头失败：${error.message}`;
-                console.error(error);
+                statusText.textContent = statusText.textContent + `\n❌ 开启失败：${error.message}`;
+                console.error('开启摄像头错误：', error);
             }
         }
 
-        // 第三步：关闭摄像头
+        // 关闭摄像头
         function stopCamera() {
             if (mediaStream) {
-                // 停止所有轨道
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
                 videoPreview.srcObject = null;
-                statusText.textContent = '摄像头已关闭';
+                statusText.textContent = statusText.textContent + '\n🔴 已关闭摄像头';
             }
         }
 
-        // 页面加载后自动检测摄像头
+        // 页面加载后初始化
         window.addEventListener('DOMContentLoaded', () => {
-            // 先请求权限（必须用户交互触发，这里绑定按钮点击）
+            // 绑定按钮事件
+            rescanBtn.addEventListener('click', scanDevices); // 手动重新扫描
             startBtn.addEventListener('click', startCamera);
             stopBtn.addEventListener('click', stopCamera);
             
-            // 检测摄像头（首次需用户授权后才能看到设备列表）
-            getCameras();
+            // 首次自动扫描（但首次需用户交互后才能获取完整列表）
+            scanDevices();
         });
     </script>
 </body>
