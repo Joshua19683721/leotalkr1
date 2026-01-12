@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>40動詞新聞故事改寫器</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 20px auto; line-height: 1.6; }
+    #output { background: #f4f4f4; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    .verb-highlight { font-weight: bold; color: #d32f2f; text-decoration: underline; }
+    textarea { width: 100%; height: 120px; }
+    input, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+    button { padding: 10px 20px; cursor: pointer; background: #2196F3; color: white; border: none; border-radius: 8px; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    #newsPreview { display:none; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-top:12px; }
+    #newsMeta { display:flex; gap:12px; align-items:flex-start; }
+    #newsImgContainer { flex-shrink:0; width:120px; display:none; }
+    #newsImg { width:100%; border-radius:8px; object-fit:cover; }
+    #newsTitle { font-weight:700; color:#111827; margin-bottom:6px; }
+    #newsDesc { font-size:13px; color:#4b5563; line-height:1.5; }
+    #newsControls { margin-top:8px; display:flex; gap:10px; align-items:center; font-size:12px; }
+    #newsControls a { color:#0ea5e9; text-decoration:underline; }
+    #newsFull { display:none; margin-top:8px; white-space:pre-wrap; font-size:13px; color:#111827; line-height:1.65; }
+    #verbsBox { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px; }
+    #verbsRow { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    #verbsList { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .pill { display:inline-block; background:#eef2ff; color:#1f2937; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid #e5e7eb; }
+    .small { font-size:12px; color:#6b7280; }
+    .chunk { font-weight:700; padding:1px 6px; border-radius:999px; border:1px solid rgba(0,0,0,0.08); cursor:help; }
+    .g1 { background:#fee2e2; color:#7f1d1d; }
+    .g2 { background:#dbeafe; color:#1e3a8a; }
+    .g3 { background:#dcfce7; color:#14532d; }
+    .g4 { background:#fef9c3; color:#713f12; }
+    .section { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-top:12px; }
+    .en { font-size:15px; color:#111827; }
+    .zh { font-size:13px; color:#374151; margin-top:4px; }
+    .metaRow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:#374151; }
+    .metaRow a { color:#0ea5e9; text-decoration:underline; }
+    .analysisItem { padding:10px; border:1px solid #e5e7eb; border-radius:10px; margin-top:8px; }
+    .analysisTitle { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .enLine { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .enText { flex:1; min-width:0; }
+    .speakBtn { background:transparent; border:1px solid #e5e7eb; color:#111827; width:34px; height:34px; border-radius:10px; cursor:pointer; padding:0; flex:0 0 auto; }
+    .speakBtn:hover { background:#f3f4f6; }
+    .learnBox { margin-top:8px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
+    .learnItem { margin-top:6px; font-size:13px; color:#111827; line-height:1.55; }
+    .learnLabel { font-weight:800; }
+    #tooltip { position:fixed; display:none; z-index:9999; pointer-events:none; max-width:360px; background:#111827; color:#f9fafb; border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    #loading .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    #loading .status-text {
+      font-size: 28px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 10px;
+      animation: pulse 2s infinite;
+    }
+    #loading .sub-text {
+      font-size: 16px;
+      color: #4b5563;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+  </style>
+</head>
+<body>
+  <h2>📰 每日新聞 x 40基礎動詞改寫器 <span id="reloadBtn" style="font-size:24px; font-weight:bold; margin-left:12px; cursor:pointer; color:#6b7280; text-decoration:none;" onclick="triggerReloadWithAutoStart()">🔄 重新載入</span></h2>
+  <p>輸入你的 OpenRouter API Key 與新聞標題/內容：</p>
+
+  <div class="row">
+    <input type="password" id="apiKey" placeholder="在此輸入 OpenRouter API Key" autocomplete="off">
+    <button id="fetchNewsBtn" type="button" onclick="loadNewsFromRss()">🔍 RSS 抓取台灣新聞</button>
+    <div id="verbsBox">
+      <div style="font-weight:700; margin-bottom:8px;">🎯 亂數動詞練習</div>
+      <div id="verbsRow">
+        <label class="small">抽取數量</label>
+        <input id="verbCount" type="number" min="5" max="40" step="1" value="12" style="width:110px;">
+        <button id="shuffleVerbsBtn" type="button" onclick="shuffleSelectedVerbs()" style="background:#10b981;">🎲 重新抽取</button>
+        <label class="small">語速</label>
+        <input id="ttsRate" type="range" min="0.5" max="1.0" step="0.1" value="0.6" style="width:160px;">
+        <span id="ttsRateVal" class="small" style="min-width:28px;">0.6</span>
+        <span class="small">生成故事會強制使用抽到的動詞（用 <span style="font-weight:bold; color:#d97706;">顏色</span> 標註）</span>
+      </div>
+      <div id="verbsList"></div>
+    </div>
+    <div id="newsPreview">
+      <div style="font-weight:700; margin-bottom:8px;">📰 新聞素材來源</div>
+      <div id="newsMeta">
+        <div id="newsImgContainer"><img id="newsImg" alt=""></div>
+        <div>
+          <div id="newsTitle"></div>
+          <div id="newsDesc"></div>
+          <div id="newsControls">
+            <a id="newsLink" href="#" target="_blank" rel="noopener noreferrer">前往原文</a>
+            <button id="toggleFullBtn" type="button" style="background:#334155;">顯示全文</button>
+          </div>
+          <div id="newsFull"></div>
+        </div>
+      </div>
+    </div>
+    <textarea id="newsContent" placeholder="在此貼上新聞內容或輸入新聞連結..."></textarea>
+    <button id="rewriteBtn" onclick="rewriteNews()">生成改寫故事</button>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="status-text" id="loadingStatus">🚀 系統處理中...</div>
+    <div class="sub-text" id="loadingSub">請稍候，正在連接 AI 大腦...</div>
+  </div>
+  <div id="output">
+      <h3>改寫後的故事：</h3>
+      <div id="storyContent">（故事將顯示在此...）</div>
+    </div>
+
+    <div id="tooltip"></div>
+
+  <script>
+    const apiKeyEl = document.getElementById('apiKey');
+    const cfg = JSON.parse(localStorage.getItem('ket_cfg') || '{}');
+    if (cfg.key) apiKeyEl.value = cfg.key;
+
+    const apiBaseUrl = (cfg.base && String(cfg.base).trim()) || 'https://openrouter.ai/api';
+    const apiModel = (cfg.model && String(cfg.model).trim()) || 'xiaomi/mimo-v2-flash:free';
+    const ttsRateEl = document.getElementById('ttsRate');
+    const ttsRateValEl = document.getElementById('ttsRateVal');
+    if (cfg.rate) {
+      const r = Number(cfg.rate);
+      if (Number.isFinite(r)) ttsRateEl.value = String(r);
+    }
+    ttsRateValEl.textContent = ttsRateEl.value;
+    ttsRateEl.addEventListener('input', () => {
+      ttsRateValEl.textContent = ttsRateEl.value;
+      localStorage.setItem('ket_cfg', JSON.stringify({ ...(cfg || {}), key: apiKeyEl.value.trim(), base: apiBaseUrl, model: apiModel, rate: ttsRateEl.value }));
+      cfg.rate = ttsRateEl.value;
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatStory(markdownText) {
+      const escaped = escapeHtml(markdownText);
+      const withBold = escaped.replace(/\*\*(.*?)\*\*/g, '<span class="verb-highlight">$1</span>');
+      return withBold.replace(/\r?\n/g, '<br>');
+    }
+
+    const VERB_BANK = [
+      'get','take','make','do','put','look','keep','give','go','come',
+      'have','say','tell','know','think','feel','see','hear','want','need',
+      'leave','find','help','show','call','try','set','hold','bring','let',
+      'mean','become','happen','spend','cost','believe','wait','start','stop','use'
+    ];
+
+    function shuffleArray(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = a[i];
+        a[i] = a[j];
+        a[j] = t;
+      }
+      return a;
+    }
+
+    function getVerbCount() {
+      const n = parseInt(document.getElementById('verbCount').value, 10);
+      if (Number.isFinite(n)) return Math.min(40, Math.max(5, n));
+      return 12;
+    }
+
+    let selectedVerbs = [];
+
+    function renderSelectedVerbs() {
+      const box = document.getElementById('verbsList');
+      box.innerHTML = selectedVerbs.map(v => `<span class="pill">${escapeHtml(v)}</span>`).join('');
+    }
+
+    function shuffleSelectedVerbs() {
+      const count = getVerbCount();
+      selectedVerbs = shuffleArray(VERB_BANK).slice(0, count);
+      renderSelectedVerbs();
+    }
+
+    document.getElementById('verbCount').addEventListener('change', () => {
+      shuffleSelectedVerbs();
+    });
+    shuffleSelectedVerbs();
+
+    function analyzeBoldedVerbs(rawText) {
+      const matches = Array.from(String(rawText).matchAll(/\*\*([a-zA-Z]+)\*\*/g)).map(m => m[1].toLowerCase());
+      const used = new Set(matches);
+      const target = new Set(selectedVerbs.map(v => v.toLowerCase()));
+      const missing = selectedVerbs.filter(v => !used.has(v.toLowerCase()));
+      const extras = Array.from(used).filter(v => !target.has(v));
+      return { missing, extras, usedCount: used.size };
+    }
+
+    const VERB_GROUPS = [
+      { id: 1, name: '十大天王', cls: 'g1', verbs: new Set(['get','take','make','do','put','look','keep','give','go','come']) },
+      { id: 2, name: '社交與感官', cls: 'g2', verbs: new Set(['have','say','tell','know','think','feel','see','hear','want','need']) },
+      { id: 3, name: '動作與狀態', cls: 'g3', verbs: new Set(['leave','find','help','show','call','try','set','hold','bring','let']) },
+      { id: 4, name: '核心功能', cls: 'g4', verbs: new Set(['mean','become','happen','spend','cost','believe','wait','start','stop','use']) }
+    ];
+
+    function groupForVerb(verb) {
+      const v = String(verb || '').toLowerCase();
+      for (const g of VERB_GROUPS) if (g.verbs.has(v)) return g;
+      return { id: 0, name: '其他', cls: 'g4' };
+    }
+
+    function escapeRegExp(s) {
+      return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function highlightVerbsInText(text) {
+      const cleaned = String(text || '').replace(/\[|\]/g, '');
+      let escaped = escapeHtml(cleaned);
+      for (const verb of VERB_BANK) {
+        const re = new RegExp(`\\b${escapeRegExp(verb)}\\b`, 'gi');
+        escaped = escaped.replace(re, (m) => {
+          const g = groupForVerb(verb);
+          return `<span class="chunk ${g.cls}" data-verb="${escapeHtml(verb)}" data-chunk="${escapeHtml(verb)}">${m}</span>`;
+        });
+      }
+      return escaped;
+    }
+
+    function parseJSON(str) {
+      // 1. Try direct parse
+      try { return JSON.parse(str); } catch (_) {}
+
+      // 2. Try cleanup markdown
+      const clean = String(str).replace(/```json/gi, '').replace(/```/g, '').trim();
+      try { return JSON.parse(clean); } catch (_) {}
+
+      // 3. Try finding the outermost JSON object
+      const firstObj = clean.indexOf('{');
+      const lastObj = clean.lastIndexOf('}');
+      if (firstObj !== -1 && lastObj > firstObj) {
+        try { return JSON.parse(clean.slice(firstObj, lastObj + 1)); } catch (_) {}
+      }
+      
+      // 4. Try fixing common JSON issues (aggressive fallback)
+      try {
+        // Sometimes LLM uses single quotes for keys/values
+        // This is risky but helpful for simple cases
+        const fixed = clean.replace(/'/g, '"').replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+        return JSON.parse(fixed);
+      } catch (_) {}
+
+      // 5. Try truncating incomplete "podcast_zh" or "podcast_en" at the end
+      // This helps if max_tokens cut off the script
+      const keysToCheck = ['"podcast_zh"', '"podcast_en"'];
+      for (const key of keysToCheck) {
+        const idx = clean.lastIndexOf(key);
+        if (idx !== -1) {
+            const before = clean.slice(0, idx).trim();
+            const cleanBefore = before.replace(/,$/, '');
+            try {
+                return JSON.parse(cleanBefore + '}');
+            } catch (_) {}
+        }
+      }
+
+      throw new Error('無法解析 AI 回傳的資料格式');
+    }
+
+    function markChunksInSentence(sentence, chunks) {
+      // Clean up accidental markdown bolding first
+      let text = String(sentence || '').replace(/\*\*/g, '');
+      
+      const tokens = new Map();
+      const sorted = Array.isArray(chunks) ? chunks.slice() : [];
+      sorted.sort((a, b) => (String(b?.text || '').length - String(a?.text || '').length));
+
+      for (let i = 0; i < sorted.length; i++) {
+        const c = sorted[i];
+        const chunkText = String(c?.text || '').trim();
+        const verb = String(c?.verb || '').trim().toLowerCase();
+        if (!chunkText || !verb) continue;
+
+        const lower = text.toLowerCase();
+        const idx = lower.indexOf(chunkText.toLowerCase());
+        if (idx === -1) continue;
+
+        const token = `@@CHUNK_${i}_${Math.random().toString(16).slice(2)}@@`;
+        const g = groupForVerb(verb);
+        const spanHtml = `<span class="chunk ${g.cls}" data-verb="${escapeHtml(verb)}" data-chunk="${escapeHtml(chunkText)}">${escapeHtml(chunkText)}</span>`;
+        tokens.set(token, spanHtml);
+        text = text.slice(0, idx) + token + text.slice(idx + chunkText.length);
+      }
+
+      let escaped = escapeHtml(text);
+      for (const [token, html] of tokens.entries()) {
+        escaped = escaped.replace(token, html);
+      }
+      return escaped;
+    }
+
+    const tooltipEl = document.getElementById('tooltip');
+    let analysisIndex = new Map();
+    let grammarAnalysisIndex = new Map();
+    let currentChunkEl = null;
+
+    function buildAnalysisIndex(analysis) {
+      const map = new Map();
+      const arr = Array.isArray(analysis) ? analysis : [];
+      for (const it of arr) {
+        const chunk = String(it?.chunk || '').trim().toLowerCase();
+        const verb = String(it?.verb || '').trim().toLowerCase();
+        if (chunk && !map.has(`c:${chunk}`)) map.set(`c:${chunk}`, it);
+        if (verb && !map.has(`v:${verb}`)) map.set(`v:${verb}`, it);
+      }
+      return map;
+    }
+
+    function setTooltipPosition(x, y) {
+      const pad = 12;
+      const maxX = window.innerWidth - pad;
+      const maxY = window.innerHeight - pad;
+      const rect = tooltipEl.getBoundingClientRect();
+      const left = Math.min(x + pad, maxX - rect.width);
+      const top = Math.min(y + pad, maxY - rect.height);
+      tooltipEl.style.left = `${Math.max(pad, left)}px`;
+      tooltipEl.style.top = `${Math.max(pad, top)}px`;
+    }
+
+    function showTooltipForChunk(el, x, y) {
+      const chunk = String(el?.dataset?.chunk || '').trim();
+      const verb = String(el?.dataset?.verb || '').trim();
+      const it = analysisIndex.get(`c:${chunk.toLowerCase()}`) || analysisIndex.get(`v:${verb.toLowerCase()}`) || null;
+      const g = groupForVerb(verb);
+
+      const meaning = String(it?.meaning_zh || '').trim();
+      const why = String(it?.why_zh || '').trim();
+      const si = Number.isFinite(it?.sentence_index) ? (it.sentence_index + 1) : '';
+
+      const siText = si ? `句 ${si}` : '';
+      tooltipEl.innerHTML = `
+        <div class="tTitle">${escapeHtml(chunk || verb)}<span class="tBadge">${escapeHtml(g.name)}${siText ? ` · ${escapeHtml(siText)}` : ''}</span></div>
+        ${meaning ? `<div class="tRow"><span style="color:#fbbf24; font-weight:bold;">💡 意思：</span>${escapeHtml(meaning)}</div>` : ''}
+        ${why ? `<div class="tRow"><span style="color:#60a5fa; font-weight:bold;">🤔 用法：</span>${escapeHtml(why)}</div>` : ''}
+      `;
+      tooltipEl.style.display = 'block';
+      setTooltipPosition(x, y);
+    }
+
+    function showTooltipForGrammar(el, x, y) {
+      const idx = el.dataset.grammarIdx;
+      const it = grammarAnalysisIndex.get(idx);
+      if (!it) return;
+
+      const summary = it.zh || '';
+      const details = it.details_zh || '';
+      const examples = Array.isArray(it.examples) ? it.examples : [];
+
+      let exHtml = '';
+      if (examples.length) {
+        exHtml = `<div style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.2); padding-top:4px;">
+          <div style="font-weight:bold; font-size:11px; color:#a5f3fc;">範例：</div>
+          ${examples.map(e => `<div style="margin-top:2px;">• ${escapeHtml(e.en)} <span style="opacity:0.8">(${escapeHtml(e.zh)})</span></div>`).join('')}
+        </div>`;
+      }
+
+      tooltipEl.innerHTML = `
+        <div class="tTitle">📘 語法解析<span class="tBadge">句 ${Number(idx) + 1}</span></div>
+        <div class="tRow" style="font-weight:bold; color:#bfdbfe;">${escapeHtml(summary)}</div>
+        ${details ? `<div class="tRow">${escapeHtml(details)}</div>` : ''}
+        ${exHtml}
+      `;
+      tooltipEl.style.display = 'block';
+      setTooltipPosition(x, y);
+    }
+
+    function hideTooltip() {
+      tooltipEl.style.display = 'none';
+      currentChunkEl = null;
+    }
+
+    document.addEventListener('mouseover', (e) => {
+      const chunkEl = e.target?.closest?.('.chunk');
+      const grammarEl = e.target?.closest?.('.grammar-tag');
+      
+      if (chunkEl) {
+        currentChunkEl = chunkEl;
+        showTooltipForChunk(chunkEl, e.clientX, e.clientY);
+      } else if (grammarEl) {
+        currentChunkEl = grammarEl;
+        showTooltipForGrammar(grammarEl, e.clientX, e.clientY);
+      }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!currentChunkEl || tooltipEl.style.display === 'none') return;
+      setTooltipPosition(e.clientX, e.clientY);
+    });
+    
+    document.addEventListener('mouseout', (e) => {
+      if (!currentChunkEl) return;
+      const leavingChunk = e.target?.closest?.('.chunk');
+      const enteringChunk = e.relatedTarget?.closest?.('.chunk');
+      
+      const leavingGrammar = e.target?.closest?.('.grammar-tag');
+      const enteringGrammar = e.relatedTarget?.closest?.('.grammar-tag');
+
+      if ((leavingChunk && !enteringChunk) || (leavingGrammar && !enteringGrammar)) {
+        hideTooltip();
+      }
+    });
+
+    function speak(text) {
+      const t = String(text || '').trim();
+      if (!t) return;
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = 'en-US';
+      const r = Number(ttsRateEl.value);
+      u.rate = Number.isFinite(r) ? r : 0.6;
+      window.speechSynthesis.speak(u);
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target?.closest?.('.speakBtn');
+      if (!btn) return;
+      speak(btn.dataset.en || '');
+    });
+
+    function normalizeEnglish(s) {
+      let t = s.replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
+      t = t.replace(/，/g, ',').replace(/。/g, '.').replace(/！/g, '!').replace(/？/g, '?').replace(/；/g, ';').replace(/：/g, ':').replace(/（/g, '(').replace(/）/g, ')').replace(/「|」|『|』/g, '"');
+      t = t.replace(/[^\x00-\x7F]/g, '');
+      return t;
+    }
+
+    function setupTypingLogic() {
+      document.querySelectorAll('.typing-box').forEach(box => {
+        const target = box.dataset.target;
+        const id = box.dataset.id;
+        const displayEl = document.getElementById(id + '-display');
+        const inputEl = document.getElementById(id + '-input');
+        const msgEl = document.getElementById(id + '-msg');
+        if (!displayEl || !inputEl || !msgEl) return;
+
+        let loopTimer = null;
+        let isFocused = false;
+
+        const speakLoop = () => {
+             if (!isFocused) return;
+             if (!window.speechSynthesis) return;
+             
+             window.speechSynthesis.cancel();
+             const u = new SpeechSynthesisUtterance(target);
+             u.lang = 'en-US';
+             const r = Number(document.getElementById('ttsRate')?.value);
+             u.rate = Number.isFinite(r) ? r : 0.6;
+             
+             u.onend = () => {
+                if (isFocused) {
+                    loopTimer = setTimeout(speakLoop, 1500); // Wait 1.5s before repeating
+                }
+             };
+             u.onerror = () => {
+                 if (isFocused) {
+                    loopTimer = setTimeout(speakLoop, 2000);
+                 }
+             };
+             window.speechSynthesis.speak(u);
+        };
+
+        inputEl.addEventListener('focus', () => {
+            isFocused = true;
+            speakLoop();
+        });
+
+        inputEl.addEventListener('blur', () => {
+            isFocused = false;
+            if (loopTimer) clearTimeout(loopTimer);
+            window.speechSynthesis.cancel();
+        });
+
+        function renderDisplay(currentInput) {
+            let html = '';
+            for (let i = 0; i < target.length; i++) {
+                const char = target[i];
+                const inputChar = currentInput[i];
+                if (inputChar === undefined) {
+                    html += `<span style="color:#cbd5e1">${escapeHtml(char)}</span>`;
+                } else if (inputChar === char) {
+                    html += `<span style="color:#0f172a">${escapeHtml(char)}</span>`;
+                } else {
+                    html += `<span style="color:#fff; background:#ef4444; border-radius:2px;">${escapeHtml(char)}</span>`;
+                }
+            }
+            displayEl.innerHTML = html;
+        }
+        
+        renderDisplay('');
+
+        // Auto-resize
+        const resize = () => {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = inputEl.scrollHeight + 'px';
+            displayEl.style.height = inputEl.style.height;
+        };
+        inputEl.addEventListener('input', resize);
+        // Initial resize logic needs delay or content
+        
+        inputEl.oninput = () => {
+            const startPos = inputEl.selectionStart;
+            const rawVal = inputEl.value;
+            const valNorm = normalizeEnglish(rawVal);
+            if (valNorm !== rawVal) {
+                inputEl.value = valNorm;
+                inputEl.selectionStart = inputEl.selectionEnd = Math.min(valNorm.length, startPos);
+            }
+            const val = inputEl.value;
+            
+            let errorMsg = '';
+            for(let i=0; i<val.length; i++) {
+                if (i < target.length && val[i] !== target[i]) {
+                    errorMsg = `❌ 第 ${i+1} 個字錯誤`;
+                    break; 
+                }
+            }
+            
+            msgEl.textContent = errorMsg;
+            renderDisplay(val);
+            resize();
+            
+            if (val === target) {
+                 msgEl.innerHTML = '<span style="color:green">✅ 正確！Good job!</span>';
+            }
+        };
+      });
+    }
+
+    function renderBilingualResult(result) {
+      const output = document.getElementById('storyContent');
+      const src = String(result?.source_url || '').trim();
+      const title = String(result?.story_title || '').trim();
+      const sentences = Array.isArray(result?.sentences) ? result.sentences : [];
+      const analysis = Array.isArray(result?.verb_analysis) ? result.verb_analysis : [];
+      analysisIndex = buildAnalysisIndex(analysis);
+
+      const groupLegend = VERB_GROUPS.map(g => `<span class="pill ${g.cls}" style="background:transparent;">${escapeHtml(g.name)}</span>`).join('');
+      const srcHtml = src
+        ? `<div class="metaRow"><span>文章位址：</span><a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src)}</a></div>`
+        : `<div class="metaRow"><span>文章位址：</span><span class="small">（未提供來源）</span></div>`;
+
+      const titleHtml = title ? `<div style="font-weight:800; font-size:16px; margin-top:6px;">${escapeHtml(title)}</div>` : '';
+      
+      const podEn = String(result?.podcast_en || result?.podcast_script || '').trim();
+      const podZh = String(result?.podcast_zh || '').trim();
+      let podcastHtml = '';
+      
+      if (podEn) {
+        podcastHtml = `
+          <div class="section" style="background:#f0fdf4; border-color:#bbf7d0;">
+            <div style="font-weight:800; margin-bottom:8px; color:#15803d;">🎙️ AI 英文播客 (Podcast)</div>
+            <div style="font-size:14px; color:#166534; white-space:pre-wrap; max-height:200px; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.5); border-radius:8px;">${escapeHtml(podEn)}</div>
+            <div style="margin-top:10px; display:flex; gap:10px;">
+                <button id="playPodEnBtn" class="podBtn" data-text="${escapeHtml(podEn)}" data-lang="en-US" style="padding:8px 16px; background:#22c55e; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">▶️ 播放英文</button>
+                <button id="dlPodEnBtn" class="dlBtn" data-text="${escapeHtml(podEn)}" data-lang="en" style="padding:8px 16px; background:#fff; border:1px solid #22c55e; color:#22c55e; border-radius:6px; cursor:pointer; font-weight:bold;">⬇️ 下載 MP3</button>
+            </div>
+            
+            ${podZh ? `
+            <div style="margin-top:20px; border-top:1px dashed #bbf7d0; padding-top:12px;">
+                <div style="font-weight:800; margin-bottom:8px; color:#15803d;">🇹🇼 中文解說與翻譯</div>
+                <div style="font-size:14px; color:#14532d; white-space:pre-wrap; max-height:200px; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.5); border-radius:8px;">${escapeHtml(podZh)}</div>
+                <div style="margin-top:10px; display:flex; gap:10px;">
+                    <button id="playPodZhBtn" class="podBtn" data-text="${escapeHtml(podZh)}" data-lang="zh-TW" style="padding:8px 16px; background:#0ea5e9; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">▶️ 播放中文</button>
+                </div>
+            </div>
+            ` : ''}
+
+            <div id="podcastStatus" style="font-size:12px; margin-top:10px; color:#15803d; min-height:1.2em;"></div>
+          </div>
+        `;
+      }
+
+      const sentencesHtml = sentences.length
+        ? sentences.map((s, idx) => {
+            const en = String(s?.en || '').trim();
+            const zh = String(s?.zh || '').trim();
+            const chunks = Array.isArray(s?.chunks) ? s.chunks : [];
+            const skeleton = String(s?.skeleton || '').trim();
+            
+            // core_chunks: expect [{en:"...", zh:"..."}] or strings. normalize to objects
+            let coreChunksHtml = '';
+            if (Array.isArray(s?.core_chunks)) {
+              const items = s.core_chunks.map(item => {
+                if (typeof item === 'string') return highlightVerbsInText(item);
+                if (item && item.en) {
+                   return `${highlightVerbsInText(item.en)} <span class="small" style="color:#666">(${item.zh || ''})</span>`;
+                }
+                return '';
+              }).filter(Boolean);
+              if (items.length) coreChunksHtml = items.join(' / ');
+            }
+
+            // grammar_highlight: expect string or object. store in index if object
+            let grammarHtml = '';
+            if (s?.grammar_highlight) {
+               if (typeof s.grammar_highlight === 'string') {
+                 grammarHtml = highlightVerbsInText(s.grammar_highlight);
+               } else if (s.grammar_highlight.en) {
+                 // Store extended analysis
+                 const gId = String(idx);
+                 grammarAnalysisIndex.set(gId, s.grammar_highlight);
+                 
+                 // Render with hover trigger
+                 grammarHtml = `<span class="grammar-tag" data-grammar-idx="${gId}" style="border-bottom:1px dashed #3b82f6; cursor:help;">
+                   ${highlightVerbsInText(s.grammar_highlight.en)} 
+                   <span class="small" style="color:#666">(${s.grammar_highlight.zh || ''})</span>
+                   <span style="font-size:10px; color:#3b82f6; vertical-align:super;">ℹ️</span>
+                 </span>`;
+               }
+            }
+            
+            // life_sentence: expect string or {en:"...", zh:"..."}
+            let lifeHtml = '';
+            if (s?.life_sentence) {
+               if (typeof s.life_sentence === 'string') {
+                 lifeHtml = highlightVerbsInText(s.life_sentence);
+               } else if (s.life_sentence.en) {
+                 lifeHtml = `${highlightVerbsInText(s.life_sentence.en)} <br><span class="small" style="color:#666; display:inline-block; margin-top:2px;">${s.life_sentence.zh || ''}</span>`;
+               }
+            }
+
+            // visual_hint: expect string or {en:"...", zh:"..."}
+            let visualHtml = '';
+            if (s?.visual_hint) {
+               if (typeof s.visual_hint === 'string') {
+                 visualHtml = highlightVerbsInText(s.visual_hint);
+               } else if (s.visual_hint.en) {
+                 visualHtml = `${highlightVerbsInText(s.visual_hint.en)} <span class="small" style="color:#666">(${s.visual_hint.zh || ''})</span>`;
+               }
+            }
+
+            const enHtml = markChunksInSentence(en, chunks);
+            const learnParts = [
+              skeleton ? `<div class="learnItem"><span class="learnLabel">句子骨架：</span>${highlightVerbsInText(skeleton)}</div>` : '',
+              coreChunksHtml ? `<div class="learnItem"><span class="learnLabel">核心語塊：</span>${coreChunksHtml}</div>` : '',
+              grammarHtml ? `<div class="learnItem"><span class="learnLabel">語法亮點：</span>${grammarHtml}</div>` : '',
+              lifeHtml ? `<div class="learnItem"><span class="learnLabel">生活造句：</span>${lifeHtml}</div>` : '',
+              visualHtml ? `<div class="learnItem"><span class="learnLabel">視覺化建議：</span>${visualHtml}</div>` : ''
+            ].filter(Boolean).join('');
+            const safeEn = en.replace(/"/g, '&quot;');
+            return `<div class="analysisItem">
+              <div class="en enLine">
+                <div class="enText">${idx + 1}. ${enHtml}</div>
+                <button class="speakBtn" type="button" data-en="${safeEn}" title="朗讀">🔊</button>
+              </div>
+              <div class="zh">${escapeHtml(zh)}</div>
+              
+              <div class="typing-box" data-target="${safeEn}" data-id="tbox-${idx}" style="margin-top:10px; padding:10px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">
+                <div style="font-size:12px; color:#64748b; margin-bottom:4px;">⌨️ 聽寫/打字練習：</div>
+                <div style="position:relative; font-family:Consolas, Monaco, monospace; font-size:16px; line-height:1.6;">
+                    <div id="tbox-${idx}-display" style="pointer-events:none; white-space:pre-wrap; word-break:break-word; min-height:1.6em; color:#94a3b8;"></div>
+                    <textarea id="tbox-${idx}-input" spellcheck="false" autocomplete="off" 
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; background:transparent; border:none; color:transparent; caret-color:#000; resize:none; overflow:hidden; font-family:inherit; font-size:inherit; line-height:inherit; padding:0;"
+                        ></textarea>
+                </div>
+                <div id="tbox-${idx}-msg" style="font-size:12px; min-height:18px; margin-top:2px; color:#ef4444;"></div>
+              </div>
+
+              ${learnParts ? `<div class="learnBox">${learnParts}</div>` : ''}
+            </div>`;
+          }).join('')
+        : `<div class="small">（沒有逐句資料）</div>`;
+
+      output.innerHTML = `
+        <div class="section">
+          <div style="font-weight:800;">📍 來源與分組</div>
+          ${srcHtml}
+          ${titleHtml}
+          <div style="margin-top:8px;" class="metaRow"><span>顏色分組：</span>${groupLegend}</div>
+        </div>
+        ${podcastHtml}
+        <div class="section">
+          <div style="font-weight:800; margin-bottom:8px;">🧩 逐句翻譯＋動詞 Chunk</div>
+          <div class="small">把滑鼠移到彩色 chunk 上會顯示用法解析</div>
+          ${sentencesHtml}
+        </div>
+      `;
+      setupTypingLogic();
+
+      if (podEn || podZh) {
+        const statusEl = document.getElementById('podcastStatus');
+        let currentUtterance = null;
+        
+        // Unified Play Handler
+        document.querySelectorAll('.podBtn').forEach(btn => {
+            btn.onclick = () => {
+                if (!window.speechSynthesis) return;
+                
+                // If currently playing, stop it
+                if (currentUtterance) {
+                    window.speechSynthesis.cancel();
+                    currentUtterance = null;
+                    statusEl.textContent = '已停止播放';
+                    // Reset all button texts
+                    document.querySelectorAll('.podBtn').forEach(b => {
+                        b.textContent = b.textContent.replace('⏹️ 停止', '▶️ 播放');
+                    });
+                    
+                    // If clicked same button that was playing, just stop
+                    if (btn.classList.contains('playing')) {
+                        btn.classList.remove('playing');
+                        return;
+                    }
+                }
+
+                // Remove playing class from all
+                document.querySelectorAll('.podBtn').forEach(b => b.classList.remove('playing'));
+
+                // Start new
+                const text = btn.dataset.text;
+                const lang = btn.dataset.lang;
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang;
+                u.rate = 0.9;
+                
+                currentUtterance = u;
+                btn.classList.add('playing');
+                const originalText = btn.textContent;
+                btn.textContent = originalText.replace('▶️ 播放', '⏹️ 停止');
+                statusEl.textContent = '正在播放中...';
+                
+                u.onend = () => {
+                    currentUtterance = null;
+                    btn.classList.remove('playing');
+                    btn.textContent = originalText;
+                    statusEl.textContent = '播放結束';
+                };
+                
+                u.onerror = () => {
+                    currentUtterance = null;
+                    btn.classList.remove('playing');
+                    btn.textContent = originalText;
+                    statusEl.textContent = '播放發生錯誤';
+                };
+                
+                window.speechSynthesis.speak(u);
+            };
+        });
+
+        // Download Handler (Only for English for now as requested, but logic is generic)
+        const dlBtn = document.getElementById('dlPodEnBtn');
+        if (dlBtn) {
+            dlBtn.onclick = async () => {
+                if (dlBtn.disabled) return;
+                dlBtn.disabled = true;
+                const originalText = dlBtn.textContent;
+                const text = dlBtn.dataset.text;
+                
+                dlBtn.textContent = '⏳ 生成 MP3...';
+                statusEl.textContent = '正在準備音訊檔案...';
+                
+                try {
+                    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+                    const chunks = [];
+                    let currentChunk = '';
+                    
+                    for (const s of sentences) {
+                        if (currentChunk.length + s.length < 150) {
+                            currentChunk += s + ' ';
+                        } else {
+                            chunks.push(currentChunk);
+                            currentChunk = s + ' ';
+                        }
+                    }
+                    if (currentChunk) chunks.push(currentChunk);
+                    
+                    const audioBlobs = [];
+                    statusEl.textContent = `正在下載音訊片段 (0/${chunks.length})...`;
+                    
+                    for (let i = 0; i < chunks.length; i++) {
+                        const chunk = chunks[i];
+                        const encoded = encodeURIComponent(chunk.trim());
+                        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=en&client=tw-ob`;
+                        
+                        const res = await fetch(url);
+                        if (!res.ok) throw new Error(`Segment ${i+1} failed`);
+                        const blob = await res.blob();
+                        audioBlobs.push(blob);
+                        
+                        statusEl.textContent = `正在下載音訊片段 (${i+1}/${chunks.length})...`;
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                    
+                    const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
+                    const audioUrl = URL.createObjectURL(combinedBlob);
+                    const a = document.createElement('a');
+                    a.href = audioUrl;
+                    a.download = `podcast_en_${Date.now()}.mp3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(audioUrl);
+                    
+                    statusEl.textContent = '下載完成！';
+                } catch (e) {
+                    console.error(e);
+                    statusEl.innerHTML = `<span style="color:red">下載失敗 (可能是瀏覽器安全性阻擋)，請嘗試直接播放。</span>`;
+                } finally {
+                    dlBtn.disabled = false;
+                    dlBtn.textContent = originalText;
+                }
+            };
+        }
+      }
+    }
+
+    async function fetchTaiwanNews() {
+      const urls = [
+        'https://www.economist.com/latest/rss.xml',
+        'https://feeds.feedburner.com/ettoday/citizen',
+        'https://feeds.feedburner.com/ettoday/lifestyle',
+        'https://feeds.feedburner.com/ettoday/global',
+        'https://feeds.feedburner.com/ettoday/news',
+        'https://feeds.feedburner.com/ettoday/finance',
+        'https://feeds.feedburner.com/ettoday/travel',
+        'https://news.ltn.com.tw/rss/all.xml',
+        'https://news.pts.org.tw/xml/newsfeed.xml'
+      ];
+
+      const fetchWithTimeout = (url, ms = 5000) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), ms);
+        return fetch(url, { signal: controller.signal })
+          .then(res => {
+            clearTimeout(id);
+            return res.ok ? res.json() : null;
+          })
+          .catch(() => null);
+      };
+
+      let allItems = [];
+
+      try {
+        const requests = urls.map(url =>
+          fetchWithTimeout('https://api.allorigins.win/get?url=' + encodeURIComponent(url + '?_t=' + Date.now()), 5000)
+        );
+
+        const results = await Promise.all(requests);
+        const validResults = results.filter(r => r && r.contents);
+
+        if (validResults.length > 0) {
+          const parser = new DOMParser();
+          validResults.forEach(data => {
+            try {
+              const xml = parser.parseFromString(data.contents, 'text/xml');
+              const items = Array.from(xml.querySelectorAll('item'));
+              items.forEach(item => {
+                const title = item.querySelector('title')?.textContent.trim();
+                const pubDate = item.querySelector('pubDate')?.textContent;
+                const link = item.querySelector('link')?.textContent?.trim() || item.querySelector('guid')?.textContent?.trim() || '';
+
+                let img = item.querySelector('image')?.textContent.trim();
+                const enclosure = item.querySelector('enclosure');
+                if (!img && enclosure && enclosure.getAttribute('type')?.startsWith('image')) {
+                  img = enclosure.getAttribute('url');
+                }
+
+                let descHtml = item.querySelector('description')?.textContent || '';
+
+                if (!img && descHtml) {
+                  const div = document.createElement('div');
+                  div.innerHTML = descHtml;
+                  const imgEl = div.querySelector('img');
+                  if (imgEl) img = imgEl.src;
+                }
+
+                const div = document.createElement('div');
+                div.innerHTML = descHtml;
+                div.querySelectorAll('img, a').forEach(el => el.remove());
+                let descText = div.textContent.trim();
+                if (descText.length > 150) descText = descText.substring(0, 150) + '...';
+
+                if (title && title.length > 5) {
+                  allItems.push({
+                    title,
+                    img,
+                    desc: descText,
+                    date: pubDate ? new Date(pubDate) : new Date(0),
+                    link
+                  });
+                }
+              });
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+
+      if (allItems.length < 5) {
+        try {
+          const requests = urls.map(url =>
+            fetchWithTimeout('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url), 5000)
+          );
+          const results = await Promise.all(requests);
+          const validResults = results.filter(r => r && r.status === 'ok' && r.items);
+
+          validResults.forEach(data => {
+            data.items.forEach(item => {
+              const title = item.title;
+              const pubDate = item.pubDate;
+              const link = item.link;
+              let img = item.thumbnail;
+              let desc = item.description;
+
+              const div = document.createElement('div');
+              div.innerHTML = desc;
+              if (!img) {
+                const imgEl = div.querySelector('img');
+                if (imgEl) img = imgEl.src;
+              }
+              div.querySelectorAll('img, a').forEach(el => el.remove());
+              let descText = div.textContent.trim();
+              if (descText.length > 150) descText = descText.substring(0, 150) + '...';
+
+              if (title && title.length > 5) {
+                allItems.push({
+                  title,
+                  img,
+                  desc: descText,
+                  date: new Date(pubDate),
+                  link
+                });
+              }
+            });
+          });
+        } catch (e) {}
+      }
+
+      allItems.sort((a, b) => b.date - a.date);
+      if (allItems.length === 0) return null;
+
+      const top30 = allItems.slice(0, 30);
+      const withImg = top30.filter(n => n.img);
+
+      if (withImg.length > 0) {
+        const poolSize = Math.min(withImg.length, 10);
+        const randomIndex = Math.floor(Math.random() * poolSize);
+        return withImg[randomIndex];
+      }
+
+      const poolSize = Math.min(top30.length, 10);
+      return top30[Math.floor(Math.random() * poolSize)];
+    }
+
+    async function fetchFullArticle(url) {
+      if (!url) return null;
+      try {
+        const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url + '?_t=' + Date.now()));
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data || !data.contents) return null;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+
+        ['script', 'style', 'noscript', 'svg', 'footer', 'nav', 'aside'].forEach(tag => {
+          doc.querySelectorAll(tag).forEach(el => el.remove());
+        });
+
+        const candidates = Array.from(doc.querySelectorAll('article, main, [id*="content"], [class*="content"], [id*="article"], [class*="article"], [id*="story"], [class*="story"], [id*="news"], [class*="news"]'));
+        let bestNode = null;
+        let bestLen = 0;
+        const scoreNode = (node) => {
+          const ps = Array.from(node.querySelectorAll('p'));
+          const text = ps.map(p => p.textContent.trim()).join('\n');
+          return text.length;
+        };
+        candidates.forEach(node => {
+          const len = scoreNode(node);
+          if (len > bestLen) { bestLen = len; bestNode = node; }
+        });
+
+        let text = '';
+        if (bestNode) {
+          text = Array.from(bestNode.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => t).join('\n');
+        } else {
+          text = Array.from(doc.querySelectorAll('p')).map(p => p.textContent.trim()).filter(t => t).join('\n');
+        }
+        if (!text) return null;
+        if (text.length > 6000) text = text.slice(0, 6000) + '\n...';
+        return text;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function callLLM(messages, temperature = 0.7, max_tokens = 1800) {
+      const key = apiKeyEl.value.trim();
+      if (!key) throw new Error('請先設定 API Key');
+
+      function ep(u) {
+        const b = String(u).replace(/\/+$/, '');
+        if (/deepseek\.com/i.test(b)) return `${b}/chat/completions`;
+        if (/openrouter\.ai/i.test(b)) return /\/api$/i.test(b) ? `${b}/v1/chat/completions` : `${b}/api/v1/chat/completions`;
+        return `${b}/v1/chat/completions`;
+      }
+
+      const res = await fetch(ep(apiBaseUrl), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({ model: apiModel, temperature, max_tokens, messages, stream: true })
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`API Error ${res.status}: ${t}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+      let fullContent = '';
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); 
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              const content = data.choices?.[0]?.delta?.content || '';
+              fullContent += content;
+            } catch (e) {}
+          }
+        }
+      }
+      
+      // Process remaining buffer
+      if (buffer && buffer.trim().startsWith('data: ')) {
+         try {
+           const data = JSON.parse(buffer.trim().slice(6));
+           const content = data.choices?.[0]?.delta?.content || '';
+           fullContent += content;
+         } catch (e) {}
+      }
+
+      return fullContent.replace(/```json/g, '').replace(/```/g, '').trim();
+    }
+
+    function showLoading(status, sub = '') {
+      const el = document.getElementById('loading');
+      const s = document.getElementById('loadingStatus');
+      const b = document.getElementById('loadingSub');
+      if (status) {
+        el.style.display = 'flex'; // Use flex to center
+        s.textContent = status;
+        b.innerHTML = sub;
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    async function loadNewsFromRss(isAuto = false) {
+      const btn = document.getElementById('fetchNewsBtn');
+      const originalText = btn.textContent;
+      const newsContentEl = document.getElementById('newsContent');
+      const newsPreview = document.getElementById('newsPreview');
+      const newsImgContainer = document.getElementById('newsImgContainer');
+      const newsImg = document.getElementById('newsImg');
+      const newsTitle = document.getElementById('newsTitle');
+      const newsDesc = document.getElementById('newsDesc');
+      const newsLink = document.getElementById('newsLink');
+      const toggleFullBtn = document.getElementById('toggleFullBtn');
+      const newsFull = document.getElementById('newsFull');
+
+      if (isAuto) {
+         btn.textContent = '⏳ 自動執行中...';
+         showLoading('📰 正在抓取台灣新聞...', '正在連線至 RSS 來源並分析內容...');
+      } else {
+         btn.textContent = '讀取中...';
+      }
+
+      btn.disabled = true;
+      newsPreview.style.display = 'none';
+      newsFull.style.display = 'none';
+      newsFull.textContent = '';
+      toggleFullBtn.textContent = '顯示全文';
+
+      let newsTopic = null;
+      for (let i = 0; i < 2; i++) {
+        newsTopic = await fetchTaiwanNews();
+        if (newsTopic) break;
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      if (!newsTopic) {
+        alert('⚠️ 無法抓取到最新新聞，請檢查網路連線或稍後再試。');
+        btn.textContent = originalText;
+        btn.disabled = false;
+        if (isAuto) showLoading(false);
+        return null;
+      }
+
+      if (isAuto) {
+         showLoading('📰 正在抓取台灣新聞...', `成功取得：${newsTopic.title}<br>正在下載全文內容...`);
+      }
+
+      newsPreview.style.display = 'block';
+      newsTitle.textContent = newsTopic.title || '';
+      newsDesc.textContent = newsTopic.desc || '（無摘要內容）';
+      newsLink.href = newsTopic.link || '#';
+
+      if (newsTopic.img) {
+        newsImgContainer.style.display = 'block';
+        newsImg.src = newsTopic.img;
+      } else {
+        newsImgContainer.style.display = 'none';
+        newsImg.removeAttribute('src');
+      }
+
+      toggleFullBtn.disabled = true;
+      toggleFullBtn.textContent = '讀取全文中...';
+      const fullText = await fetchFullArticle(newsTopic.link);
+      newsFull.textContent = fullText || '（無法取得全文或來源不支援）';
+      toggleFullBtn.disabled = false;
+      toggleFullBtn.textContent = '顯示全文';
+
+      toggleFullBtn.onclick = () => {
+        const visible = newsFull.style.display !== 'none';
+        newsFull.style.display = visible ? 'none' : 'block';
+        toggleFullBtn.textContent = visible ? '顯示全文' : '隱藏全文';
+      };
+
+      const parts = [];
+      if (newsTopic.title) parts.push(newsTopic.title);
+      if (newsTopic.desc) parts.push(newsTopic.desc);
+      if (fullText) parts.push(fullText);
+      newsContentEl.value = parts.join('\n\n');
+
+      window.__lastNews = {
+        title: newsTopic.title || '',
+        desc: newsTopic.desc || '',
+        link: newsTopic.link || '',
+        fullText: fullText || ''
+      };
+
+      btn.textContent = originalText;
+      btn.disabled = false;
+      
+      // Keep loading on if auto, rewrite will take over
+      if (!isAuto) showLoading(false); 
+
+      return true; // Success
+    }
+
+    async function rewriteNews(isAuto = false) {
+      const content = document.getElementById('newsContent').value;
+      const output = document.getElementById('storyContent');
+      const btn = document.getElementById('rewriteBtn');
+
+      if (isAuto) {
+         showLoading('🚀 AI 正在改寫故事...', '正在使用 40 個基礎動詞重新編寫文章<br>並進行語法分析與翻譯...');
+      } else {
+         showLoading('✍️ 正在改寫中...', 'AI 正在努力創作，這可能需要 30-60 秒...');
+      }
+
+      const apiKey = apiKeyEl.value.trim();
+      if (!apiKey || !content.trim()) { alert('請輸入 Key 與內容'); showLoading(false); return; }
+
+      localStorage.setItem('ket_cfg', JSON.stringify({ ...(cfg || {}), key: apiKey, base: apiBaseUrl, model: apiModel, rate: ttsRateEl.value }));
+
+      btn.disabled = true;
+
+      if (!selectedVerbs.length) shuffleSelectedVerbs();
+      const verbList = selectedVerbs.join(', ');
+      const srcUrl = String(window.__lastNews?.link || '').trim();
+
+      const prompt =
+        'Return STRICT JSON only.\n' +
+        'Task: Rewrite the news into an A2-level English story, then translate each sentence into Traditional Chinese.\n' +
+        'You must use each of the target verbs at least once in the story.\n' +
+        'You must also mark verb chunks (verb + its object/complement OR common phrasal chunk) for learning.\n' +
+        'For each sentence, also provide learning notes (skeleton, core chunks, grammar highlight, life example, visual hint).\n' +
+        'Finally, create two "Podcast Scripts": one in English (podcast_en) and one in Chinese (podcast_zh).\n' +
+        'The English script should be a lively host explaining the story and key points.\n' +
+        'The Chinese script should be a translated version of the podcast with detailed explanations of the teaching points.\n' +
+        'Do not use square brackets like [verb] or [動詞].\n' +
+        '\n' +
+        `Target verbs (base form): ${verbList}\n` +
+        `Source URL (if any): ${srcUrl || 'N/A'}\n` +
+        '\n' +
+        'JSON schema:\n' +
+        '{\n' +
+        '  "source_url": "string",\n' +
+        '  "story_title": "string",\n' +
+        '  "selected_verbs": ["get", "..."],\n' +
+        '  "sentences": [\n' +
+        '    {\n' +
+        '      "en": "One sentence.",\n' +
+        '      "zh": "繁體中文翻譯。",\n' +
+        '      "chunks": [\n' +
+        '        {"text":"get a ticket","verb":"get"},\n' +
+        '        {"text":"take a bus","verb":"take"}\n' +
+        '      ]\n' +
+        '      ,\n' +
+        '      "skeleton": "S: ... / V: ... / O: ...",\n' +
+        '      "core_chunks": [\n' +
+        '        { "en": "get up", "zh": "起床" },\n' +
+        '        { "en": "go to school", "zh": "去上學" }\n' +
+        '      ],\n' +
+        '      "grammar_highlight": {\n' +
+        '        "en": "Past simple tense",\n' +
+        '        "zh": "過去簡單式",\n' +
+        '        "details_zh": "使用動詞過去式表示發生在過去的動作。",\n' +
+        '        "examples": [\n' +
+        '          { "en": "I walked home.", "zh": "我走路回家。" }\n' +
+        '        ]\n' +
+        '      },\n' +
+        '      "life_sentence": { "en": "I get up at 7.", "zh": "我七點起床。" },\n' +
+        '      "visual_hint": { "en": "Imagine a clock.", "zh": "想像一個時鐘。" }\n' +
+        '    }\n' +
+        '  ],\n' +
+        '  "verb_analysis": [\n' +
+        '    {\n' +
+        '      "chunk":"get a ticket",\n' +
+        '      "verb":"get",\n' +
+        '      "meaning_zh":"清楚的繁中翻譯",\n' +
+        '      "why_zh":"詳盡的用法解析 (1.文法結構 2.語境語氣 3.搭配詞 4.時態變化)",\n' +
+        '      "sentence_index": 0\n' +
+        '    }\n' +
+        '  ],\n' +
+        '  "podcast_en": "Full English podcast script...",\n' +
+        '  "podcast_zh": "Full Chinese podcast script..."\n' +
+        '}\n' +
+        '\n' +
+        'Rules:\n' +
+        '1) "sentences" must be 8-14 sentences.\n' +
+        '2) Each "chunks[].text" must appear EXACTLY in that sentence "en".\n' +
+        '3) Use only Traditional Chinese. In "why_zh", provide a VERY DETAILED explanation. Include: Grammatical structure (e.g. V+Prep+Obj), Context/Nuance (why this specific verb?), Tense/Voice analysis, and Common Collocations. Make it a rich learning resource.\n' +
+        '4) "life_sentence" must be a simple A2 English sentence with the same structure, plus a Chinese translation.\n' +
+        '5) "core_chunks" and "visual_hint" MUST include English content ("en") and its Chinese meaning ("zh").\n' +
+        '6) "grammar_highlight" MUST include "en", "zh" (summary), "details_zh" (extended usage tips), and "examples" (list of en/zh sentences).\n' +
+        '7) Do not include markdown code fences. Return ONLY the JSON object, no other text.\n' +
+        '8) Do NOT use markdown bolding (like **word**) in the "en" sentences. Use plain text only.\n' +
+        '9) Place "podcast_en" and "podcast_zh" AT THE END of the JSON object.\n' +
+        '   - "podcast_en": 300-500 words. Host explaining the story, key vocab, grammar. Friendly teacher persona.\n' +
+        '   - "podcast_zh": A complete Chinese version of the podcast content. It should translate what the host says and provide detailed explanations of the grammar/vocab points mentioned, suitable for a Chinese audience learning English.\n' +
+        '\n' +
+        `News content:\n${content}`;
+
+      let raw = '';
+      try {
+        raw = await callLLM([{ role: 'user', content: prompt }], 0.5, 10000);
+        const data = parseJSON(raw);
+        if (!data.source_url) data.source_url = srcUrl;
+        if (!Array.isArray(data.selected_verbs) || !data.selected_verbs.length) data.selected_verbs = selectedVerbs.slice();
+        renderBilingualResult(data);
+      } catch (error) {
+        console.error('Rewrite Error:', error);
+        let extraInfo = '';
+        if (error.message.includes('無法解析')) {
+           extraInfo = `<div style="margin-top:10px; padding:10px; background:#eee; font-family:monospace; font-size:12px; max-height:200px; overflow:auto;">
+             <strong>Raw Output (Partial):</strong><br>
+             ${escapeHtml(raw ? (raw.slice(0, 500) + '\n...\n' + raw.slice(-500)) : 'Empty')}
+           </div>`;
+        }
+        output.innerHTML = `<div style="color:red; padding:10px; border:1px solid red; background:#fff1f0;">
+          <strong>出錯了：</strong><br>${escapeHtml(error.message)}<br><br>
+          <small>請檢查 API Key、網路狀況，或打開 Console 查看詳細錯誤。</small>
+          ${extraInfo}
+        </div>`;
+      } finally {
+        showLoading(false);
+        btn.disabled = false;
+      }
+    }
+    function triggerReloadWithAutoStart() {
+      const url = new URL(location.href);
+      url.searchParams.set('v', Date.now());
+      url.searchParams.set('auto_start', '1');
+      location.href = url.toString();
+    }
+
+    // Auto-start logic on page load
+    window.addEventListener('load', async () => {
+       const params = new URLSearchParams(location.search);
+       if (params.get('auto_start') === '1') {
+         // Wait for UI init
+         await new Promise(r => setTimeout(r, 500));
+         
+         const apiKey = apiKeyEl.value.trim();
+         if (!apiKey) {
+           alert('請先輸入 API Key 才能自動執行。');
+           return;
+         }
+
+         // Step 1: Fetch News
+         const success = await loadNewsFromRss(true);
+         if (!success) return;
+
+         // Step 2: Rewrite
+         await rewriteNews(true);
+       }
+    });
+  </script>
+</body>
+</html>
