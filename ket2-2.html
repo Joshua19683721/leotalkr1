@@ -47,6 +47,14 @@
     .learnItem { margin-top:6px; font-size:13px; color:#111827; line-height:1.55; }
     .learnLabel { font-weight:800; }
     #tooltip { position:fixed; display:none; z-index:9999; pointer-events:none; max-width:360px; background:#111827; color:#f9fafb; border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+    
+    /* New Podcast Styles */
+    .pod-seg { cursor: help; padding: 2px 4px; border-radius: 4px; transition: background 0.2s; display:inline; }
+    .pod-seg:hover { background: #e0f2fe; }
+    .pod-seg.active { background: #bae6fd; box-shadow: 0 0 0 2px #3b82f6; }
+    .pod-zh-seg { display:block; padding:2px 4px; border-radius:4px; transition:background 0.2s; }
+    .pod-zh-seg.active { background:#e0f2fe; }
+
     #loading {
       position: fixed;
       top: 0;
@@ -138,7 +146,13 @@
 
   <script>
     const apiKeyEl = document.getElementById('apiKey');
-    const cfg = JSON.parse(localStorage.getItem('ket_cfg') || '{}');
+    let cfg = {};
+    try {
+      const rawCfg = localStorage.getItem('ket_cfg');
+      if (rawCfg) cfg = JSON.parse(rawCfg);
+    } catch (e) {
+      cfg = {};
+    }
     if (cfg.key) apiKeyEl.value = cfg.key;
 
     const apiBaseUrl = (cfg.base && String(cfg.base).trim()) || 'https://openrouter.ai/api';
@@ -150,10 +164,20 @@
       if (Number.isFinite(r)) ttsRateEl.value = String(r);
     }
     ttsRateValEl.textContent = ttsRateEl.value;
-    ttsRateEl.addEventListener('input', () => {
+    ttsRateEl.addEventListener('input', function () {
       ttsRateValEl.textContent = ttsRateEl.value;
-      localStorage.setItem('ket_cfg', JSON.stringify({ ...(cfg || {}), key: apiKeyEl.value.trim(), base: apiBaseUrl, model: apiModel, rate: ttsRateEl.value }));
-      cfg.rate = ttsRateEl.value;
+      var prev = cfg || {};
+      var nextCfg = {
+        key: apiKeyEl.value.trim(),
+        base: apiBaseUrl,
+        model: apiModel,
+        rate: ttsRateEl.value
+      };
+      for (var k in prev) {
+        if (!(k in nextCfg)) nextCfg[k] = prev[k];
+      }
+      cfg = nextCfg;
+      localStorage.setItem('ket_cfg', JSON.stringify(nextCfg));
     });
 
     function escapeHtml(str) {
@@ -459,7 +483,7 @@
       t = t.replace(/[^\x00-\x7F]/g, '');
       return t;
     }
-
+    
     function setupTypingLogic() {
       document.querySelectorAll('.typing-box').forEach(box => {
         const target = box.dataset.target;
@@ -561,7 +585,50 @@
         };
       });
     }
-
+    
+    // ---- High-quality voice selection for more natural TTS ----
+    let availableVoices = [];
+    function refreshVoices() {
+      try {
+        availableVoices = window.speechSynthesis?.getVoices?.() || [];
+      } catch (_) {
+        availableVoices = [];
+      }
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = refreshVoices;
+      refreshVoices();
+    }
+    function pickBestVoice(lang) {
+      const voices = availableVoices || [];
+      const target = String(lang || '').toLowerCase();
+      const isZh = target.startsWith('zh');
+      const byLang = voices.filter(v => String(v.lang || '').toLowerCase() === target);
+      const zhFallback = isZh ? voices.filter(v => String(v.lang || '').toLowerCase().startsWith('zh')) : [];
+      const pool = byLang.length ? byLang : zhFallback.length ? zhFallback : voices;
+      
+      const preferredNamesZh = [
+        'hanhan', 'yating', 'xiaoyun', 'xiaoqi', 'hsiaochen', 'huihui',
+        'google 國語', 'google mandarin', 'google 中文', 'microsoft'
+      ];
+      const preferredNamesEn = [
+        'google us english', 'microsoft', 'samantha', 'karen', 'daniel', 'alex'
+      ];
+      const prefs = isZh ? preferredNamesZh : preferredNamesEn;
+      
+      const nameMatch = (n) => prefs.some(p => String(n || '').toLowerCase().includes(p));
+      const byName = pool.find(v => nameMatch(v.name));
+      if (byName) return byName;
+      
+      const byGoogle = pool.find(v => String(v.name || '').toLowerCase().includes('google'));
+      if (byGoogle) return byGoogle;
+      
+      const byMicrosoft = pool.find(v => String(v.name || '').toLowerCase().includes('microsoft'));
+      if (byMicrosoft) return byMicrosoft;
+      
+      return pool[0] || null;
+    }
+    
     function renderBilingualResult(result) {
       const output = document.getElementById('storyContent');
       const src = String(result?.source_url || '').trim();
@@ -577,27 +644,55 @@
 
       const titleHtml = title ? `<div style="font-weight:800; font-size:16px; margin-top:6px;">${escapeHtml(title)}</div>` : '';
       
-      const podEn = String(result?.podcast_en || result?.podcast_script || '').trim();
-      const podZh = String(result?.podcast_zh || '').trim();
+      const podEn = result?.podcast_en || result?.podcast_script || (Array.isArray(result?.podcast_segments) ? result.podcast_segments.map(s => s.en).join(' ') : '') || '';
+      const podZh = result?.podcast_zh || (Array.isArray(result?.podcast_segments) ? result.podcast_segments.map(s => s.zh).join('\n') : '') || '';
       let podcastHtml = '';
       
       if (podEn) {
+        let contentHtml = '';
+        let zhContentHtml = '';
+        
+        // Helper to format **bold** in podcast text
+        const fmtPod = (text) => {
+            return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<span style="color:#d97706; font-weight:bold;">$1</span>');
+        };
+
+        if (Array.isArray(result.podcast_segments) && result.podcast_segments.length > 0) {
+           contentHtml = result.podcast_segments.map((seg, i) => 
+             `<span id="pod-seg-${i}" class="pod-seg" title="${escapeHtml(seg.zh)}" data-zh="${escapeHtml(seg.zh)}">${fmtPod(seg.en)}</span>`
+           ).join(' ');
+           zhContentHtml = result.podcast_segments.map((seg, i) =>
+             `<span id="pod-zh-seg-${i}" class="pod-zh-seg">${escapeHtml(seg.zh)}</span>`
+           ).join('');
+        } else {
+           contentHtml = fmtPod(podEn);
+           zhContentHtml = escapeHtml(podZh);
+        }
+
         podcastHtml = `
           <div class="section" style="background:#f0fdf4; border-color:#bbf7d0;">
             <div style="font-weight:800; margin-bottom:8px; color:#15803d;">🎙️ AI 英文播客 (Podcast)</div>
-            <div style="font-size:14px; color:#166534; white-space:pre-wrap; max-height:200px; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.5); border-radius:8px;">${escapeHtml(podEn)}</div>
+            
+            <div style="margin-bottom:10px; padding:8px; background:rgba(255,255,255,0.6); border-radius:6px;">
+                <label style="font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="useNetworkVoice" checked> 
+                    <span>使用 Google 網路語音 (聲音較自然，需連網)</span>
+                </label>
+                <div style="font-size:12px; color:#666; margin-left:22px; margin-top:2px;">
+                    ※ 若取消勾選，將使用瀏覽器內建語音 (速度快但較機械)
+                </div>
+            </div>
+
+            <div id="podContent" style="font-size:14px; color:#166534; white-space:pre-wrap; max-height:200px; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.5); border-radius:8px; line-height:1.6;">${contentHtml}</div>
             <div style="margin-top:10px; display:flex; gap:10px;">
-                <button id="playPodEnBtn" class="podBtn" data-text="${escapeHtml(podEn)}" data-lang="en-US" style="padding:8px 16px; background:#22c55e; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">▶️ 播放英文</button>
-                <button id="dlPodEnBtn" class="dlBtn" data-text="${escapeHtml(podEn)}" data-lang="en" style="padding:8px 16px; background:#fff; border:1px solid #22c55e; color:#22c55e; border-radius:6px; cursor:pointer; font-weight:bold;">⬇️ 下載 MP3</button>
+                <button id="playPodEnBtn" class="podBtn" data-text="${escapeHtml(podEn.replace(/\*\*/g, ''))}" data-lang="en-US" style="padding:8px 16px; background:#22c55e; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">▶️ 播放英文</button>
+                <button id="dlPodEnBtn" class="dlBtn" data-text="${escapeHtml(podEn.replace(/\*\*/g, ''))}" data-lang="en" style="padding:8px 16px; background:#fff; border:1px solid #22c55e; color:#22c55e; border-radius:6px; cursor:pointer; font-weight:bold;">⬇️ 下載 MP3</button>
             </div>
             
             ${podZh ? `
             <div style="margin-top:20px; border-top:1px dashed #bbf7d0; padding-top:12px;">
                 <div style="font-weight:800; margin-bottom:8px; color:#15803d;">🇹🇼 中文解說與翻譯</div>
-                <div style="font-size:14px; color:#14532d; white-space:pre-wrap; max-height:200px; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.5); border-radius:8px;">${escapeHtml(podZh)}</div>
-                <div style="margin-top:10px; display:flex; gap:10px;">
-                    <button id="playPodZhBtn" class="podBtn" data-text="${escapeHtml(podZh)}" data-lang="zh-TW" style="padding:8px 16px; background:#0ea5e9; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">▶️ 播放中文</button>
-                </div>
+                <div id="podZhContent" style="font-size:14px; color:#14532d; white-space:pre-wrap; max-height:200px; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.5); border-radius:8px;">${zhContentHtml}</div>
             </div>
             ` : ''}
 
@@ -716,112 +811,292 @@
       if (podEn || podZh) {
         const statusEl = document.getElementById('podcastStatus');
         let currentUtterance = null;
-        
-        // Unified Play Handler
-        document.querySelectorAll('.podBtn').forEach(btn => {
-            btn.onclick = () => {
-                if (!window.speechSynthesis) return;
+        let currentAudio = null;
+
+        // Shared Helper for fetching a single TTS chunk via Proxy
+        async function fetchTTSBlob(text, lang) {
+             const tl = lang === 'zh' ? 'zh-TW' : 'en';
+             const proxies = [
+                  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+             ];
+             
+             const targetUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${tl}&client=tw-ob`;
+             
+             for (let i = 0; i < proxies.length; i++) {
+                  try {
+                      const proxyUrl = proxies[i](targetUrl);
+                      const res = await fetch(proxyUrl);
+                      if (!res.ok) throw new Error(`Proxy ${i+1} status: ${res.status}`);
+                      const blob = await res.blob();
+                      if (blob.size < 100) throw new Error(`Proxy ${i+1} returned empty blob`);
+                      return blob;
+                  } catch (e) {
+                      if (i === proxies.length - 1) throw e;
+                  }
+             }
+        }
+
+        // Shared Logic for TTS Fetching (Download / Buffer)
+        async function fetchTTSChunks(text, lang, onProgress) {
+              const chunks = [];
+              let remaining = text;
+              while (remaining.length > 0) {
+                  let chunk = remaining.slice(0, 100);
+                  const lastPunct = Math.max(chunk.lastIndexOf('.'), chunk.lastIndexOf('?'), chunk.lastIndexOf('!'), chunk.lastIndexOf('。'), chunk.lastIndexOf('？'), chunk.lastIndexOf('！'));
+                  if (lastPunct > 50) {
+                      chunk = chunk.slice(0, lastPunct + 1);
+                  }
+                  chunks.push(chunk);
+                  remaining = remaining.slice(chunk.length);
+              }
+              
+              const blobs = [];
+              for (let i = 0; i < chunks.length; i++) {
+                  const chunk = chunks[i];
+                  if (!chunk.trim()) continue;
+                  if (onProgress) onProgress(i + 1, chunks.length);
+                  
+                  try {
+                      const blob = await fetchTTSBlob(chunk, lang);
+                      blobs.push(blob);
+                  } catch (e) {
+                      console.error(`Final failure for chunk ${i}:`, e);
+                      throw new Error("Voice download failed");
+                  }
+                  await new Promise(r => setTimeout(r, 50));
+              }
+              return new Blob(blobs, { type: 'audio/mpeg' });
+        }
+
+        // Unified Play Handler (delegated to handlePodBtnClick)
+
+
+         // Extracted Main Handler Logic
+         async function handlePodBtnClick(btn) {
+                const useNetwork = document.getElementById('useNetworkVoice')?.checked;
+                const statusEl = document.getElementById('podcastStatus');
                 
-                // If currently playing, stop it
+                // 1. Stop existing playback
                 if (currentUtterance) {
                     window.speechSynthesis.cancel();
                     currentUtterance = null;
-                    statusEl.textContent = '已停止播放';
-                    // Reset all button texts
-                    document.querySelectorAll('.podBtn').forEach(b => {
-                        b.textContent = b.textContent.replace('⏹️ 停止', '▶️ 播放');
-                    });
-                    
-                    // If clicked same button that was playing, just stop
-                    if (btn.classList.contains('playing')) {
-                        btn.classList.remove('playing');
-                        return;
-                    }
+                }
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                }
+                
+                // 2. Toggle Off logic
+                if (btn.classList.contains('playing')) {
+                     btn.classList.remove('playing');
+                     btn.textContent = btn.textContent.replace('⏹️ 停止', '▶️ 播放');
+                     btn.textContent = btn.textContent.replace('⏳ 載入中', '▶️ 播放');
+                     statusEl.textContent = '已停止播放';
+                     document.querySelectorAll('.pod-seg').forEach(el => el.classList.remove('active'));
+                     document.querySelectorAll('.pod-zh-seg').forEach(el => el.classList.remove('active'));
+                     return;
                 }
 
-                // Remove playing class from all
-                document.querySelectorAll('.podBtn').forEach(b => b.classList.remove('playing'));
+                // 3. Reset all buttons
+                document.querySelectorAll('.podBtn').forEach(b => {
+                    b.classList.remove('playing');
+                    b.textContent = b.textContent.replace('⏹️ 停止', '▶️ 播放');
+                    b.textContent = b.textContent.replace('⏳ 載入中', '▶️ 播放');
+                });
 
-                // Start new
+                // 4. Start New Playback
+                const originalText = btn.dataset.originalText || btn.textContent.replace('▶️ ', '').replace('⏹️ ', ''); 
+                if (!btn.dataset.originalText) btn.dataset.originalText = originalText;
+
                 const text = btn.dataset.text;
-                const lang = btn.dataset.lang;
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = lang;
-                u.rate = 0.9;
-                
-                currentUtterance = u;
-                btn.classList.add('playing');
-                const originalText = btn.textContent;
-                btn.textContent = originalText.replace('▶️ 播放', '⏹️ 停止');
-                statusEl.textContent = '正在播放中...';
-                
-                u.onend = () => {
-                    currentUtterance = null;
-                    btn.classList.remove('playing');
-                    btn.textContent = originalText;
-                    statusEl.textContent = '播放結束';
-                };
-                
-                u.onerror = () => {
-                    currentUtterance = null;
-                    btn.classList.remove('playing');
-                    btn.textContent = originalText;
-                    statusEl.textContent = '播放發生錯誤';
-                };
-                
-                window.speechSynthesis.speak(u);
-            };
-        });
+                const lang = btn.dataset.lang; 
+                const shortLang = lang.startsWith('zh') ? 'zh' : 'en';
 
-        // Download Handler (Only for English for now as requested, but logic is generic)
-        const dlBtn = document.getElementById('dlPodEnBtn');
-        if (dlBtn) {
+                if (useNetwork) {
+                    btn.classList.add('playing');
+                    btn.textContent = `⏹️ 停止${originalText}`;
+                    statusEl.textContent = '⏳ 正在載入高品質語音...';
+
+                    let chunks = [];
+                    const domSegments = document.querySelectorAll('.pod-seg');
+                    const hasSegments = (domSegments.length > 0 && lang.includes('en'));
+
+                    if (hasSegments) {
+                        domSegments.forEach(el => chunks.push(el.textContent));
+                    } else {
+                        let remaining = text;
+                        while (remaining.length > 0) {
+                            let chunk = remaining.slice(0, 100);
+                            const lastPunct = Math.max(chunk.lastIndexOf('.'), chunk.lastIndexOf('?'), chunk.lastIndexOf('!'), chunk.lastIndexOf('。'), chunk.lastIndexOf('？'), chunk.lastIndexOf('！'));
+                            if (lastPunct > 50) chunk = chunk.slice(0, lastPunct + 1);
+                            chunks.push(chunk);
+                            remaining = remaining.slice(chunk.length);
+                        }
+                    }
+
+                    let idx = 0;
+
+                    const playNext = async () => {
+                        if (!btn.classList.contains('playing')) return;
+
+                        if (idx >= chunks.length) {
+                            btn.classList.remove('playing');
+                            btn.textContent = `▶️ ${originalText}`;
+                            statusEl.textContent = '播放結束';
+                            if (hasSegments) {
+                              document.querySelectorAll('.pod-seg').forEach(el => el.classList.remove('active'));
+                              document.querySelectorAll('.pod-zh-seg').forEach(el => el.classList.remove('active'));
+                            }
+                            return;
+                        }
+
+                        if (hasSegments) {
+                            document.querySelectorAll('.pod-seg').forEach(el => el.classList.remove('active'));
+                            document.querySelectorAll('.pod-zh-seg').forEach(el => el.classList.remove('active'));
+                            const enEl = document.getElementById(`pod-seg-${idx}`);
+                            if (enEl) {
+                                enEl.classList.add('active');
+                                enEl.scrollIntoView({behavior: "smooth", block: "center"});
+                            }
+                            const zhEl = document.getElementById(`pod-zh-seg-${idx}`);
+                            if (zhEl) {
+                                zhEl.classList.add('active');
+                            }
+                        }
+
+                        const chunk = chunks[idx];
+                        if (!chunk.trim()) {
+                            idx++;
+                            playNext();
+                            return;
+                        }
+
+                        statusEl.textContent = `▶️ 播網路語音 (${idx+1}/${chunks.length})...`;
+
+                        try {
+                            const blob = await fetchTTSBlob(chunk, shortLang);
+                            const audioUrl = URL.createObjectURL(blob);
+                            const audio = new Audio(audioUrl);
+                            currentAudio = audio;
+
+                            audio.onended = () => {
+                                URL.revokeObjectURL(audioUrl);
+                                idx++;
+                                playNext();
+                            };
+
+                            audio.onerror = () => {
+                                URL.revokeObjectURL(audioUrl);
+                                idx++;
+                                playNext();
+                            };
+
+                            const playPromise = audio.play();
+                            if (playPromise !== undefined) {
+                                playPromise.catch(err => {
+                                    console.warn("Auto-play prevented", err);
+                                    btn.classList.remove('playing');
+                                    btn.textContent = '▶️ 點擊繼續';
+                                    statusEl.textContent = '⚠️ 請點擊按鈕繼續播放';
+                                    btn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        btn.onclick = () => handlePodBtnClick(btn);
+                                    };
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Network voice failed, fallback to local", e);
+                            btn.classList.remove('playing');
+                            btn.textContent = `▶️ ${originalText}`;
+                            if (hasSegments) {
+                              document.querySelectorAll('.pod-seg').forEach(el => el.classList.remove('active'));
+                              document.querySelectorAll('.pod-zh-seg').forEach(el => el.classList.remove('active'));
+                            }
+                            statusEl.textContent = '⚠️ 網路語音失敗，改用本地語音...';
+                            playLocalVoice(btn, text, lang, originalText);
+                        }
+                    };
+
+                    playNext();
+
+                } else {
+                    playLocalVoice(btn, text, lang, originalText);
+                }
+         }
+
+         // Attach Handler
+         document.querySelectorAll('.podBtn').forEach(btn => {
+             btn.onclick = () => handlePodBtnClick(btn);
+         });
+
+        // Let's do a cleaner replacement that defines the function
+        
+
+        
+        // Helper for Local Voice
+        function playLocalVoice(btn, text, lang, originalText) {
+            if (!window.speechSynthesis) return;
+            
+            const statusEl = document.getElementById('podcastStatus');
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = lang;
+            const v = pickBestVoice(lang);
+            if (v) u.voice = v;
+            
+            if (String(lang).toLowerCase().startsWith('zh')) {
+              u.rate = 1.0;
+              u.pitch = 1.0;
+            } else {
+              u.rate = 0.6;
+              u.pitch = 1.0;
+            }
+            
+            currentUtterance = u;
+            btn.classList.add('playing');
+            btn.textContent = `⏹️ 停止${originalText}`;
+            statusEl.textContent = '▶️ 正在播放本地語音...';
+            
+            u.onend = () => {
+                currentUtterance = null;
+                btn.classList.remove('playing');
+                btn.textContent = `▶️ ${originalText}`;
+                statusEl.textContent = '播放結束';
+            };
+            
+            u.onerror = () => {
+                currentUtterance = null;
+                btn.classList.remove('playing');
+                btn.textContent = `▶️ ${originalText}`;
+                statusEl.textContent = '播放發生錯誤';
+            };
+            
+            window.speechSynthesis.speak(u);
+        }
+
+        document.querySelectorAll('.dlBtn').forEach(dlBtn => {
             dlBtn.onclick = async () => {
                 if (dlBtn.disabled) return;
                 dlBtn.disabled = true;
+                const statusEl = document.getElementById('podcastStatus');
                 const originalText = dlBtn.textContent;
                 const text = dlBtn.dataset.text;
+                const lang = dlBtn.dataset.lang || 'en';
+                const shortLang = lang.startsWith('zh') ? 'zh' : 'en';
                 
-                dlBtn.textContent = '⏳ 生成 MP3...';
+                dlBtn.textContent = '⏳ 下載中...';
                 statusEl.textContent = '正在準備音訊檔案...';
                 
                 try {
-                    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-                    const chunks = [];
-                    let currentChunk = '';
+                    statusEl.textContent = '正在透過 Proxy 抓取音訊...';
+                    const combinedBlob = await fetchTTSChunks(text, shortLang, (curr, total) => {
+                        statusEl.textContent = `正在下載片段 (${curr}/${total})...`;
+                    });
                     
-                    for (const s of sentences) {
-                        if (currentChunk.length + s.length < 150) {
-                            currentChunk += s + ' ';
-                        } else {
-                            chunks.push(currentChunk);
-                            currentChunk = s + ' ';
-                        }
-                    }
-                    if (currentChunk) chunks.push(currentChunk);
-                    
-                    const audioBlobs = [];
-                    statusEl.textContent = `正在下載音訊片段 (0/${chunks.length})...`;
-                    
-                    for (let i = 0; i < chunks.length; i++) {
-                        const chunk = chunks[i];
-                        const encoded = encodeURIComponent(chunk.trim());
-                        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=en&client=tw-ob`;
-                        
-                        const res = await fetch(url);
-                        if (!res.ok) throw new Error(`Segment ${i+1} failed`);
-                        const blob = await res.blob();
-                        audioBlobs.push(blob);
-                        
-                        statusEl.textContent = `正在下載音訊片段 (${i+1}/${chunks.length})...`;
-                        await new Promise(r => setTimeout(r, 100));
-                    }
-                    
-                    const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
                     const audioUrl = URL.createObjectURL(combinedBlob);
                     const a = document.createElement('a');
                     a.href = audioUrl;
-                    a.download = `podcast_en_${Date.now()}.mp3`;
+                    a.download = `podcast_${lang}_${Date.now()}.mp3`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -830,13 +1105,108 @@
                     statusEl.textContent = '下載完成！';
                 } catch (e) {
                     console.error(e);
-                    statusEl.innerHTML = `<span style="color:red">下載失敗 (可能是瀏覽器安全性阻擋)，請嘗試直接播放。</span>`;
+                    statusEl.innerHTML = `<span style="color:red">下載失敗 (Proxy 可能忙碌)，請改用播放功能。</span>`;
                 } finally {
                     dlBtn.disabled = false;
                     dlBtn.textContent = originalText;
                 }
             };
-        }
+        });
+
+        document.querySelectorAll('.pod-seg').forEach(segEl => {
+            segEl.onclick = async () => {
+                if (currentUtterance) {
+                    window.speechSynthesis.cancel();
+                    currentUtterance = null;
+                }
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                }
+                document.querySelectorAll('.podBtn').forEach(b => {
+                    b.classList.remove('playing');
+                    b.textContent = b.textContent.replace('⏹️ 停止', '▶️ 播放');
+                    b.textContent = b.textContent.replace('⏳ 載入中', '▶️ 播放');
+                });
+                document.querySelectorAll('.pod-seg').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.pod-zh-seg').forEach(el => el.classList.remove('active'));
+                segEl.classList.add('active');
+                const id = segEl.id || '';
+                if (id.indexOf('pod-seg-') === 0) {
+                    const idx = id.slice('pod-seg-'.length);
+                    const zhEl = document.getElementById('pod-zh-seg-' + idx);
+                    if (zhEl) {
+                        zhEl.classList.add('active');
+                    }
+                }
+                const text = segEl.textContent.trim();
+                if (!text) return;
+                const useNetwork = document.getElementById('useNetworkVoice')?.checked;
+                const speakLocal = () => {
+                    const u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'en-US';
+                    const v = pickBestVoice('en-US');
+                    if (v) u.voice = v;
+                    u.rate = 0.6;
+                    u.pitch = 1.0;
+                    currentUtterance = u;
+                    statusEl.textContent = '▶️ 正在朗讀這一句英文...';
+                    u.onend = () => {
+                        if (currentUtterance === u) {
+                            currentUtterance = null;
+                        }
+                        statusEl.textContent = '播放結束';
+                    };
+                    u.onerror = () => {
+                        if (currentUtterance === u) {
+                            currentUtterance = null;
+                        }
+                        statusEl.textContent = '播放發生錯誤';
+                    };
+                    window.speechSynthesis.speak(u);
+                };
+                if (useNetwork) {
+                    const shortLang = 'en';
+                    statusEl.textContent = '⏳ 正在連接 Google 語音...';
+                    try {
+                        const blob = await fetchTTSBlob(text, shortLang);
+                        const audioUrl = URL.createObjectURL(blob);
+                        const audio = new Audio(audioUrl);
+                        currentAudio = audio;
+                        audio.onended = () => {
+                            URL.revokeObjectURL(audioUrl);
+                            if (currentAudio === audio) {
+                                currentAudio = null;
+                            }
+                            statusEl.textContent = '播放結束';
+                        };
+                        audio.onerror = () => {
+                            URL.revokeObjectURL(audioUrl);
+                            if (currentAudio === audio) {
+                                currentAudio = null;
+                            }
+                            statusEl.textContent = '播網路語音失敗，改用本地語音...';
+                            speakLocal();
+                        };
+                        const playPromise = audio.play();
+                        if (playPromise && playPromise.catch) {
+                            playPromise.catch(() => {
+                                if (currentAudio === audio) {
+                                    currentAudio = null;
+                                }
+                                statusEl.textContent = '播網路語音失敗，改用本地語音...';
+                                speakLocal();
+                            });
+                        }
+                    } catch (e) {
+                        statusEl.textContent = '播網路語音失敗，改用本地語音...';
+                        speakLocal();
+                    }
+                } else {
+                    speakLocal();
+                }
+            };
+        });
       }
     }
 
@@ -1201,7 +1571,20 @@
       const apiKey = apiKeyEl.value.trim();
       if (!apiKey || !content.trim()) { alert('請輸入 Key 與內容'); showLoading(false); return; }
 
-      localStorage.setItem('ket_cfg', JSON.stringify({ ...(cfg || {}), key: apiKey, base: apiBaseUrl, model: apiModel, rate: ttsRateEl.value }));
+      (function(){
+        var prev = cfg || {};
+        var nextCfg = {
+          key: apiKey,
+          base: apiBaseUrl,
+          model: apiModel,
+          rate: ttsRateEl.value
+        };
+        for (var k in prev) {
+          if (!(k in nextCfg)) nextCfg[k] = prev[k];
+        }
+        cfg = nextCfg;
+        localStorage.setItem('ket_cfg', JSON.stringify(nextCfg));
+      })();
 
       btn.disabled = true;
 
@@ -1218,7 +1601,7 @@
         'Finally, create two "Podcast Scripts": one in English (podcast_en) and one in Chinese (podcast_zh).\n' +
         'The English script should be a lively host explaining the story and key points.\n' +
         'The Chinese script should be a translated version of the podcast with detailed explanations of the teaching points.\n' +
-        'Do not use square brackets like [verb] or [動詞].\n' +
+        'In the English podcast script, do NOT use square brackets [ ]. Instead, wrap the target verbs with **double asterisks** (e.g. **get**) so they can be highlighted in color.\n' +
         '\n' +
         `Target verbs (base form): ${verbList}\n` +
         `Source URL (if any): ${srcUrl || 'N/A'}\n` +
@@ -1263,8 +1646,10 @@
         '      "sentence_index": 0\n' +
         '    }\n' +
         '  ],\n' +
-        '  "podcast_en": "Full English podcast script...",\n' +
-        '  "podcast_zh": "Full Chinese podcast script..."\n' +
+        '  "podcast_segments": [\n' +
+        '    { "en": "Sentence 1...", "zh": "翻譯 1..." },\n' +
+        '    { "en": "Sentence 2...", "zh": "翻譯 2..." }\n' +
+        '  ]\n' +
         '}\n' +
         '\n' +
         'Rules:\n' +
@@ -1276,9 +1661,8 @@
         '6) "grammar_highlight" MUST include "en", "zh" (summary), "details_zh" (extended usage tips), and "examples" (list of en/zh sentences).\n' +
         '7) Do not include markdown code fences. Return ONLY the JSON object, no other text.\n' +
         '8) Do NOT use markdown bolding (like **word**) in the "en" sentences. Use plain text only.\n' +
-        '9) Place "podcast_en" and "podcast_zh" AT THE END of the JSON object.\n' +
-        '   - "podcast_en": 300-500 words. Host explaining the story, key vocab, grammar. Friendly teacher persona.\n' +
-        '   - "podcast_zh": A complete Chinese version of the podcast content. It should translate what the host says and provide detailed explanations of the grammar/vocab points mentioned, suitable for a Chinese audience learning English.\n' +
+        '9) "podcast_segments": Generate a lively host script (300-500 words). Instead of a block of text, return an array of segments (usually 1-2 sentences per segment). "en" is the English script (with **verbs** bolded), "zh" is the Traditional Chinese translation/explanation.\n' +
+        '   IMPORTANT for "zh": If the segment mentions any of the target verbs, you MUST provide an extra detailed explanation of that verb (meaning, usage, nuance) in Chinese.\n' +
         '\n' +
         `News content:\n${content}`;
 
